@@ -1,44 +1,61 @@
-body{
-    display: block;
-    margin: 0;
-    background-color:black 
-}
-.header{
+/* Page + header layout */
+body { margin: 0; background:#000; color:#fff; font-family: sans-serif; }
+.header { display:flex; flex-direction:column; gap:12px; padding:12px 24px; }
+.logo { margin:0; }
+
+/* Nav row */
+.main-nav{
+  align-self:flex-end;         /* nav on the right under the logo */
   display:flex;
   gap:32px;
-  padding:16px 24px;
+  align-items:center;
+  position:relative;
 }
 
-h1{
-    color: white;
-    margin-bottom: 20px;
-}
-a{
-    background-color: black;
-    color: white;
-    cursor: pointer;
-    border: none;
-    text-decoration: none;
+/* Each top-level menu item is its own mini-container */
+.item{
+  position:relative;           /* anchor for submenu */
+  display:inline-block;        /* keeps each item together */
 }
 
-.logo{margin: 0px;}
-nav{
-    margin-left: auto;
-    display: flex;
-    gap: 40px;
-    padding: 40px 12px;
-}
-nav a{
-    display: inline-block;
-    padding: 8px 12px;
-    border: none;
-    white-space: nowrap;
+/* Top links */
+.menu-link,
+.main-nav > a{                 /* includes #sign */
+  color:#fff;
+  text-decoration:none;
+  padding:8px 12px;
+  white-space:nowrap;
 }
 
-#sign{
-    background-color: blueviolet;
-    color: white;
-    text-decoration: none;
-    padding: 10px ;
-    border-radius: 6px;
+/* Sign up button */
+#sign{ background:blueviolet; border-radius:8px; }
+
+/* Submenu panel (hidden by default) */
+.submenu{
+  display:none;
+  position:absolute;
+  top:100%;                    /* directly below the link */
+  left:0;
+  min-width:180px;
+  background:#111;
+  border-radius:8px;
+  padding:6px 0;
+  box-shadow:0 8px 20px rgba(0,0,0,.35);
+  z-index:1000;               /* stay above page content */
 }
+
+/* Submenu items */
+.submenu a{
+  display:block;
+  padding:8px 12px;
+  color:#fff;
+  text-decoration:none;
+}
+.submenu a:hover{ background:#222; }
+
+/* Show submenu on hover/focus; keep open while hovering it */
+.item:hover .submenu,
+.item:focus-within .submenu{ display:block; }
+
+/* If a menu is near the right edge, flip it */
+.item.end .submenu{ left:auto; right:0; }
