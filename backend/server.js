@@ -1,19 +1,45 @@
 /*
-Currently have barebones registration and login functionality working right now.
-Works when testing it with Postman.
-Haven't implemented any password hashing yet but gonna add that soon.
-I also need to work on trying to connect TMBD REST API to fetch movie data and store it in our database.
+Updated server.js with frontend connection support
+- Added static file serving
+- Added CORS support
+- Added session management
+- Ready for password hashing implementation
 */
 
 const express = require('express');
-const { getConnection } = require('./db'); 
+const path = require('path');
+const cors = require('cors');
+const session = require('express-session');
+const { getConnection } = require('./db');
 require('dotenv').config();
 
 const app = express();
 const port = process.env.PORT || 4000;
 
-// Middleware to parse JSON bodies
+// Middleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// CORS configuration for development
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://localhost:4000', 'http://127.0.0.1:5500'],
+  credentials: true
+}));
+
+// Session configuration
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'movie-night-secret-key-change-this',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false, // Set to true in production with HTTPS
+    httpOnly: true,
+    maxAge: 1000 * 60 * 60 * 24 // 24 hours
+  }
+}));
+
+// Serve static files (HTML, CSS, JS)
+app.use(express.static(path.join(__dirname, '../frontend/public')));
 
 // Test database connection on startup
 (async () => {
@@ -27,16 +53,27 @@ app.use(express.json());
   }
 })();
 
+// Middleware to check authentication
+function requireAuth(req, res, next) {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  next();
+}
+
 /**
  * Root route - Health check
  */
-app.get('/', (req, res) => {
-  res.json({ status: 'Movie Tracker API is running' });
+app.get('/api', (req, res) => {
+  res.json({
+    status: 'Movie Tracker API is running',
+    authenticated: !!req.session.userId
+  });
 });
 
 /**
  * GET /api/users
- * Get all users (for testing)
+ * Get all users (for testing - should be protected in production)
  */
 app.get('/api/users', async (req, res) => {
   try {
@@ -62,6 +99,17 @@ app.post('/api/users/register', async (req, res) => {
     return res.status(400).json({ error: 'All fields required' });
   }
 
+  // Basic email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ error: 'Invalid email format' });
+  }
+
+  // Password strength check
+  if (password.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+  }
+
   try {
     const conn = await getConnection();
 
@@ -72,10 +120,13 @@ app.post('/api/users/register', async (req, res) => {
       return res.status(400).json({ error: 'Email already exists' });
     }
 
+    // TODO: Hash password before storing
+    // const hashedPassword = await bcrypt.hash(password, 10);
+
     // Insert new user
     const [result] = await conn.query(
       'INSERT INTO Users (name, email, password, created_at) VALUES (?, ?, ?, NOW())',
-      [name, email, password]
+      [name, email, password] // Use hashedPassword in production
     );
 
     await conn.end();
@@ -112,11 +163,23 @@ app.post('/api/users/login', async (req, res) => {
 
     const user = rows[0];
 
-    // Simple password check (no hashing for now)
+    // TODO: Use bcrypt to compare hashed passwords
+    // const validPassword = await bcrypt.compare(password, user.password);
+    // if (!validPassword) {
+
+    // Simple password check (replace with bcrypt in production)
     if (user.password !== password) {
       await conn.end();
       return res.status(401).json({ error: 'Invalid credentials' });
     }
+
+    // Create session
+    req.session.userId = user.user_id;
+    req.session.user = {
+      id: user.user_id,
+      name: user.name,
+      email: user.email
+    };
 
     await conn.end();
 
@@ -135,13 +198,48 @@ app.post('/api/users/login', async (req, res) => {
 });
 
 /**
+ * POST /api/users/logout
+ * User logout
+ */
+app.post('/api/users/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).json({ error: 'Logout failed' });
+    }
+    res.json({ message: 'Logged out successfully' });
+  });
+});
+
+/**
+ * GET /api/users/me
+ * Get current user info
+ */
+app.get('/api/users/me', requireAuth, (req, res) => {
+  res.json({ user: req.session.user });
+});
+
+/**
  * GET /api/groups
- * Get all groups (for testing)
+ * Get all groups (optionally filtered by user)
  */
 app.get('/api/groups', async (req, res) => {
   try {
     const conn = await getConnection();
-    const [rows] = await conn.query('SELECT * FROM Movie_Groups');
+    let query = 'SELECT * FROM Movie_Groups';
+    let params = [];
+
+    // If user is logged in, optionally filter their groups
+    if (req.session.userId && req.query.myGroups === 'true') {
+      query = `
+        SELECT mg.* 
+        FROM Movie_Groups mg
+        JOIN Group_Members gm ON mg.group_id = gm.group_id
+        WHERE gm.user_id = ?
+      `;
+      params = [req.session.userId];
+    }
+
+    const [rows] = await conn.query(query, params);
     await conn.end();
     res.json(rows);
   } catch (err) {
@@ -154,11 +252,12 @@ app.get('/api/groups', async (req, res) => {
  * POST /api/groups
  * Create a new group
  */
-app.post('/api/groups', async (req, res) => {
-  const { groupName, userId } = req.body;
+app.post('/api/groups', requireAuth, async (req, res) => {
+  const { groupName } = req.body;
+  const userId = req.session.userId;
 
-  if (!groupName || !userId) {
-    return res.status(400).json({ error: 'Group name and user ID required' });
+  if (!groupName) {
+    return res.status(400).json({ error: 'Group name required' });
   }
 
   try {
@@ -187,6 +286,43 @@ app.post('/api/groups', async (req, res) => {
   } catch (err) {
     console.error('Error creating group:', err);
     res.status(500).json({ error: 'Failed to create group' });
+  }
+});
+
+/**
+ * POST /api/groups/:groupId/join
+ * Join a group
+ */
+app.post('/api/groups/:groupId/join', requireAuth, async (req, res) => {
+  const { groupId } = req.params;
+  const userId = req.session.userId;
+
+  try {
+    const conn = await getConnection();
+
+    // Check if already a member
+    const [existing] = await conn.query(
+      'SELECT * FROM Group_Members WHERE group_id = ? AND user_id = ?',
+      [groupId, userId]
+    );
+
+    if (existing.length > 0) {
+      await conn.end();
+      return res.status(400).json({ error: 'Already a member of this group' });
+    }
+
+    // Add member
+    await conn.query(
+      'INSERT INTO Group_Members (group_id, user_id, joined_at) VALUES (?, ?, NOW())',
+      [groupId, userId]
+    );
+
+    await conn.end();
+
+    res.json({ message: 'Successfully joined group' });
+  } catch (err) {
+    console.error('Error joining group:', err);
+    res.status(500).json({ error: 'Failed to join group' });
   }
 });
 
@@ -221,7 +357,7 @@ app.get('/api/groups/:groupId/members', async (req, res) => {
 app.get('/api/movies', async (req, res) => {
   try {
     const conn = await getConnection();
-    const [rows] = await conn.query('SELECT * FROM Movies');
+    const [rows] = await conn.query('SELECT * FROM Movies ORDER BY title');
     await conn.end();
     res.json(rows);
   } catch (err) {
@@ -250,6 +386,79 @@ app.get('/api/movies/:id', async (req, res) => {
     console.error('Error fetching movie:', err);
     res.status(500).json({ error: 'Failed to fetch movie' });
   }
+});
+
+/**
+ * POST /api/groups/:groupId/watchlist
+ * Add a movie to group watchlist
+ */
+app.post('/api/groups/:groupId/watchlist', requireAuth, async (req, res) => {
+  const { groupId } = req.params;
+  const { movieId } = req.body;
+  const userId = req.session.userId;
+
+  if (!movieId) {
+    return res.status(400).json({ error: 'Movie ID required' });
+  }
+
+  try {
+    const conn = await getConnection();
+
+    // Check if movie already in watchlist
+    const [existing] = await conn.query(
+      'SELECT * FROM Group_Watchlist WHERE group_id = ? AND movie_id = ?',
+      [groupId, movieId]
+    );
+
+    if (existing.length > 0) {
+      await conn.end();
+      return res.status(400).json({ error: 'Movie already in watchlist' });
+    }
+
+    // Add to watchlist
+    await conn.query(
+      'INSERT INTO Group_Watchlist (group_id, movie_id, added_by, added_at) VALUES (?, ?, ?, NOW())',
+      [groupId, movieId, userId]
+    );
+
+    await conn.end();
+
+    res.json({ message: 'Movie added to watchlist' });
+  } catch (err) {
+    console.error('Error adding movie to watchlist:', err);
+    res.status(500).json({ error: 'Failed to add movie to watchlist' });
+  }
+});
+
+/**
+ * GET /api/groups/:groupId/watchlist
+ * Get group watchlist
+ */
+app.get('/api/groups/:groupId/watchlist', async (req, res) => {
+  const { groupId } = req.params;
+
+  try {
+    const conn = await getConnection();
+    const [rows] = await conn.query(
+      `SELECT m.*, gw.added_at, u.name as added_by_name
+       FROM Group_Watchlist gw
+       JOIN Movies m ON gw.movie_id = m.movie_id
+       JOIN Users u ON gw.added_by = u.user_id
+       WHERE gw.group_id = ?
+       ORDER BY gw.added_at DESC`,
+      [groupId]
+    );
+    await conn.end();
+    res.json(rows);
+  } catch (err) {
+    console.error('Error fetching watchlist:', err);
+    res.status(500).json({ error: 'Failed to fetch watchlist' });
+  }
+});
+
+// Catch-all route to serve the main HTML file for client-side routing
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/public/website.html'));
 });
 
 // Start the server

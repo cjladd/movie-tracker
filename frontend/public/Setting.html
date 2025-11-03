@@ -1,24 +1,398 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Settings - MovieNightPlanner</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .settings-section {
+            background: #111;
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 22px;
+            margin-bottom: 25px;
+            color: #fff;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ccc;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #333;
+            border-radius: 6px;
+            background: #1a1a1a;
+            color: #fff;
+            font-size: 16px;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: blueviolet;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .save-button {
+            background: blueviolet;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .save-button:hover {
+            background: #7b3ff2;
+            transform: translateY(-2px);
+        }
+
+        .save-button:disabled {
+            background: #555;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .preference-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #222;
+        }
+
+        .preference-item:last-child {
+            border-bottom: none;
+        }
+
+        .preference-label {
+            color: #ccc;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 25px;
+        }
+
+        .toggle-switch input {
+            display: none;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #333;
+            border-radius: 25px;
+            transition: 0.4s;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 3.5px;
+            background-color: white;
+            border-radius: 50%;
+            transition: 0.4s;
+        }
+
+        input:checked+.toggle-slider {
+            background-color: blueviolet;
+        }
+
+        input:checked+.toggle-slider:before {
+            transform: translateX(24px);
+        }
+
+        .danger-zone {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #333;
+        }
+
+        .danger-button {
+            background: transparent;
+            color: #ff4444;
+            border: 1px solid #ff4444;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .danger-button:hover {
+            background: #ff4444;
+            color: white;
+        }
+
+        .login-prompt {
+            text-align: center;
+            padding: 60px 20px;
+            background: #111;
+            border-radius: 8px;
+        }
+
+        .login-prompt a {
+            color: blueviolet;
+            text-decoration: none;
+        }
+
+        .success-message {
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid #4caf50;
+            color: #66bb6a;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+        }
+    </style>
 </head>
+
 <body>
     <header class="header">
-        <h1 class="logo"> MovieNightPlanner</h1>
-            <nav>
-                <a href="website.html">Home</a>
-                <a href="Binge_Bank.html">Binge Bank</a>
-                <a href="Stream_team.html">Stream Team</a>
-                <a href="heads_up.html">Heads up</a>
-                <a href="Setting.html">Setting</a>
-                <a href="Log_In.html">Log In</a>
-                <a id="sign" href="Sign_Up.html">Sign Up</a>
-            </nav>
+        <h1 class="logo">MovieNightPlanner</h1>
+        <nav>
+            <a href="website.html">Home</a>
+            <a href="Binge_Bank.html">Binge Bank</a>
+            <a href="Stream_team.html">Stream Team</a>
+            <a href="heads_up.html">Heads up</a>
+            <a href="Setting.html">Setting</a>
+            <a href="Log_In.html">Log In</a>
+            <a id="sign" href="Sign_Up.html">Sign Up</a>
+        </nav>
     </header>
-    <h1>Set me up!</h1>
+
+    <div class="container">
+        <h1>Settings</h1>
+
+        <div id="content">
+            <!-- Content will be loaded here -->
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        const content = document.getElementById('content');
+
+        function loadSettings() {
+            if (!currentUser) {
+                content.innerHTML = `
+                    <div class="login-prompt">
+                        <h3>Please log in to access settings</h3>
+                        <p>Manage your profile and preferences</p>
+                        <a href="Log_In.html">Log In</a> or <a href="Sign_Up.html">Sign Up</a>
+                    </div>
+                `;
+                return;
+            }
+
+            content.innerHTML = `
+                <div class="success-message" id="successMessage">
+                    Settings saved successfully!
+                </div>
+                
+                <!-- Profile Section -->
+                <div class="settings-section">
+                    <h2 class="section-title">Profile Information</h2>
+                    <form id="profileForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="name">Name</label>
+                                <input type="text" id="name" value="${escapeHtml(currentUser.name)}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="email">Email</label>
+                                <input type="email" id="email" value="${escapeHtml(currentUser.email)}" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="bio">Bio</label>
+                            <textarea id="bio" rows="3" placeholder="Tell us about yourself..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="favoriteGenres">Favorite Movie Genres</label>
+                            <input type="text" id="favoriteGenres" placeholder="Action, Comedy, Drama...">
+                        </div>
+                        <button type="submit" class="save-button">Save Profile</button>
+                    </form>
+                </div>
+                
+                <!-- Preferences Section -->
+                <div class="settings-section">
+                    <h2 class="section-title">Preferences</h2>
+                    <div class="preference-item">
+                        <span class="preference-label">Email notifications for movie nights</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="emailNotif" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="preference-item">
+                        <span class="preference-label">Group invitation notifications</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="groupNotif" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="preference-item">
+                        <span class="preference-label">Vote reminders</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="voteNotif" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="preference-item">
+                        <span class="preference-label">Show my profile to other users</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="publicProfile" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Security Section -->
+                <div class="settings-section">
+                    <h2 class="section-title">Security</h2>
+                    <form id="passwordForm">
+                        <div class="form-group">
+                            <label for="currentPassword">Current Password</label>
+                            <input type="password" id="currentPassword" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="newPassword">New Password</label>
+                                <input type="password" id="newPassword" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="confirmPassword">Confirm New Password</label>
+                                <input type="password" id="confirmPassword" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="save-button">Change Password</button>
+                    </form>
+                    
+                    <div class="danger-zone">
+                        <h3 style="color: #ff4444; margin-bottom: 10px;">Danger Zone</h3>
+                        <p style="color: #999; margin-bottom: 15px;">Once you delete your account, there is no going back.</p>
+                        <button class="danger-button" id="deleteAccount">Delete Account</button>
+                    </div>
+                </div>
+            `;
+
+            // Add form handlers
+            document.getElementById('profileForm').addEventListener('submit', saveProfile);
+            document.getElementById('passwordForm').addEventListener('submit', changePassword);
+            document.getElementById('deleteAccount').addEventListener('click', deleteAccount);
+        }
+
+        async function saveProfile(e) {
+            e.preventDefault();
+            const successMessage = document.getElementById('successMessage');
+
+            // Simulate saving (in real app, this would call an API)
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+
+            // Update local user data
+            currentUser.name = name;
+            currentUser.email = email;
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+
+            // Show success message
+            successMessage.style.display = 'block';
+            setTimeout(() => {
+                successMessage.style.display = 'none';
+            }, 3000);
+
+            // Update UI
+            updateAuthUI();
+        }
+
+        async function changePassword(e) {
+            e.preventDefault();
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (newPassword !== confirmPassword) {
+                alert('New passwords do not match');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                alert('Password must be at least 6 characters');
+                return;
+            }
+
+            // In real app, this would call an API
+            alert('Password change functionality coming soon!');
+            e.target.reset();
+        }
+
+        function deleteAccount() {
+            if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+                if (confirm('This will permanently delete all your data. Are you absolutely sure?')) {
+                    // In real app, this would call an API
+                    alert('Account deletion functionality coming soon!');
+                }
+            }
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text ? text.toString().replace(/[&<>"']/g, m => map[m]) : '';
+        }
+
+        // Load settings on page load
+        loadSettings();
+    </script>
 </body>
+
 </html>

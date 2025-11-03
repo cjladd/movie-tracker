@@ -1,24 +1,415 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Stream Team - MovieNightPlanner</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .team-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .create-group-btn {
+            background: blueviolet;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .create-group-btn:hover {
+            background: #7b3ff2;
+            transform: translateY(-2px);
+        }
+
+        .groups-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .group-card {
+            background: #111;
+            border-radius: 8px;
+            padding: 20px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .group-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(138, 43, 226, 0.3);
+        }
+
+        .group-name {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+
+        .group-info {
+            color: #999;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .group-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .group-btn {
+            background: #222;
+            color: #fff;
+            border: 1px solid #444;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .group-btn:hover {
+            background: #333;
+            border-color: blueviolet;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: relative;
+            background: #111;
+            margin: 100px auto;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 8px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .close {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            font-size: 28px;
+            color: #999;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #fff;
+        }
+
+        .modal h2 {
+            margin-bottom: 20px;
+        }
+
+        .modal input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            background: #222;
+            border: 1px solid #444;
+            color: #fff;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        .modal button {
+            background: blueviolet;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+        }
+
+        .modal button:hover {
+            background: #7b3ff2;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state h3 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+
+        .members-list {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #333;
+        }
+
+        .member-chip {
+            display: inline-block;
+            background: #222;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-right: 5px;
+            margin-bottom: 5px;
+            color: #ccc;
+        }
+
+        .login-prompt {
+            text-align: center;
+            padding: 60px 20px;
+            background: #111;
+            border-radius: 8px;
+            margin-top: 30px;
+        }
+
+        .login-prompt h3 {
+            margin-bottom: 15px;
+        }
+
+        .login-prompt a {
+            color: blueviolet;
+            text-decoration: none;
+        }
+    </style>
 </head>
+
 <body>
     <header class="header">
-        <h1 class="logo"> MovieNightPlanner</h1>
-            <nav>
-                <a href="website.html">Home</a>
-                <a href="Binge_Bank.html">Binge Bank</a>
-                <a href="Stream_team.html">Stream Team</a>
-                <a href="heads_up.html">Heads up</a>
-                <a href="Setting.html">Setting</a>
-                <a href="Log_In.html">Log In</a>
-                <a id="sign" href="Sign_Up.html">Sign Up</a>
-            </nav>
+        <h1 class="logo">MovieNightPlanner</h1>
+        <nav class="main-nav">
+            <a href="website.html">Home</a>
+            <a href="Binge_Bank.html">Binge Bank</a>
+            <a href="Stream_team.html">Stream Team</a>
+            <a href="heads_up.html">Heads up</a>
+            <a href="Setting.html">Setting</a>
+            <a href="Log_In.html">Log In</a>
+            <a id="sign" href="Sign_Up.html">Sign Up</a>
+        </nav>
     </header>
-    <h1>sup</h1>
+
+    <div class="container">
+        <div class="team-header">
+            <h1>Your Stream Teams</h1>
+            <button class="create-group-btn" id="createGroupBtn">Create New Group</button>
+        </div>
+
+        <div id="content">
+            <!-- Groups will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Create Group Modal -->
+    <div id="createModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Create a New Group</h2>
+            <input type="text" id="groupNameInput" placeholder="Enter group name..." maxlength="100">
+            <button id="confirmCreateBtn">Create Group</button>
+        </div>
+    </div>
+
+    <!-- Group Members Modal -->
+    <div id="membersModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="membersModalTitle">Group Members</h2>
+            <div id="membersList"></div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        // DOM elements
+        const content = document.getElementById('content');
+        const createGroupBtn = document.getElementById('createGroupBtn');
+        const createModal = document.getElementById('createModal');
+        const membersModal = document.getElementById('membersModal');
+        const groupNameInput = document.getElementById('groupNameInput');
+        const confirmCreateBtn = document.getElementById('confirmCreateBtn');
+        const membersList = document.getElementById('membersList');
+        const membersModalTitle = document.getElementById('membersModalTitle');
+
+        // Modal controls
+        document.querySelectorAll('.close').forEach(closeBtn => {
+            closeBtn.onclick = function () {
+                this.closest('.modal').style.display = 'none';
+            }
+        });
+
+        window.onclick = function (event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        }
+
+        // Load groups on page load
+        async function loadGroups() {
+            if (!currentUser) {
+                content.innerHTML = `
+                    <div class="login-prompt">
+                        <h3>Please log in to view your groups</h3>
+                        <p>Join or create movie groups with your friends!</p>
+                        <a href="Log_In.html">Log In</a> or <a href="Sign_Up.html">Sign Up</a>
+                    </div>
+                `;
+                createGroupBtn.style.display = 'none';
+                return;
+            }
+
+            try {
+                const groups = await getGroups();
+
+                if (groups.length === 0) {
+                    content.innerHTML = `
+                        <div class="empty-state">
+                            <h3>No groups yet!</h3>
+                            <p>Create your first group to start planning movie nights with friends.</p>
+                        </div>
+                    `;
+                } else {
+                    displayGroups(groups);
+                }
+            } catch (error) {
+                content.innerHTML = `
+                    <div class="empty-state">
+                        <h3>Error loading groups</h3>
+                        <p>Please try refreshing the page.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Display groups in grid
+        function displayGroups(groups) {
+            const grid = document.createElement('div');
+            grid.className = 'groups-grid';
+
+            groups.forEach(group => {
+                const card = document.createElement('div');
+                card.className = 'group-card';
+
+                card.innerHTML = `
+                    <div class="group-name">${escapeHtml(group.group_name)}</div>
+                    <div class="group-info">
+                        Created: ${new Date(group.created_at).toLocaleDateString()}
+                    </div>
+                    <div class="group-actions">
+                        <button class="group-btn" onclick="viewMembers(${group.group_id}, '${escapeHtml(group.group_name)}')">View Members</button>
+                        <button class="group-btn" onclick="viewGroup(${group.group_id})">Enter Group</button>
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
+
+            content.innerHTML = '';
+            content.appendChild(grid);
+        }
+
+        // Create new group
+        createGroupBtn.onclick = function () {
+            if (!checkAuth()) return;
+            createModal.style.display = 'block';
+            groupNameInput.value = '';
+            groupNameInput.focus();
+        }
+
+        confirmCreateBtn.onclick = async function () {
+            const groupName = groupNameInput.value.trim();
+
+            if (!groupName) {
+                alert('Please enter a group name');
+                return;
+            }
+
+            try {
+                await createGroup(groupName);
+                createModal.style.display = 'none';
+                loadGroups(); // Reload groups
+            } catch (error) {
+                alert('Failed to create group. Please try again.');
+            }
+        }
+
+        // View group members
+        async function viewMembers(groupId, groupName) {
+            try {
+                const members = await getGroupMembers(groupId);
+                membersModalTitle.textContent = `Members of ${groupName}`;
+
+                if (members.length === 0) {
+                    membersList.innerHTML = '<p>No members found.</p>';
+                } else {
+                    membersList.innerHTML = members.map(member => `
+                        <div class="member-chip">${escapeHtml(member.name)}</div>
+                    `).join('');
+                }
+
+                membersModal.style.display = 'block';
+            } catch (error) {
+                alert('Failed to load group members');
+            }
+        }
+
+        // Navigate to group page
+        function viewGroup(groupId) {
+            // Store current group in localStorage
+            localStorage.setItem('currentGroupId', groupId);
+            // Navigate to group detail page (you'll need to create this)
+            alert(`Group detail page coming soon! (Group ID: ${groupId})`);
+        }
+
+        // Utility function to escape HTML
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // Handle Enter key in group name input
+        groupNameInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                confirmCreateBtn.click();
+            }
+        });
+
+        // Initialize page
+        loadGroups();
+    </script>
 </body>
+
 </html>
