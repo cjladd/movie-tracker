@@ -36,7 +36,8 @@ CREATE TABLE Movies (
     genre VARCHAR(100),
     release_year INT,
     rating DECIMAL(3,1), -- e.g., 7.5 out of 10
-    poster_url VARCHAR(500)
+    poster_url VARCHAR(500),
+    tmdb_id INT UNIQUE -- TMDB API movie ID
 );
 
 -- 5. Group_Watchlist table (many-to-many between Movie_Groups and Movies)

@@ -1,64 +1,322 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>MovieNightPlanner</title>
-        <link rel="stylesheet" href="style.css">
-    <head>
-    <body>
-        <header class="header">
-            <h1 class="logo">MovieNightPlanner</h1>
 
-            <nav class="main-nav">
-                <div class="item">
+<head>
+    <title>MovieNightPlanner</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Hero Section Styles */
+        .hero-section {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            min-height: 400px;
+        }
+
+        .hero-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            gap: 40px;
+        }
+
+        .hero-text {
+            flex: 1;
+            max-width: 500px;
+        }
+
+        .hero-text h1 {
+            font-size: 48px;
+            font-weight: bold;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+
+        .hero-text p {
+            font-size: 18px;
+            color: #ccc;
+            margin-top: 10px;
+        }
+
+        .hero-movie {
+            flex: 1;
+            max-width: 500px;
+            position: relative;
+        }
+
+        .hero-movie img {
+            width: 100%;
+            height: 600px;
+            object-fit: cover;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .hero-movie-info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+
+        .hero-movie-info h3 {
+            color: #fff;
+            font-size: 22px;
+            margin: 0 0 10px 0;
+        }
+
+        .rating {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        /* Featured Movies Section */
+        .featured-section {
+            max-width: 1200px;
+            margin: 60px auto;
+            padding: 20px;
+        }
+
+        .featured-section h2 {
+            text-align: center;
+            font-size: 36px;
+            color: #fff;
+            margin-bottom: 40px;
+        }
+
+        .movies-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 20px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .movie-card {
+            background: #111;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+        }
+
+        .movie-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(138, 43, 226, 0.3);
+        }
+
+        .movie-poster {
+            width: 100%;
+            height: 200px;
+            overflow: hidden;
+        }
+
+        .movie-poster img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .movie-card:hover .movie-poster img {
+            transform: scale(1.05);
+        }
+
+        .movie-info {
+            padding: 15px;
+            text-align: center;
+        }
+
+        .movie-info h4 {
+            color: #fff;
+            font-size: 14px;
+            margin: 0 0 8px 0;
+            font-weight: bold;
+        }
+
+        .movie-info p {
+            color: #999;
+            font-size: 12px;
+            margin: 0;
+        }
+
+        /* Loading State */
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #333;
+            border-radius: 50%;
+            border-top-color: blueviolet;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Error State */
+        .error {
+            text-align: center;
+            padding: 60px 20px;
+            color: #ff6666;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .hero-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .hero-text h1 {
+                font-size: 36px;
+            }
+
+            .hero-movie {
+                max-width: 400px;
+            }
+
+            .hero-movie img {
+                height: 500px;
+            }
+
+            .movies-grid {
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+                gap: 15px;
+            }
+
+            .featured-section h2 {
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header class="header">
+        <h1 class="logo">MovieNightPlanner</h1>
+
+        <nav class="main-nav">
+            <div class="item">
                 <a class="menu-link" href="website.html">Home</a>
                 <div class="submenu">
                     <a href="Continue_Watching.html">Continue Watching</a>
                     <a href="History.html">History</a>
                 </div>
-                </div>
+            </div>
 
-                <div class="item">
+            <div class="item">
                 <a class="menu-link" href="Binge_Bank.html">Binge Bank</a>
                 <div class="submenu">
                     <a href="Lists.html">My Lists</a>
                     <a href="Saved.html">Saved for later</a>
                 </div>
-                </div>
+            </div>
 
-                <div class="item">
+            <div class="item">
                 <a class="menu-link" href="Stream_team.html">Stream Team</a>
                 <div class="submenu">
                     <a href="#">Friends</a>
                     <a href="#">Invites</a>
                 </div>
-                </div>
+            </div>
 
-                <div class="item">
+            <div class="item">
                 <a class="menu-link" href="heads_up.html">Heads up</a>
                 <div class="submenu">
                     <a href="#">News</a>
                     <a href="#">Alerts</a>
                 </div>
-                </div>
+            </div>
 
-                <div class="item">
+            <div class="item">
                 <a class="menu-link" href="Setting.html">Setting</a>
                 <div class="submenu">
                     <a href="#">Profile</a>
                     <a href="#">Preferences</a>
                 </div>
-                </div>
+            </div>
 
-                <div class="item">
+            <div class="item">
                 <a class="menu-link" href="Log_In.html">Log In</a>
                 <div class="submenu">
                     <a href="#">Forgot password</a>
                 </div>
-                </div>
+            </div>
 
-                <a id="sign" href="Sign_Up.html">Sign Up</a>
-            </nav>
-        </header>
-        <h1>Home Page</h1>
-    </body>
+            <a id="sign" href="Sign_Up.html">Sign Up</a>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div id="hero-section" class="loading">
+            Loading featured content...
+        </div>
+    </section>
+
+    <!-- Featured Movies Section -->
+    <section class="featured-section">
+        <div id="featured-movies" class="loading">
+            Loading movies...
+        </div>
+    </section>
+
+    <script src="app.js"></script>
+
+    <!-- Error handling -->
+    <script>
+        window.addEventListener('error', function (e) {
+            console.error('JavaScript Error:', e.error);
+            const heroSection = document.getElementById('hero-section');
+            const featuredSection = document.getElementById('featured-movies');
+
+            if (heroSection && heroSection.classList.contains('loading')) {
+                heroSection.innerHTML = `<div class="error">Error: ${e.error.message}</div>`;
+                heroSection.classList.remove('loading');
+            }
+
+            if (featuredSection && featuredSection.classList.contains('loading')) {
+                featuredSection.innerHTML = `<div class="error">Error: ${e.error.message}</div>`;
+                featuredSection.classList.remove('loading');
+            }
+        });
+
+        setTimeout(function () {
+            const heroSection = document.getElementById('hero-section');
+            const featuredSection = document.getElementById('featured-movies');
+
+            if (heroSection && heroSection.classList.contains('loading')) {
+                heroSection.innerHTML = `<div class="error">Content failed to load. Check console for errors.</div>`;
+                heroSection.classList.remove('loading');
+            }
+
+            if (featuredSection && featuredSection.classList.contains('loading')) {
+                featuredSection.innerHTML = `<div class="error">Movies failed to load. Check console for errors.</div>`;
+                featuredSection.classList.remove('loading');
+            }
+        }, 10000);
+    </script>
+</body>
+
 </html>

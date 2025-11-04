@@ -32,6 +32,36 @@ async function apiCall(endpoint, method = 'GET', data = null) {
     }
 }
 
+// TMDB API Functions
+async function seedDatabaseWithTMDBMovies() {
+    try {
+        const result = await apiCall('/tmdb/seed', 'POST');
+        console.log('Database seeded successfully:', result);
+        return result;
+    } catch (error) {
+        console.error('Failed to seed database:', error);
+        throw error;
+    }
+}
+
+async function getFeaturedMovies() {
+    try {
+        return await apiCall('/movies/featured');
+    } catch (error) {
+        console.error('Failed to fetch featured movies:', error);
+        return [];
+    }
+}
+
+async function getHeroMovie() {
+    try {
+        return await apiCall('/movies/hero');
+    } catch (error) {
+        console.error('Failed to fetch hero movie:', error);
+        return null;
+    }
+}
+
 // Authentication Functions
 async function register(name, email, password) {
     try {
@@ -65,7 +95,6 @@ function logout() {
     window.location.href = 'Log_In.html';
 }
 
-// Check if user is logged in
 function checkAuth() {
     if (!currentUser) {
         window.location.href = 'Log_In.html';
@@ -74,13 +103,11 @@ function checkAuth() {
     return true;
 }
 
-// Update UI based on login status
 function updateAuthUI() {
     const loginLink = document.querySelector('a[href="Log_In.html"]');
     const signupLink = document.querySelector('a[href="Sign_Up.html"]');
 
     if (currentUser && loginLink) {
-        // Change login link to logout
         loginLink.textContent = 'Logout';
         loginLink.href = '#';
         loginLink.onclick = (e) => {
@@ -90,7 +117,6 @@ function updateAuthUI() {
             }
         };
 
-        // Change signup link to show user name
         if (signupLink) {
             signupLink.textContent = currentUser.name;
             signupLink.href = 'Setting.html';
@@ -152,32 +178,146 @@ async function getMovie(movieId) {
     }
 }
 
+// Homepage Functions
+async function loadHomepageContent() {
+    console.log('🎬 Starting to load homepage content...');
+
+    try {
+        // First, seed database
+        console.log('📚 Seeding database...');
+        await seedDatabaseWithTMDBMovies();
+
+        // Load featured movies
+        console.log('🎥 Loading featured movies...');
+        const featuredMovies = await getFeaturedMovies();
+
+        if (featuredMovies && featuredMovies.length > 0) {
+            console.log(`✅ Found ${featuredMovies.length} movies`);
+
+            // Display hero movie (first one)
+            displayHeroMovie(featuredMovies[0]);
+
+            // Display featured movies
+            displayFeaturedMovies(featuredMovies);
+        } else {
+            console.log('❌ No movies found');
+            showError('No movies found in database');
+        }
+    } catch (error) {
+        console.error('❌ Error loading homepage content:', error);
+        showError(`Failed to load content: ${error.message}`);
+    }
+}
+
+function displayHeroMovie(movie) {
+    const heroSection = document.getElementById('hero-section');
+    if (!heroSection) {
+        console.error('Hero section element not found');
+        return;
+    }
+
+    // FIXED: Safely handle rating
+    let ratingDisplay = 'N/A';
+    if (movie.rating !== null && movie.rating !== undefined && !isNaN(movie.rating)) {
+        ratingDisplay = Number(movie.rating).toFixed(1);
+    }
+
+    const posterUrl = movie.poster_url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAwIiBoZWlnaHQ9IjYwMCIgdmlld0JveD0iMCAwIDUwMCA2MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI1MDAiIGhlaWdodD0iNjAwIiBmaWxsPSIjMzMzIi8+Cjx0ZXh0IHg9IjI1MCIgeT0iMzAwIiBmaWxsPSIjNjY2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiPk5vIFBvc3RlcjwvdGV4dD4KPHN2Zz4=';
+
+    heroSection.innerHTML = `
+        <div class="hero-content">
+            <div class="hero-text">
+                <h1>Watch your<br>Favorite<br>Movie</h1>
+                <p>Anytime Anywhere with Anyone</p>
+            </div>
+            <div class="hero-movie">
+                <img src="${posterUrl}" alt="${movie.title}">
+                <div class="hero-movie-info">
+                    <h3>${movie.title} (${movie.release_year || 'Unknown'})</h3>
+                    <div class="rating">${ratingDisplay}/10</div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    heroSection.classList.remove('loading');
+    console.log('✅ Hero movie displayed:', movie.title);
+}
+
+function displayFeaturedMovies(movies) {
+    const featuredSection = document.getElementById('featured-movies');
+    if (!featuredSection) {
+        console.error('Featured movies section element not found');
+        return;
+    }
+
+    const movieCards = movies.map(movie => {
+        const posterUrl = movie.poster_url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDE0MCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxNDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjMzMzIi8+Cjx0ZXh0IHg9IjcwIiB5PSIxMDAiIGZpbGw9IiM2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiI+Tm8gUG9zdGVyPC90ZXh0Pgo8L3N2Zz4=';
+
+        return `
+            <div class="movie-card">
+                <div class="movie-poster">
+                    <img src="${posterUrl}" alt="${movie.title}">
+                </div>
+                <div class="movie-info">
+                    <h4>${movie.title}</h4>
+                    <p>${movie.release_year || 'Unknown'}</p>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    featuredSection.innerHTML = `
+        <h2>Top 8 Movies</h2>
+        <div class="movies-grid">
+            ${movieCards}
+        </div>
+    `;
+
+    featuredSection.classList.remove('loading');
+    console.log(`✅ Featured movies displayed: ${movies.length} movies`);
+}
+
+function showError(message) {
+    const heroSection = document.getElementById('hero-section');
+    const featuredSection = document.getElementById('featured-movies');
+
+    if (heroSection && heroSection.classList.contains('loading')) {
+        heroSection.innerHTML = `<div class="error">${message}</div>`;
+        heroSection.classList.remove('loading');
+    }
+
+    if (featuredSection && featuredSection.classList.contains('loading')) {
+        featuredSection.innerHTML = `<div class="error">${message}</div>`;
+        featuredSection.classList.remove('loading');
+    }
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 DOM loaded, initializing app...');
+
     updateAuthUI();
 
     // Add page-specific initialization
     const currentPage = window.location.pathname.split('/').pop();
+    console.log(`📄 Current page: ${currentPage}`);
 
     switch (currentPage) {
         case 'website.html':
-            // Homepage specific code
-            if (currentUser) {
-                const welcomeMessage = document.createElement('p');
-                welcomeMessage.textContent = `Welcome back, ${currentUser.name}!`;
-                welcomeMessage.style.textAlign = 'center';
-                welcomeMessage.style.marginTop = '20px';
-                document.querySelector('h1').after(welcomeMessage);
-            }
+        case '':
+        case '/':
+            console.log('🏠 Loading homepage content...');
+            loadHomepageContent();
             break;
 
         case 'Stream_team.html':
-            // Load and display groups
+            console.log('👥 Loading groups...');
             loadGroups();
             break;
 
         case 'Binge_Bank.html':
-            // Load and display movies
+            console.log('🎥 Loading movies...');
             loadMovies();
             break;
     }
@@ -186,14 +326,13 @@ document.addEventListener('DOMContentLoaded', () => {
 // Helper functions for specific pages
 async function loadGroups() {
     if (!checkAuth()) return;
-
     const groups = await getGroups();
-    // Add code to display groups on the page
     console.log('Groups:', groups);
 }
 
 async function loadMovies() {
     const movies = await getMovies();
-    // Add code to display movies on the page
     console.log('Movies:', movies);
 }
+
+console.log('✅ app.js loaded successfully');
