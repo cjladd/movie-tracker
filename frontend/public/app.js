@@ -104,25 +104,25 @@ function checkAuth() {
 }
 
 function updateAuthUI() {
-    const loginLink = document.querySelector('a[href="Log_In.html"]');
-    const signupLink = document.querySelector('a[href="Sign_Up.html"]');
+  const loginLink = document.getElementById('loginLink');
+  const signupLink = document.getElementById('signupLink');
 
-    if (currentUser && loginLink) {
-        loginLink.textContent = 'Logout';
-        loginLink.href = '#';
-        loginLink.onclick = (e) => {
-            e.preventDefault();
-            if (confirm('Are you sure you want to logout?')) {
-                logout();
-            }
-        };
+  if (currentUser && loginLink && signupLink) {
+    loginLink.textContent = 'Logout';
+    loginLink.href = '#';
+    loginLink.onclick = e => {
+      e.preventDefault();
+      if (confirm('Are you sure you want to logout?')) {
+        logout();
+      }
+    };
 
-        if (signupLink) {
-            signupLink.textContent = currentUser.name;
-            signupLink.href = 'Setting.html';
-        }
-    }
+    signupLink.textContent = currentUser.name;
+    signupLink.href = 'Setting.html';
+    signupLink.onclick = null; // remove any residual handler
+  }
 }
+
 
 // Group Management Functions
 async function createGroup(groupName) {
