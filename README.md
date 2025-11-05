@@ -1,63 +1,97 @@
-# Movie Tracker Project
+# Movie Night Planner (movie-tracker)
 
-This repository contains the source code for the **Movie Tracker** web application.  The goal of this project is to provide a simple movie‑tracking platform where users can browse movies, see details and save them to personal lists.
+Collaborative movie night app: create groups, build a watchlist, vote on movies, and pull fresh data from TMDB.
 
-The project is organised into three key parts:
+## ✨ Features
+- User accounts with **bcrypt password hashing** (no plaintext passwords)
+- Session-based authentication (Express sessions)
+- Groups and membership management
+- Group watchlists + voting
+- TMDB integration for seeding/displaying featured movies (hero card + grid)
+- Static frontend served by the backend
 
-* **frontend** – a React application responsible for the user interface.
-* **backend** – an API server that contains the business logic and communicates with the database.
-* **database** – SQL scripts used to create and manage the application's data schema.
+## 🧱 Tech Stack
+- **Backend:** Node.js, Express, mysql2, express-session, dotenv, cors
+- **Frontend:** Static HTML/CSS/JS (served from `frontend/public`)
+- **DB:** MySQL / MariaDB
+- **Security:** bcrypt for password hashing
 
-## Getting Started
+---
 
-### Prerequisites
+## 📦 Prerequisites
+- Node.js 18+
+- MySQL/MariaDB
+- TMDB API Read Access Token (v4) or API Key
 
-To run this project locally you will need the following tools installed:
+---
 
-* **Node.js** (version 18 or higher) and npm – required for both the backend and frontend.
-* **A SQL database server** such as MySQL or PostgreSQL.  SQLite can be used for local development if preferred.
-* **(Optional)** PHP – if you choose to use a PHP‑based backend instead of the provided Node.js example.
+## 🔧 Local Setup
 
-### Initial Setup
+```bash
+git clone https://github.com/cjladd/movie-tracker.git
+cd movie-tracker
+```
 
-1. **Clone this repository** using your Git provider of choice.
-2. **Create the database schema**.  Execute the SQL statements in `database/schema.sql` against your database server to create the necessary tables.
-3. **Configure environment variables**.  Copy `backend/.env.example` to `backend/.env` and update the values with your database credentials and desired port.
-4. **Install dependencies and start the backend**:
+### 1) Environment variables
 
-   ```bash
-   cd backend
-   npm install
-   npm start
-   ```
-
-5. **Install dependencies and start the frontend**:
-
-   ```bash
-   cd frontend
-   npm install
-   npm start
-   ```
-
-   By default the React development server runs on port 3000 and proxies API requests to the backend (see the `proxy` setting in `frontend/package.json`).  Once both servers are running you can open the frontend application at `http://localhost:3000` and it will communicate with the API server on the configured port (default 4000).
-
-## Project Structure
+Create `backend/.env`:
 
 ```
-movie-tracker/
-├── backend/           # Express API server
-│   ├── server.js      # Entry point for the API
-│   ├── db.js          # Database connection helper
-│   ├── package.json   # Backend npm configuration
-│   ├── .env.example   # Sample environment variables file
-│   └── ...
-├── database/
-│   └── schema.sql     # SQL script to create tables
-└── frontend/          # React application
-    ├── package.json   # Frontend npm configuration
-    ├── public/
-    │   └── index.html # HTML template
-    └── src/
-        ├── App.js     # Root React component
-        └── index.js   # React entry point
+DB_HOST=localhost
+DB_USER=<your_db_user>
+DB_PASSWORD=<your_db_password>
+DB_NAME=movie_night_planner
+PORT=4000
+SESSION_SECRET=<random_long_string>
+
+# TMDB
+TMDB_BASE_URL=https://api.themoviedb.org/3
+TMDB_IMAGE_BASE=https://image.tmdb.org/t/p
+TMDB_READ_TOKEN=<your_tmdb_v4_read_token_or_bearer>
 ```
+
+> **Important:** Never commit `.env`. Add it to `.gitignore`.
+
+### 2) Install & Run
+
+```bash
+cd backend
+npm install
+npm start
+```
+
+Open: `http://localhost:4000/` → serves `frontend/public/website.html`.
+
+---
+
+## 🔐 Authentication (bcrypt hashing)
+
+- On **register** (`POST /api/users/register`), passwords are hashed with **bcrypt** before storing.
+- On **login** (`POST /api/users/login`), submitted passwords are checked with `bcrypt.compare(...)`.
+- Sessions: `express-session` stores a server-side session; routes that require auth check `req.session.userId`.
+
+---
+
+## 🎬 TMDB Integration
+
+- Seeding route populates `Movies` with popular titles (includes `tmdb_id`, `poster_url`, and rating).
+- Homepage auto-seeds (first run) and displays a **hero** movie + **Top 8** featured movies.
+- Configure tokens in `.env` (see above).
+
+---
+
+## 🔌 API (selected routes)
+
+- `POST /api/users/register` – name, email, password
+- `POST /api/users/login` – email, password
+- `POST /api/users/logout`
+- `GET  /api/users/me` – current session user
+- `GET  /api/groups?myGroups=true`
+- `POST /api/groups` – create group (auth)
+- `POST /api/groups/:groupId/join` – join (auth)
+- `POST /api/groups/:groupId/watchlist` – add movie (auth)
+- `GET  /movies/featured` – 8 movies for homepage
+- `GET  /movies/hero` – highest-rated movie
+- `POST /tmdb/seed` – populate DB from TMDB (dev)
+
+---

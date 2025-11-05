@@ -4,6 +4,8 @@ const cors = require('cors');
 const session = require('express-session');
 const axios = require('axios');
 const { getConnection } = require('./db');
+const bcrypt = require('bcrypt'); //const for password hashing
+const SALT_ROUNDS = 10; //^^
 require('dotenv').config();
 
 const app = express();
@@ -179,9 +181,10 @@ app.post('/api/users/register', async (req, res) => {
       return res.status(400).json({ error: 'Email already exists' });
     }
 
+    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
     const [result] = await conn.query(
       'INSERT INTO Users (name, email, password, created_at) VALUES (?, ?, ?, NOW())',
-      [name, email, password]
+      [name, email, hashedPassword]
     );
 
     await conn.end();
@@ -213,7 +216,8 @@ app.post('/api/users/login', async (req, res) => {
 
     const user = rows[0];
 
-    if (user.password !== password) {
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
       await conn.end();
       return res.status(401).json({ error: 'Invalid credentials' });
     }
