@@ -1,3 +1,4 @@
+CREATE DATABASE movie_night_planner;
 USE movie_night_planner;
 
 -- 1. Users table
