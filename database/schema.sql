@@ -10,7 +10,7 @@ CREATE TABLE Users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2. Movie_Groups table (renamed to avoid reserved word)
+-- 2. Movie_Groups table 
 CREATE TABLE Movie_Groups (
     group_id INT PRIMARY KEY AUTO_INCREMENT,
     group_name VARCHAR(100) NOT NULL,

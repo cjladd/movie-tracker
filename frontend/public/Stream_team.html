@@ -24,7 +24,7 @@
             background: blueviolet;
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 12px 24px;
             border-radius: 6px;
             cursor: pointer;
             font-size: 16px;
@@ -48,6 +48,7 @@
             border-radius: 8px;
             padding: 20px;
             transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
         }
 
         .group-card:hover {
@@ -89,6 +90,392 @@
             border-color: blueviolet;
         }
 
+        .group-btn.primary {
+            background: blueviolet;
+            border-color: blueviolet;
+        }
+
+        .group-btn.primary:hover {
+            background: #7b3ff2;
+        }
+
+        /* Group Detail View */
+        .group-detail {
+            display: none;
+            background: #111;
+            border-radius: 8px;
+            padding: 30px;
+            margin-top: 20px;
+        }
+
+        .group-detail.active {
+            display: block;
+        }
+
+        .group-detail-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 30px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 15px;
+        }
+
+        .group-detail-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+            margin: 0;
+        }
+
+        .back-btn {
+            background: #333;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .back-btn:hover {
+            background: #444;
+        }
+
+        .detail-tabs {
+            display: flex;
+            gap: 20px;
+            border-bottom: 2px solid #333;
+            margin-bottom: 30px;
+        }
+
+        .detail-tab {
+            padding: 10px 20px;
+            color: #999;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+        }
+
+        .detail-tab:hover {
+            color: #fff;
+        }
+
+        .detail-tab.active {
+            color: blueviolet;
+            border-bottom-color: blueviolet;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .members-list {
+            display: grid;
+            gap: 15px;
+        }
+
+        .member-item {
+            background: #222;
+            padding: 15px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: between;
+            align-items: center;
+        }
+
+        .member-info {
+            flex: 1;
+        }
+
+        .member-name {
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 5px;
+        }
+
+        .member-email {
+            color: #999;
+            font-size: 14px;
+        }
+
+        .add-member-form {
+            background: #222;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .add-member-form input {
+            width: 70%;
+            padding: 10px;
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 4px;
+            color: #fff;
+            margin-right: 10px;
+        }
+
+        .add-member-form button {
+            background: blueviolet;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .movie-nights-list {
+            display: grid;
+            gap: 20px;
+        }
+
+        .movie-night-item {
+            background: #222;
+            padding: 20px;
+            border-radius: 6px;
+        }
+
+        .movie-night-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .movie-night-date {
+            font-weight: bold;
+            color: #fff;
+            font-size: 18px;
+        }
+
+        .movie-night-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status-planned {
+            background: rgba(138, 43, 226, 0.2);
+            color: blueviolet;
+        }
+
+        .status-completed {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4caf50;
+        }
+
+        .status-cancelled {
+            background: rgba(255, 68, 68, 0.2);
+            color: #ff4444;
+        }
+
+        .create-movie-night-form {
+            background: #222;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #ccc;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 4px;
+            color: #fff;
+        }
+
+        .watchlist-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .watchlist-item {
+            background: #222;
+            border-radius: 6px;
+            overflow: hidden;
+            transition: transform 0.3s;
+        }
+
+        .watchlist-item:hover {
+            transform: scale(1.05);
+        }
+
+        .watchlist-poster {
+            width: 100%;
+            height: 250px;
+            background: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+        }
+
+        .watchlist-poster img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .watchlist-info {
+            padding: 15px;
+        }
+
+        .watchlist-title {
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .watchlist-year {
+            color: #999;
+            font-size: 12px;
+        }
+
+        .watchlist-voting-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        .watchlist-meta {
+            color: #ccc;
+            font-size: 12px;
+            margin-bottom: 15px;
+        }
+
+        /* Voting Interface */
+        .voting-section {
+            border-top: 1px solid #333;
+            padding: 15px;
+            background: #1a1a1a;
+        }
+
+        .voting-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .voting-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .average-rating {
+            color: #ffd700;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .star-rating {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .star {
+            cursor: pointer;
+            color: #666;
+            font-size: 20px;
+            transition: color 0.3s;
+        }
+
+        .star:hover,
+        .star.active {
+            color: #ffd700;
+        }
+
+        .star.hover {
+            color: #ffed4e;
+        }
+
+        .your-vote {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 10px;
+        }
+
+        .vote-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .vote-count {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .vote-breakdown {
+            background: #111;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .vote-breakdown.show {
+            display: block;
+        }
+
+        .vote-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+            font-size: 11px;
+        }
+
+        .vote-bar-fill {
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            overflow: hidden;
+            flex: 1;
+            margin: 0 10px;
+        }
+
+        .vote-bar-progress {
+            height: 100%;
+            background: blueviolet;
+            transition: width 0.3s;
+        }
+
+        .loading-vote {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
         .modal {
             display: none;
             position: fixed;
@@ -126,6 +513,7 @@
 
         .modal h2 {
             margin-bottom: 20px;
+            color: #fff;
         }
 
         .modal input {
@@ -143,7 +531,7 @@
             background: blueviolet;
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 12px 24px;
             border-radius: 4px;
             cursor: pointer;
             font-size: 16px;
@@ -166,23 +554,6 @@
             color: #fff;
         }
 
-        .members-list {
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid #333;
-        }
-
-        .member-chip {
-            display: inline-block;
-            background: #222;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            margin-right: 5px;
-            margin-bottom: 5px;
-            color: #ccc;
-        }
-
         .login-prompt {
             text-align: center;
             padding: 60px 20px;
@@ -193,11 +564,32 @@
 
         .login-prompt h3 {
             margin-bottom: 15px;
+            color: #fff;
         }
 
         .login-prompt a {
             color: blueviolet;
             text-decoration: none;
+        }
+
+        .success-message,
+        .error-message {
+            padding: 10px 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .success-message {
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid #4caf50;
+            color: #66bb6a;
+        }
+
+        .error-message {
+            background: rgba(255, 68, 68, 0.1);
+            border: 1px solid #ff4444;
+            color: #ff6666;
         }
     </style>
 </head>
@@ -225,6 +617,74 @@
         <div id="content">
             <!-- Groups will be loaded here -->
         </div>
+
+        <!-- Group Detail View -->
+        <div id="groupDetail" class="group-detail">
+            <div class="group-detail-header">
+                <h2 class="group-detail-title" id="groupDetailTitle">Group Name</h2>
+                <button class="back-btn" id="backToGroups">← Back to Groups</button>
+            </div>
+
+            <div class="detail-tabs">
+                <div class="detail-tab active" data-tab="members">Members</div>
+                <div class="detail-tab" data-tab="watchlist">Watchlist</div>
+                <div class="detail-tab" data-tab="movie-nights">Movie Nights</div>
+            </div>
+
+            <!-- Members Tab -->
+            <div id="membersTab" class="tab-content active">
+                <div class="success-message" id="memberSuccess"></div>
+                <div class="error-message" id="memberError"></div>
+
+                <div class="add-member-form">
+                    <h3>Invite Member</h3>
+                    <input type="email" id="memberEmailInput" placeholder="Enter email address...">
+                    <button id="addMemberBtn">Invite</button>
+                </div>
+
+                <div class="members-list" id="membersList">
+                    <!-- Members will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Watchlist Tab -->
+            <div id="watchlistTab" class="tab-content">
+                <div class="watchlist-header"
+                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="margin: 0; color: #fff;">Group Watchlist</h3>
+                    <a href="Binge_Bank.html" class="group-btn primary">Add More Movies</a>
+                </div>
+
+                <div class="watchlist-voting-grid" id="watchlistVotingGrid">
+                    <!-- Watchlist items with voting will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Movie Nights Tab -->
+            <div id="movieNightsTab" class="tab-content">
+                <div class="success-message" id="movieNightSuccess"></div>
+                <div class="error-message" id="movieNightError"></div>
+
+                <div class="create-movie-night-form">
+                    <h3>Schedule Movie Night</h3>
+                    <div class="form-group">
+                        <label for="movieNightDate">Date & Time:</label>
+                        <input type="datetime-local" id="movieNightDate">
+                    </div>
+                    <div class="form-group">
+                        <label for="chosenMovie">Movie (optional):</label>
+                        <select id="chosenMovie">
+                            <option value="">Select a movie from watchlist...</option>
+                        </select>
+                    </div>
+                    <button id="createMovieNightBtn" class="group-btn primary">Schedule Movie Night</button>
+                </div>
+
+                <div class="movie-nights-list" id="movieNightsList">
+                    <!-- Movie nights will be loaded here -->
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Create Group Modal -->
@@ -232,46 +692,94 @@
         <div class="modal-content">
             <span class="close">&times;</span>
             <h2>Create a New Group</h2>
+            <div class="error-message" id="createGroupError"></div>
             <input type="text" id="groupNameInput" placeholder="Enter group name..." maxlength="100">
             <button id="confirmCreateBtn">Create Group</button>
         </div>
     </div>
 
-    <!-- Group Members Modal -->
-    <div id="membersModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2 id="membersModalTitle">Group Members</h2>
-            <div id="membersList"></div>
-        </div>
-    </div>
-
     <script src="app.js"></script>
     <script>
+        // State management
+        let currentGroupId = null;
+        let currentGroup = null;
+
         // DOM elements
         const content = document.getElementById('content');
         const createGroupBtn = document.getElementById('createGroupBtn');
         const createModal = document.getElementById('createModal');
-        const membersModal = document.getElementById('membersModal');
+        const groupDetail = document.getElementById('groupDetail');
         const groupNameInput = document.getElementById('groupNameInput');
         const confirmCreateBtn = document.getElementById('confirmCreateBtn');
-        const membersList = document.getElementById('membersList');
-        const membersModalTitle = document.getElementById('membersModalTitle');
+        const backToGroups = document.getElementById('backToGroups');
 
-        // Modal controls
-        document.querySelectorAll('.close').forEach(closeBtn => {
-            closeBtn.onclick = function () {
-                this.closest('.modal').style.display = 'none';
-            }
+        // Detail view elements
+        const groupDetailTitle = document.getElementById('groupDetailTitle');
+        const membersList = document.getElementById('membersList');
+        const watchlistVotingGrid = document.getElementById('watchlistVotingGrid');
+        const movieNightsList = document.getElementById('movieNightsList');
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            loadGroups();
+            setupEventListeners();
         });
 
-        window.onclick = function (event) {
-            if (event.target.classList.contains('modal')) {
-                event.target.style.display = 'none';
+        function setupEventListeners() {
+            // Modal controls
+            document.querySelectorAll('.close').forEach(closeBtn => {
+                closeBtn.onclick = function () {
+                    this.closest('.modal').style.display = 'none';
+                }
+            });
+
+            window.onclick = function (event) {
+                if (event.target.classList.contains('modal')) {
+                    event.target.style.display = 'none';
+                }
             }
+
+            // Create group
+            createGroupBtn.onclick = function () {
+                if (!checkAuth()) {
+                    window.location.href = 'Log_In.html';
+                    return;
+                }
+                createModal.style.display = 'block';
+                groupNameInput.value = '';
+                groupNameInput.focus();
+            }
+
+            confirmCreateBtn.onclick = handleCreateGroup;
+            groupNameInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') confirmCreateBtn.click();
+            });
+
+            // Back button
+            backToGroups.onclick = () => {
+                groupDetail.classList.remove('active');
+                loadGroups();
+            }
+
+            // Tab switching
+            document.querySelectorAll('.detail-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabName = tab.dataset.tab;
+                    switchTab(tabName);
+                });
+            });
+
+            // Add member
+            document.getElementById('addMemberBtn').onclick = handleAddMember;
+            document.getElementById('memberEmailInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleAddMember();
+            });
+
+            // Create movie night
+            document.getElementById('createMovieNightBtn').onclick = handleCreateMovieNight;
         }
 
-        // Load groups on page load
+        // Load and display groups
         async function loadGroups() {
             if (!currentUser) {
                 content.innerHTML = `
@@ -284,6 +792,8 @@
                 createGroupBtn.style.display = 'none';
                 return;
             }
+
+            createGroupBtn.style.display = 'block';
 
             try {
                 const groups = await getGroups();
@@ -308,7 +818,6 @@
             }
         }
 
-        // Display groups in grid
         function displayGroups(groups) {
             const grid = document.createElement('div');
             grid.className = 'groups-grid';
@@ -320,11 +829,12 @@
                 card.innerHTML = `
                     <div class="group-name">${escapeHtml(group.group_name)}</div>
                     <div class="group-info">
-                        Created: ${new Date(group.created_at).toLocaleDateString()}
+                        Created: ${formatDate(group.created_at)}<br>
+                        Creator: ${escapeHtml(group.creator_name)}
                     </div>
                     <div class="group-actions">
                         <button class="group-btn" onclick="viewMembers(${group.group_id}, '${escapeHtml(group.group_name)}')">View Members</button>
-                        <button class="group-btn" onclick="viewGroup(${group.group_id})">Enter Group</button>
+                        <button class="group-btn primary" onclick="enterGroup(${group.group_id}, '${escapeHtml(group.group_name)}')">Enter Group</button>
                     </div>
                 `;
 
@@ -336,18 +846,12 @@
         }
 
         // Create new group
-        createGroupBtn.onclick = function () {
-            if (!checkAuth()) return;
-            createModal.style.display = 'block';
-            groupNameInput.value = '';
-            groupNameInput.focus();
-        }
-
-        confirmCreateBtn.onclick = async function () {
+        async function handleCreateGroup() {
             const groupName = groupNameInput.value.trim();
+            const errorDiv = document.getElementById('createGroupError');
 
             if (!groupName) {
-                alert('Please enter a group name');
+                showError(errorDiv, 'Please enter a group name');
                 return;
             }
 
@@ -355,60 +859,361 @@
                 await createGroup(groupName);
                 createModal.style.display = 'none';
                 loadGroups(); // Reload groups
+                showSuccess(null, 'Group created successfully!');
             } catch (error) {
-                alert('Failed to create group. Please try again.');
+                showError(errorDiv, error.message || 'Failed to create group');
             }
         }
 
-        // View group members
-        async function viewMembers(groupId, groupName) {
+        // Enter group detail view
+        async function enterGroup(groupId, groupName) {
+            currentGroupId = groupId;
+            currentGroup = { group_id: groupId, group_name: groupName };
+
+            groupDetailTitle.textContent = groupName;
+            groupDetail.classList.add('active');
+
+            // Load initial tab content
+            await loadMembers();
+            await loadWatchlistMovies();
+        }
+
+        // Switch tabs in group detail view
+        function switchTab(tabName) {
+            // Update tab active states
+            document.querySelectorAll('.detail-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.tab === tabName);
+            });
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+
+            const targetTab = document.getElementById(`${tabName}Tab`);
+            if (targetTab) {
+                targetTab.classList.add('active');
+            }
+
+            // Load tab-specific content
+            switch (tabName) {
+                case 'members':
+                    loadMembers();
+                    break;
+                case 'watchlist':
+                    loadWatchlist();
+                    break;
+                case 'movie-nights':
+                    loadMovieNights();
+                    break;
+            }
+        }
+
+        // Load group members
+        async function loadMembers() {
+            if (!currentGroupId) return;
+
             try {
-                const members = await getGroupMembers(groupId);
-                membersModalTitle.textContent = `Members of ${groupName}`;
+                const members = await getGroupMembers(currentGroupId);
 
                 if (members.length === 0) {
-                    membersList.innerHTML = '<p>No members found.</p>';
+                    membersList.innerHTML = '<div class="empty-state"><h3>No members yet</h3></div>';
                 } else {
                     membersList.innerHTML = members.map(member => `
-                        <div class="member-chip">${escapeHtml(member.name)}</div>
+                        <div class="member-item">
+                            <div class="member-info">
+                                <div class="member-name">${escapeHtml(member.name)}</div>
+                                <div class="member-email">${escapeHtml(member.email)}</div>
+                            </div>
+                        </div>
                     `).join('');
                 }
-
-                membersModal.style.display = 'block';
             } catch (error) {
-                alert('Failed to load group members');
+                membersList.innerHTML = '<div class="empty-state"><h3>Error loading members</h3></div>';
             }
         }
 
-        // Navigate to group page
-        function viewGroup(groupId) {
-            // Store current group in localStorage
-            localStorage.setItem('currentGroupId', groupId);
-            // Navigate to group detail page (you'll need to create this)
-            alert(`Group detail page coming soon! (Group ID: ${groupId})`);
-        }
+        // Add member to group
+        async function handleAddMember() {
+            const email = document.getElementById('memberEmailInput').value.trim();
+            const successDiv = document.getElementById('memberSuccess');
+            const errorDiv = document.getElementById('memberError');
 
-        // Utility function to escape HTML
-        function escapeHtml(text) {
-            const map = {
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#039;'
-            };
-            return text.replace(/[&<>"']/g, m => map[m]);
-        }
-
-        // Handle Enter key in group name input
-        groupNameInput.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                confirmCreateBtn.click();
+            if (!email) {
+                showError(errorDiv, 'Please enter an email address');
+                return;
             }
-        });
 
-        // Initialize page
-        loadGroups();
+            try {
+                await addGroupMember(currentGroupId, email);
+                document.getElementById('memberEmailInput').value = '';
+                showSuccess(successDiv, 'Member invited successfully!');
+                await loadMembers(); // Reload members list
+            } catch (error) {
+                showError(errorDiv, error.message || 'Failed to add member');
+            }
+        }
+
+        // Load group watchlist with voting
+        async function loadWatchlist() {
+            if (!currentGroupId) return;
+
+            try {
+                const watchlist = await getWatchlist(currentGroupId);
+
+                if (watchlist.length === 0) {
+                    document.getElementById('watchlistVotingGrid').innerHTML = `
+                        <div class="empty-state">
+                            <h3>No movies in watchlist</h3>
+                            <p>Add movies from <a href="Binge_Bank.html" style="color: blueviolet;">Binge Bank</a> to start voting!</p>
+                        </div>
+                    `;
+                } else {
+                    await displayWatchlistWithVoting(watchlist);
+                }
+            } catch (error) {
+                document.getElementById('watchlistVotingGrid').innerHTML = '<div class="empty-state"><h3>Error loading watchlist</h3></div>';
+            }
+        }
+
+        // Display watchlist with voting interface
+        async function displayWatchlistWithVoting(watchlist) {
+            const watchlistGrid = document.getElementById('watchlistVotingGrid');
+
+            let html = '';
+
+            for (const movie of watchlist) {
+                // Get votes for this movie
+                const votes = await getMovieVotes(currentGroupId, movie.movie_id);
+                const userVote = votes.find(v => v.user_id === currentUser.id);
+                const averageRating = votes.length > 0 ?
+                    (votes.reduce((sum, v) => sum + v.vote_value, 0) / votes.length).toFixed(1) : 0;
+
+                html += `
+                    <div class="watchlist-item">
+                        <div class="watchlist-poster">
+                            ${movie.poster_url ?
+                        `<img src="${movie.poster_url}" alt="${escapeHtml(movie.title)}">` :
+                        '<span>No Poster</span>'
+                    }
+                        </div>
+                        <div class="watchlist-info">
+                            <div class="watchlist-title">${escapeHtml(movie.title)}</div>
+                            <div class="watchlist-year">${movie.release_year || 'Unknown'}</div>
+                            <div class="watchlist-meta">Added by ${escapeHtml(movie.added_by_name)}</div>
+                        </div>
+                        <div class="voting-section">
+                            <div class="voting-header">
+                                <span class="voting-title">Rate this movie</span>
+                                ${averageRating > 0 ? `
+                                    <div class="average-rating">
+                                        ⭐ ${averageRating}/5
+                                    </div>
+                                ` : ''}
+                            </div>
+                            
+                            <div class="star-rating" data-movie-id="${movie.movie_id}">
+                                ${[1, 2, 3, 4, 5].map(rating => `
+                                    <span class="star ${userVote && userVote.vote_value >= rating ? 'active' : ''}" 
+                                          data-rating="${rating}" 
+                                          onclick="voteMovie(${movie.movie_id}, ${rating})">
+                                        ★
+                                    </span>
+                                `).join('')}
+                            </div>
+                            
+                            ${userVote ? `
+                                <div class="your-vote">Your vote: ${userVote.vote_value}/5 stars</div>
+                            ` : `
+                                <div class="your-vote">Click stars to vote</div>
+                            `}
+                            
+                            <div class="vote-stats">
+                                <div class="vote-count">
+                                    👥 ${votes.length} vote${votes.length !== 1 ? 's' : ''}
+                                </div>
+                                ${votes.length > 0 ? `
+                                    <div style="cursor: pointer; color: blueviolet;" 
+                                         onclick="toggleVoteBreakdown(${movie.movie_id})">
+                                        View breakdown
+                                    </div>
+                                ` : ''}
+                            </div>
+                            
+                            <div class="vote-breakdown" id="breakdown-${movie.movie_id}">
+                                ${generateVoteBreakdown(votes)}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            watchlistGrid.innerHTML = html;
+            setupStarHoverEffects();
+        }
+
+        // Generate vote breakdown visualization
+        function generateVoteBreakdown(votes) {
+            if (votes.length === 0) return '';
+
+            const breakdown = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+            votes.forEach(vote => breakdown[vote.vote_value]++);
+
+            return [5, 4, 3, 2, 1].map(rating => {
+                const count = breakdown[rating];
+                const percentage = votes.length > 0 ? (count / votes.length) * 100 : 0;
+
+                return `
+                    <div class="vote-bar">
+                        <span>${rating}★</span>
+                        <div class="vote-bar-fill">
+                            <div class="vote-bar-progress" style="width: ${percentage}%"></div>
+                        </div>
+                        <span>${count}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Vote on a movie
+        async function voteMovie(movieId, rating) {
+            try {
+                const starRating = document.querySelector(`[data-movie-id="${movieId}"]`);
+                starRating.classList.add('loading-vote');
+
+                await voteOnMovie(currentGroupId, movieId, rating);
+
+                // Reload the watchlist to show updated votes
+                await loadWatchlist();
+
+                // Show success message briefly
+                console.log(`Voted ${rating} stars!`);
+            } catch (error) {
+                console.error('Failed to record vote:', error);
+                alert(error.message || 'Failed to record vote');
+                // Remove loading state
+                const starRating = document.querySelector(`[data-movie-id="${movieId}"]`);
+                if (starRating) starRating.classList.remove('loading-vote');
+            }
+        }
+
+        // Setup star hover effects
+        function setupStarHoverEffects() {
+            document.querySelectorAll('.star-rating').forEach(ratingContainer => {
+                const stars = ratingContainer.querySelectorAll('.star');
+
+                stars.forEach((star, index) => {
+                    star.addEventListener('mouseenter', () => {
+                        stars.forEach((s, i) => {
+                            s.classList.toggle('hover', i <= index);
+                        });
+                    });
+
+                    star.addEventListener('mouseleave', () => {
+                        stars.forEach(s => s.classList.remove('hover'));
+                    });
+                });
+            });
+        }
+
+        // Toggle vote breakdown visibility
+        function toggleVoteBreakdown(movieId) {
+            const breakdown = document.getElementById(`breakdown-${movieId}`);
+            breakdown.classList.toggle('show');
+        }
+
+        // Load watchlist movies for movie night dropdown
+        async function loadWatchlistMovies() {
+            if (!currentGroupId) return;
+
+            try {
+                const watchlist = await getWatchlist(currentGroupId);
+                const select = document.getElementById('chosenMovie');
+
+                select.innerHTML = '<option value="">Select a movie from watchlist...</option>';
+                watchlist.forEach(movie => {
+                    select.innerHTML += `<option value="${movie.movie_id}">${escapeHtml(movie.title)} (${movie.release_year})</option>`;
+                });
+            } catch (error) {
+                console.error('Error loading watchlist for dropdown:', error);
+            }
+        }
+
+        // Load movie nights
+        async function loadMovieNights() {
+            if (!currentGroupId) return;
+
+            try {
+                const movieNights = await getMovieNights(currentGroupId);
+
+                if (movieNights.length === 0) {
+                    movieNightsList.innerHTML = '<div class="empty-state"><h3>No movie nights scheduled</h3><p>Schedule your first movie night!</p></div>';
+                } else {
+                    movieNightsList.innerHTML = movieNights.map(night => `
+                        <div class="movie-night-item">
+                            <div class="movie-night-header">
+                                <div class="movie-night-date">${formatDateTime(night.scheduled_date)}</div>
+                                <div class="movie-night-status status-${night.status}">${night.status}</div>
+                            </div>
+                            ${night.movie_title ?
+                            `<div class="movie-night-movie">Movie: ${escapeHtml(night.movie_title)}</div>` :
+                            '<div class="movie-night-movie">No movie selected yet</div>'
+                        }
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                movieNightsList.innerHTML = '<div class="empty-state"><h3>Error loading movie nights</h3></div>';
+            }
+        }
+
+        // Create movie night
+        async function handleCreateMovieNight() {
+            const dateInput = document.getElementById('movieNightDate').value;
+            const movieSelect = document.getElementById('chosenMovie').value;
+            const successDiv = document.getElementById('movieNightSuccess');
+            const errorDiv = document.getElementById('movieNightError');
+
+            if (!dateInput) {
+                showError(errorDiv, 'Please select a date and time');
+                return;
+            }
+
+            try {
+                await createMovieNight(currentGroupId, dateInput, movieSelect || null);
+                document.getElementById('movieNightDate').value = '';
+                document.getElementById('chosenMovie').value = '';
+                showSuccess(successDiv, 'Movie night scheduled successfully!');
+                await loadMovieNights(); // Reload movie nights
+            } catch (error) {
+                showError(errorDiv, error.message || 'Failed to create movie night');
+            }
+        }
+
+        // Quick view members function (for compatibility)
+        async function viewMembers(groupId, groupName) {
+            enterGroup(groupId, groupName);
+        }
+
+        // Utility functions
+        function showError(element, message) {
+            if (element) {
+                element.textContent = message;
+                element.style.display = 'block';
+                setTimeout(() => element.style.display = 'none', 5000);
+            }
+        }
+
+        function showSuccess(element, message) {
+            if (element) {
+                element.textContent = message;
+                element.style.display = 'block';
+                setTimeout(() => element.style.display = 'none', 3000);
+            } else {
+                // Show global success message (you can implement this)
+                console.log('Success:', message);
+            }
+        }
     </script>
 </body>
 
