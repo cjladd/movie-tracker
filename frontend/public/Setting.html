@@ -144,27 +144,6 @@
             transform: translateX(24px);
         }
 
-        .danger-zone {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid #333;
-        }
-
-        .danger-button {
-            background: transparent;
-            color: #ff4444;
-            border: 1px solid #ff4444;
-            padding: 10px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .danger-button:hover {
-            background: #ff4444;
-            color: white;
-        }
-
         .login-prompt {
             text-align: center;
             padding: 60px 20px;
@@ -186,6 +165,35 @@
             margin-bottom: 20px;
             display: none;
         }
+
+        .error-message {
+            background: rgba(255, 68, 68, 0.1);
+            border: 1px solid #ff4444;
+            color: #ff6666;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, .3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
+            vertical-align: middle;
+            display: none;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
     </style>
 </head>
 
@@ -206,6 +214,9 @@
     <div class="container">
         <h1>Settings</h1>
 
+        <div class="success-message" id="successMessage"></div>
+        <div class="error-message" id="errorMessage"></div>
+
         <div id="content">
             <!-- Content will be loaded here -->
         </div>
@@ -214,8 +225,52 @@
     <script src="app.js"></script>
     <script>
         const content = document.getElementById('content');
+        const successMessage = document.getElementById('successMessage');
+        const errorMessage = document.getElementById('errorMessage');
+        let userProfile = null;
 
-        function loadSettings() {
+        function showSuccess(message) {
+            successMessage.textContent = message;
+            successMessage.style.display = 'block';
+            errorMessage.style.display = 'none';
+            setTimeout(() => {
+                successMessage.style.display = 'none';
+            }, 3000);
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            successMessage.style.display = 'none';
+        }
+
+        function hideMessages() {
+            successMessage.style.display = 'none';
+            errorMessage.style.display = 'none';
+        }
+
+        async function loadUserProfile() {
+            try {
+                const response = await fetch('/api/users/profile', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load profile');
+                }
+
+                userProfile = await response.json();
+                return userProfile;
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                throw error;
+            }
+        }
+
+        async function loadSettings() {
             if (!currentUser) {
                 content.innerHTML = `
                     <div class="login-prompt">
@@ -227,155 +282,220 @@
                 return;
             }
 
-            content.innerHTML = `
-                <div class="success-message" id="successMessage">
-                    Settings saved successfully!
-                </div>
-                
-                <!-- Profile Section -->
-                <div class="settings-section">
-                    <h2 class="section-title">Profile Information</h2>
-                    <form id="profileForm">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="name">Name</label>
-                                <input type="text" id="name" value="${escapeHtml(currentUser.name)}" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="email">Email</label>
-                                <input type="email" id="email" value="${escapeHtml(currentUser.email)}" required>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="bio">Bio</label>
-                            <textarea id="bio" rows="3" placeholder="Tell us about yourself..."></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="favoriteGenres">Favorite Movie Genres</label>
-                            <input type="text" id="favoriteGenres" placeholder="Action, Comedy, Drama...">
-                        </div>
-                        <button type="submit" class="save-button">Save Profile</button>
-                    </form>
-                </div>
-                
-                <!-- Preferences Section -->
-                <div class="settings-section">
-                    <h2 class="section-title">Preferences</h2>
-                    <div class="preference-item">
-                        <span class="preference-label">Email notifications for movie nights</span>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="emailNotif" checked>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-                    <div class="preference-item">
-                        <span class="preference-label">Group invitation notifications</span>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="groupNotif" checked>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-                    <div class="preference-item">
-                        <span class="preference-label">Vote reminders</span>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="voteNotif" checked>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-                    <div class="preference-item">
-                        <span class="preference-label">Show my profile to other users</span>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="publicProfile" checked>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-                </div>
-                
-                <!-- Security Section -->
-                <div class="settings-section">
-                    <h2 class="section-title">Security</h2>
-                    <form id="passwordForm">
-                        <div class="form-group">
-                            <label for="currentPassword">Current Password</label>
-                            <input type="password" id="currentPassword" required>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="newPassword">New Password</label>
-                                <input type="password" id="newPassword" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="confirmPassword">Confirm New Password</label>
-                                <input type="password" id="confirmPassword" required>
-                            </div>
-                        </div>
-                        <button type="submit" class="save-button">Change Password</button>
-                    </form>
-                    
-                    <div class="danger-zone">
-                        <h3 style="color: #ff4444; margin-bottom: 10px;">Danger Zone</h3>
-                        <p style="color: #999; margin-bottom: 15px;">Once you delete your account, there is no going back.</p>
-                        <button class="danger-button" id="deleteAccount">Delete Account</button>
-                    </div>
-                </div>
-            `;
+            try {
+                // Load user profile data from backend
+                await loadUserProfile();
 
-            // Add form handlers
-            document.getElementById('profileForm').addEventListener('submit', saveProfile);
-            document.getElementById('passwordForm').addEventListener('submit', changePassword);
-            document.getElementById('deleteAccount').addEventListener('click', deleteAccount);
+                content.innerHTML = `                
+                    <!-- Profile Section -->
+                    <div class="settings-section">
+                        <h2 class="section-title">Profile Information</h2>
+                        <form id="profileForm">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="name">Name</label>
+                                    <input type="text" id="name" value="${escapeHtml(userProfile.name)}" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="email">Email</label>
+                                    <input type="email" id="email" value="${escapeHtml(userProfile.email)}" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="bio">Bio</label>
+                                <textarea id="bio" rows="3" placeholder="Tell us about yourself...">${escapeHtml(userProfile.bio)}</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="favoriteGenres">Favorite Movie Genres</label>
+                                <input type="text" id="favoriteGenres" placeholder="Action, Comedy, Drama..." value="${escapeHtml(userProfile.favorite_genres)}">
+                            </div>
+                            <button type="submit" class="save-button" id="profileSaveBtn">
+                                <span id="profileBtnText">Save Profile</span>
+                                <span class="loading" id="profileLoading"></span>
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <!-- Preferences Section -->
+                    <div class="settings-section">
+                        <h2 class="section-title">Notification Preferences</h2>
+                        <form id="preferencesForm">
+                            <div class="preference-item">
+                                <span class="preference-label">Email notifications for movie nights</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="emailNotif" ${userProfile.email_notifications ? 'checked' : ''}>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="preference-item">
+                                <span class="preference-label">Group invitation notifications</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="groupNotif" ${userProfile.group_notifications ? 'checked' : ''}>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="preference-item">
+                                <span class="preference-label">Vote reminders</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="voteNotif" ${userProfile.vote_notifications ? 'checked' : ''}>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="preference-item">
+                                <span class="preference-label">Show my profile to other users</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="publicProfile" ${userProfile.public_profile ? 'checked' : ''}>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #333;">
+                                <button type="submit" class="save-button" id="prefSaveBtn">
+                                    <span id="prefBtnText">Save Preferences</span>
+                                    <span class="loading" id="prefLoading"></span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                `;
+
+                // Add form handlers
+                document.getElementById('profileForm').addEventListener('submit', saveProfile);
+                document.getElementById('preferencesForm').addEventListener('submit', savePreferences);
+
+            } catch (error) {
+                showError('Failed to load settings. Please try again.');
+                content.innerHTML = `
+                    <div class="login-prompt">
+                        <h3>Error loading settings</h3>
+                        <p>Please try refreshing the page</p>
+                        <button onclick="loadSettings()" class="save-button">Retry</button>
+                    </div>
+                `;
+            }
         }
 
         async function saveProfile(e) {
             e.preventDefault();
-            const successMessage = document.getElementById('successMessage');
+            hideMessages();
 
-            // Simulate saving (in real app, this would call an API)
-            const name = document.getElementById('name').value;
-            const email = document.getElementById('email').value;
+            const profileSaveBtn = document.getElementById('profileSaveBtn');
+            const profileBtnText = document.getElementById('profileBtnText');
+            const profileLoading = document.getElementById('profileLoading');
 
-            // Update local user data
-            currentUser.name = name;
-            currentUser.email = email;
-            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const bio = document.getElementById('bio').value.trim();
+            const favoriteGenres = document.getElementById('favoriteGenres').value.trim();
 
-            // Show success message
-            successMessage.style.display = 'block';
-            setTimeout(() => {
-                successMessage.style.display = 'none';
-            }, 3000);
-
-            // Update UI
-            updateAuthUI();
-        }
-
-        async function changePassword(e) {
-            e.preventDefault();
-            const currentPassword = document.getElementById('currentPassword').value;
-            const newPassword = document.getElementById('newPassword').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-
-            if (newPassword !== confirmPassword) {
-                alert('New passwords do not match');
+            if (!name || !email) {
+                showError('Name and email are required');
                 return;
             }
 
-            if (newPassword.length < 6) {
-                alert('Password must be at least 6 characters');
-                return;
-            }
+            // Show loading state
+            profileSaveBtn.disabled = true;
+            profileBtnText.textContent = 'Saving...';
+            profileLoading.style.display = 'inline-block';
 
-            // In real app, this would call an API
-            alert('Password change functionality coming soon!');
-            e.target.reset();
-        }
+            try {
+                const response = await fetch('/api/users/profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name,
+                        email,
+                        bio,
+                        favorite_genres: favoriteGenres
+                    })
+                });
 
-        function deleteAccount() {
-            if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-                if (confirm('This will permanently delete all your data. Are you absolutely sure?')) {
-                    // In real app, this would call an API
-                    alert('Account deletion functionality coming soon!');
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to update profile');
                 }
+
+                const result = await response.json();
+
+                // Update local user data
+                currentUser.name = result.user.name;
+                currentUser.email = result.user.email;
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+
+                // Update userProfile
+                userProfile.name = name;
+                userProfile.email = email;
+                userProfile.bio = bio;
+                userProfile.favorite_genres = favoriteGenres;
+
+                showSuccess('Profile updated successfully!');
+
+                // Update UI
+                updateAuthUI();
+
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                // Reset button state
+                profileSaveBtn.disabled = false;
+                profileBtnText.textContent = 'Save Profile';
+                profileLoading.style.display = 'none';
+            }
+        }
+
+        async function savePreferences(e) {
+            e.preventDefault();
+            hideMessages();
+
+            const prefSaveBtn = document.getElementById('prefSaveBtn');
+            const prefBtnText = document.getElementById('prefBtnText');
+            const prefLoading = document.getElementById('prefLoading');
+
+            const emailNotifications = document.getElementById('emailNotif').checked;
+            const groupNotifications = document.getElementById('groupNotif').checked;
+            const voteNotifications = document.getElementById('voteNotif').checked;
+            const publicProfile = document.getElementById('publicProfile').checked;
+
+            // Show loading state
+            prefSaveBtn.disabled = true;
+            prefBtnText.textContent = 'Saving...';
+            prefLoading.style.display = 'inline-block';
+
+            try {
+                const response = await fetch('/api/users/preferences', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email_notifications: emailNotifications,
+                        group_notifications: groupNotifications,
+                        vote_notifications: voteNotifications,
+                        public_profile: publicProfile
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to update preferences');
+                }
+
+                // Update userProfile
+                userProfile.email_notifications = emailNotifications;
+                userProfile.group_notifications = groupNotifications;
+                userProfile.vote_notifications = voteNotifications;
+                userProfile.public_profile = publicProfile;
+
+                showSuccess('Preferences updated successfully!');
+
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                // Reset button state
+                prefSaveBtn.disabled = false;
+                prefBtnText.textContent = 'Save Preferences';
+                prefLoading.style.display = 'none';
             }
         }
 

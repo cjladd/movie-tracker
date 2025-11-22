@@ -13,7 +13,7 @@ const port = process.env.PORT || 4000;
 
 // TMDB API Configuration
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
-const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w780'; 
+const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w780'; // Higher quality posters
 const TMDB_HEADERS = {
   'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI3N2NlNjJiMjY5ZmVlZmMxMzBlZWJkM2MyOTg2M2MwYSIsIm5iZiI6MTc2MDk5MjM2OC42NzYsInN1YiI6IjY4ZjY5YzcwNWM0YWJjNjNjMTY5MTcyOSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.Nd22pOpxDRpIhSVEDqc8DZ8rA0tNhA8IYRz-sWRWDts',
   'accept': 'application/json'
@@ -132,6 +132,175 @@ app.post('/api/tmdb/seed', async (req, res) => {
   } catch (error) {
     console.error('❌ Error seeding movies:', error);
     res.status(500).json({ error: 'Failed to seed movies from TMDB' });
+  }
+});
+
+// TMDB SEARCH ROUTES
+
+// Search movies via TMDB
+app.get('/api/tmdb/search', async (req, res) => {
+  const { query, page = 1 } = req.query;
+
+  if (!query) {
+    return res.status(400).json({ error: 'Search query is required' });
+  }
+
+  try {
+    const searchResults = await fetchFromTMDB(`/search/movie?query=${encodeURIComponent(query)}&page=${page}`);
+
+    // Map the results to include full poster URLs
+    const mappedResults = {
+      ...searchResults,
+      results: searchResults.results.map(movie => ({
+        ...movie,
+        poster_url: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}` : null,
+        backdrop_url: movie.backdrop_path ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}` : null
+      }))
+    };
+
+    res.json(mappedResults);
+  } catch (error) {
+    console.error('Error searching movies:', error);
+    res.status(500).json({ error: 'Failed to search movies' });
+  }
+});
+
+// Get movie details by TMDB ID
+app.get('/api/tmdb/movie/:tmdbId', async (req, res) => {
+  const { tmdbId } = req.params;
+
+  try {
+    const movieDetails = await fetchFromTMDB(`/movie/${tmdbId}`);
+    const credits = await fetchFromTMDB(`/movie/${tmdbId}/credits`);
+
+    // Map the movie details
+    const mappedMovie = {
+      ...movieDetails,
+      poster_url: movieDetails.poster_path ? `${TMDB_IMAGE_BASE_URL}${movieDetails.poster_path}` : null,
+      backdrop_url: movieDetails.backdrop_path ? `https://image.tmdb.org/t/p/w1280${movieDetails.backdrop_path}` : null,
+      cast: credits.cast.slice(0, 10), // Top 10 cast members
+      crew: credits.crew.filter(person => ['Director', 'Producer', 'Writer'].includes(person.job))
+    };
+
+    res.json(mappedMovie);
+  } catch (error) {
+    console.error('Error fetching movie details:', error);
+    res.status(500).json({ error: 'Failed to fetch movie details' });
+  }
+});
+
+// Get popular movies from TMDB
+app.get('/api/tmdb/popular', async (req, res) => {
+  const { page = 1 } = req.query;
+
+  try {
+    const popularMovies = await fetchFromTMDB(`/movie/popular?page=${page}`);
+
+    const mappedResults = {
+      ...popularMovies,
+      results: popularMovies.results.map(movie => ({
+        ...movie,
+        poster_url: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}` : null,
+        backdrop_url: movie.backdrop_path ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}` : null
+      }))
+    };
+
+    res.json(mappedResults);
+  } catch (error) {
+    console.error('Error fetching popular movies:', error);
+    res.status(500).json({ error: 'Failed to fetch popular movies' });
+  }
+});
+
+// Get trending movies
+app.get('/api/tmdb/trending', async (req, res) => {
+  try {
+    const trendingMovies = await fetchFromTMDB('/trending/movie/week');
+
+    const mappedResults = {
+      ...trendingMovies,
+      results: trendingMovies.results.map(movie => ({
+        ...movie,
+        poster_url: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}` : null,
+        backdrop_url: movie.backdrop_path ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}` : null
+      }))
+    };
+
+    res.json(mappedResults);
+  } catch (error) {
+    console.error('Error fetching trending movies:', error);
+    res.status(500).json({ error: 'Failed to fetch trending movies' });
+  }
+});
+
+// Add TMDB movie to local database and group watchlist
+app.post('/api/tmdb/add-to-group', requireAuth, async (req, res) => {
+  const { tmdbMovie, groupId } = req.body;
+  const userId = req.session.userId;
+
+  if (!tmdbMovie || !groupId) {
+    return res.status(400).json({ error: 'Movie data and group ID are required' });
+  }
+
+  try {
+    const conn = await getConnection();
+
+    // Check if user is member of this group
+    const [membership] = await conn.query(
+      'SELECT * FROM Group_Members WHERE group_id = ? AND user_id = ?',
+      [groupId, userId]
+    );
+
+    if (membership.length === 0) {
+      await conn.end();
+      return res.status(403).json({ error: 'Not a member of this group' });
+    }
+
+    // Check if movie already exists in our database
+    let movieId;
+    const [existingMovie] = await conn.query(
+      'SELECT movie_id FROM Movies WHERE tmdb_id = ?',
+      [tmdbMovie.id]
+    );
+
+    if (existingMovie.length > 0) {
+      movieId = existingMovie[0].movie_id;
+    } else {
+      // Add movie to our database
+      const movieData = mapTMDBMovieToDatabase(tmdbMovie);
+      const [result] = await conn.query(
+        'INSERT INTO Movies (title, runtime_minutes, genre, release_year, rating, poster_url, tmdb_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [movieData.title, movieData.runtime_minutes, movieData.genre, movieData.release_year, movieData.rating, movieData.poster_url, movieData.tmdb_id]
+      );
+      movieId = result.insertId;
+    }
+
+    // Check if movie already in group watchlist
+    const [existingWatchlist] = await conn.query(
+      'SELECT * FROM Group_Watchlist WHERE group_id = ? AND movie_id = ?',
+      [groupId, movieId]
+    );
+
+    if (existingWatchlist.length > 0) {
+      await conn.end();
+      return res.status(400).json({ error: 'Movie already in group watchlist' });
+    }
+
+    // Add to group watchlist
+    await conn.query(
+      'INSERT INTO Group_Watchlist (group_id, movie_id, added_by, added_at) VALUES (?, ?, ?, NOW())',
+      [groupId, movieId, userId]
+    );
+
+    await conn.end();
+
+    res.json({
+      message: 'Movie added to group watchlist successfully',
+      movieId: movieId
+    });
+  } catch (err) {
+    console.error('Error adding movie to group:', err);
+    res.status(500).json({ error: 'Failed to add movie to group' });
   }
 });
 
@@ -750,176 +919,125 @@ app.post('/api/notifications/read-all', requireAuth, async (req, res) => {
   }
 });
 
-// TMDB SEARCH ROUTES
+// SETTINGS API ROUTES
 
-// Search movies via TMDB
-app.get('/api/tmdb/search', async (req, res) => {
-  const { query, page = 1 } = req.query;
-
-  if (!query) {
-    return res.status(400).json({ error: 'Search query is required' });
-  }
-
-  try {
-    const searchResults = await fetchFromTMDB(`/search/movie?query=${encodeURIComponent(query)}&page=${page}`);
-
-    // Map the results to include full poster URLs
-    const mappedResults = {
-      ...searchResults,
-      results: searchResults.results.map(movie => ({
-        ...movie,
-        poster_url: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}` : null,
-        backdrop_url: movie.backdrop_path ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}` : null
-      }))
-    };
-
-    res.json(mappedResults);
-  } catch (error) {
-    console.error('Error searching movies:', error);
-    res.status(500).json({ error: 'Failed to search movies' });
-  }
-});
-
-// Get movie details by TMDB ID
-app.get('/api/tmdb/movie/:tmdbId', async (req, res) => {
-  const { tmdbId } = req.params;
-
-  try {
-    const movieDetails = await fetchFromTMDB(`/movie/${tmdbId}`);
-    const credits = await fetchFromTMDB(`/movie/${tmdbId}/credits`);
-
-    // Map the movie details
-    const mappedMovie = {
-      ...movieDetails,
-      poster_url: movieDetails.poster_path ? `${TMDB_IMAGE_BASE_URL}${movieDetails.poster_path}` : null,
-      backdrop_url: movieDetails.backdrop_path ? `https://image.tmdb.org/t/p/w1280${movieDetails.backdrop_path}` : null,
-      cast: credits.cast.slice(0, 10), // Top 10 cast members
-      crew: credits.crew.filter(person => ['Director', 'Producer', 'Writer'].includes(person.job))
-    };
-
-    res.json(mappedMovie);
-  } catch (error) {
-    console.error('Error fetching movie details:', error);
-    res.status(500).json({ error: 'Failed to fetch movie details' });
-  }
-});
-
-// Get popular movies from TMDB
-app.get('/api/tmdb/popular', async (req, res) => {
-  const { page = 1 } = req.query;
-
-  try {
-    const popularMovies = await fetchFromTMDB(`/movie/popular?page=${page}`);
-
-    const mappedResults = {
-      ...popularMovies,
-      results: popularMovies.results.map(movie => ({
-        ...movie,
-        poster_url: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}` : null,
-        backdrop_url: movie.backdrop_path ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}` : null
-      }))
-    };
-
-    res.json(mappedResults);
-  } catch (error) {
-    console.error('Error fetching popular movies:', error);
-    res.status(500).json({ error: 'Failed to fetch popular movies' });
-  }
-});
-
-// Get trending movies
-app.get('/api/tmdb/trending', async (req, res) => {
-  try {
-    const trendingMovies = await fetchFromTMDB('/trending/movie/week');
-
-    const mappedResults = {
-      ...trendingMovies,
-      results: trendingMovies.results.map(movie => ({
-        ...movie,
-        poster_url: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}` : null,
-        backdrop_url: movie.backdrop_path ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}` : null
-      }))
-    };
-
-    res.json(mappedResults);
-  } catch (error) {
-    console.error('Error fetching trending movies:', error);
-    res.status(500).json({ error: 'Failed to fetch trending movies' });
-  }
-});
-
-// Add TMDB movie to local database and group watchlist
-app.post('/api/tmdb/add-to-group', requireAuth, async (req, res) => {
-  const { tmdbMovie, groupId } = req.body;
+// Get user profile information
+app.get('/api/users/profile', requireAuth, async (req, res) => {
   const userId = req.session.userId;
 
-  if (!tmdbMovie || !groupId) {
-    return res.status(400).json({ error: 'Movie data and group ID are required' });
+  try {
+    const conn = await getConnection();
+    const [rows] = await conn.query(
+      'SELECT user_id, name, email, bio, favorite_genres, email_notifications, group_notifications, vote_notifications, public_profile FROM Users WHERE user_id = ?',
+      [userId]
+    );
+
+    if (rows.length === 0) {
+      await conn.end();
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = rows[0];
+    await conn.end();
+
+    res.json({
+      id: user.user_id,
+      name: user.name,
+      email: user.email,
+      bio: user.bio || '',
+      favorite_genres: user.favorite_genres || '',
+      email_notifications: !!user.email_notifications,
+      group_notifications: !!user.group_notifications,
+      vote_notifications: !!user.vote_notifications,
+      public_profile: !!user.public_profile
+    });
+  } catch (err) {
+    console.error('Error fetching user profile:', err);
+    res.status(500).json({ error: 'Failed to fetch profile' });
+  }
+});
+
+// Update user profile information
+app.put('/api/users/profile', requireAuth, async (req, res) => {
+  const userId = req.session.userId;
+  const { name, email, bio, favorite_genres } = req.body;
+
+  if (!name || !email) {
+    return res.status(400).json({ error: 'Name and email are required' });
   }
 
   try {
     const conn = await getConnection();
 
-    // Check if user is member of this group
-    const [membership] = await conn.query(
-      'SELECT * FROM Group_Members WHERE group_id = ? AND user_id = ?',
-      [groupId, userId]
+    // Check if email is already taken by another user
+    const [existing] = await conn.query(
+      'SELECT user_id FROM Users WHERE email = ? AND user_id != ?',
+      [email, userId]
     );
 
-    if (membership.length === 0) {
+    if (existing.length > 0) {
       await conn.end();
-      return res.status(403).json({ error: 'Not a member of this group' });
+      return res.status(400).json({ error: 'Email already exists' });
     }
 
-    // Check if movie already exists in our database
-    let movieId;
-    const [existingMovie] = await conn.query(
-      'SELECT movie_id FROM Movies WHERE tmdb_id = ?',
-      [tmdbMovie.id]
-    );
-
-    if (existingMovie.length > 0) {
-      movieId = existingMovie[0].movie_id;
-    } else {
-      // Add movie to our database
-      const movieData = mapTMDBMovieToDatabase(tmdbMovie);
-      const [result] = await conn.query(
-        'INSERT INTO Movies (title, runtime_minutes, genre, release_year, rating, poster_url, tmdb_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [movieData.title, movieData.runtime_minutes, movieData.genre, movieData.release_year, movieData.rating, movieData.poster_url, movieData.tmdb_id]
-      );
-      movieId = result.insertId;
-    }
-
-    // Check if movie already in group watchlist
-    const [existingWatchlist] = await conn.query(
-      'SELECT * FROM Group_Watchlist WHERE group_id = ? AND movie_id = ?',
-      [groupId, movieId]
-    );
-
-    if (existingWatchlist.length > 0) {
-      await conn.end();
-      return res.status(400).json({ error: 'Movie already in group watchlist' });
-    }
-
-    // Add to group watchlist
+    // Update profile
     await conn.query(
-      'INSERT INTO Group_Watchlist (group_id, movie_id, added_by, added_at) VALUES (?, ?, ?, NOW())',
-      [groupId, movieId, userId]
+      'UPDATE Users SET name = ?, email = ?, bio = ?, favorite_genres = ? WHERE user_id = ?',
+      [name, email, bio || null, favorite_genres || null, userId]
     );
+
+    // Update session data
+    req.session.user = {
+      id: userId,
+      name: name,
+      email: email
+    };
 
     await conn.end();
 
     res.json({
-      message: 'Movie added to group watchlist successfully',
-      movieId: movieId
+      message: 'Profile updated successfully',
+      user: {
+        id: userId,
+        name: name,
+        email: email
+      }
     });
   } catch (err) {
-    console.error('Error adding movie to group:', err);
-    res.status(500).json({ error: 'Failed to add movie to group' });
+    console.error('Error updating user profile:', err);
+    res.status(500).json({ error: 'Failed to update profile' });
   }
 });
 
-// ROOT ROUTE - THIS IS THE FIX!
+// Update notification preferences
+app.put('/api/users/preferences', requireAuth, async (req, res) => {
+  const userId = req.session.userId;
+  const { email_notifications, group_notifications, vote_notifications, public_profile } = req.body;
+
+  try {
+    const conn = await getConnection();
+
+    await conn.query(
+      'UPDATE Users SET email_notifications = ?, group_notifications = ?, vote_notifications = ?, public_profile = ? WHERE user_id = ?',
+      [
+        email_notifications ? 1 : 0,
+        group_notifications ? 1 : 0,
+        vote_notifications ? 1 : 0,
+        public_profile ? 1 : 0,
+        userId
+      ]
+    );
+
+    await conn.end();
+
+    res.json({ message: 'Preferences updated successfully' });
+  } catch (err) {
+    console.error('Error updating preferences:', err);
+    res.status(500).json({ error: 'Failed to update preferences' });
+  }
+});
+
+// ROOT ROUTE 
 app.get('/', (req, res) => {
   console.log('🔍 Root route accessed');
   const indexPath = path.join(__dirname, '../frontend/public/website.html');

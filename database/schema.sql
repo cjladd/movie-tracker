@@ -7,6 +7,12 @@ CREATE TABLE Users (
     name VARCHAR(100) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
+    bio TEXT,
+    favorite_genres VARCHAR(255),
+    email_notifications BOOLEAN DEFAULT TRUE,
+    group_notifications BOOLEAN DEFAULT TRUE,
+    vote_notifications BOOLEAN DEFAULT TRUE,
+    public_profile BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
