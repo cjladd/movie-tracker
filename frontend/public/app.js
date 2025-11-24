@@ -214,6 +214,62 @@ async function addGroupMember(groupId, email) {
     }
 }
 
+/**************************\
+ * Friends / Invites API  *
+\**************************/
+
+// Get list of current friends
+async function getFriends() {
+  const res = await fetch('/api/friends', { credentials: 'include' });
+  if (!res.ok) throw new Error('Failed to fetch friends');
+  return res.json();
+}
+
+// Get pending friend requests
+async function getFriendRequests() {
+  const res = await fetch('/api/friends/requests', { credentials: 'include' });
+  if (!res.ok) throw new Error('Failed to fetch friend requests');
+  return res.json();
+}
+
+// Send a friend request by email
+async function sendFriendRequest(email) {
+  const res = await fetch('/api/friends/request', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ email })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to send friend request');
+  return data;
+}
+
+// Accept a pending friend request
+async function acceptFriendRequest(requestId) {
+  const res = await fetch('/api/friends/accept', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ requestId })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to accept friend request');
+  return data;
+}
+
+// Remove an existing friend
+async function removeFriend(friendId) {
+  const res = await fetch(`/api/friends/${friendId}`, {
+    method: 'DELETE',
+    credentials: 'include'
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to remove friend');
+  return data;
+}
+
+
 // Movie Night Functions
 async function createMovieNight(groupId, scheduledDate, chosenMovieId = null) {
     try {
@@ -445,12 +501,21 @@ function showError(message) {
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🚀 DOM loaded, initializing app...');
-
+    updateAuthNav();
     updateAuthUI();
 
     // Add page-specific initialization
     const currentPage = window.location.pathname.split('/').pop() || 'website.html';
     console.log(`📄 Current page: ${currentPage}`);
+
+    const logoutLink = document.getElementById('logoutLink');
+    if (logoutLink) {
+        logoutLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        logout();
+        });
+    }       
+
 
     switch (currentPage) {
         case 'website.html':
@@ -479,6 +544,45 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Helper functions for specific pages (keeping for compatibility)
+
+// Toggle nav links based on authentication state
+function updateAuthNav() {
+  const loginLink = document.getElementById('loginLink');
+  const signUpLink = document.getElementById('signUpLink');
+  const logoutLink = document.getElementById('logoutLink');
+
+  // If these elements aren’t found on the current page, do nothing
+  if (!loginLink || !signUpLink || !logoutLink) return;
+
+  if (currentUser) {
+    loginLink.style.display = 'none';
+    signUpLink.style.display = 'none';
+    logoutLink.style.display = 'inline-block';
+  } else {
+    loginLink.style.display = '';
+    signUpLink.style.display = '';
+    logoutLink.style.display = 'none';
+  }
+}
+
+// Perform logout
+async function logout() {
+  try {
+    await fetch('/api/users/logout', {
+      method: 'POST',
+      credentials: 'include'
+    });
+  } catch (err) {
+    console.error('Logout failed:', err);
+  }
+  currentUser = null;
+  localStorage.removeItem('currentUser');
+  updateAuthNav();
+  // Redirect to home or login page after logout
+  window.location.href = 'website.html';
+}
+
+
 async function loadGroups() {
     if (!checkAuth()) return;
     const groups = await getGroups();

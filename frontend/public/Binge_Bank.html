@@ -543,10 +543,12 @@
             <a href="website.html">Home</a>
             <a href="Binge_Bank.html">Binge Bank</a>
             <a href="Stream_team.html">Stream Team</a>
+            <a href="Friends.html">Friends</a>
             <a href="heads_up.html">Heads up</a>
             <a href="Setting.html">Setting</a>
-            <a href="Log_In.html">Log In</a>
-            <a id="sign" href="Sign_Up.html">Sign Up</a>
+            <a href="Log_In.html" id="loginLink">Log In</a>
+            <a href="Sign_Up.html" id="signUpLink">Sign Up</a>
+            <a href="#" id="logoutLink" style="display: none;">Sign Out</a>
         </nav>
     </header>
 
@@ -851,7 +853,7 @@
 
         async function showMovieDetails(tmdbId) {
             try {
-                showLoading();
+               // showLoading();
                 const movie = await getMovieDetails(tmdbId);
                 currentMovieData = movie;
 
@@ -900,10 +902,8 @@
                 }
 
                 modal.style.display = 'block';
-                moviesContainer.innerHTML = ''; // Clear loading state
             } catch (error) {
                 showError('Failed to load movie details');
-                moviesContainer.innerHTML = ''; // Clear loading state
             }
         }
 

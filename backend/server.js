@@ -55,6 +55,8 @@ app.use(express.static(path.join(__dirname, '../frontend/public')));
   }
 })();
 
+
+
 // Authentication middleware
 function requireAuth(req, res, next) {
   if (!req.session.userId) {
@@ -918,6 +920,171 @@ app.post('/api/notifications/read-all', requireAuth, async (req, res) => {
     res.status(500).json({ error: 'Failed to mark all notifications as read' });
   }
 });
+
+// FRIENDS / INVITES API ROUTES
+
+// Get the current user's friends
+app.get('/api/friends', requireAuth, async (req, res) => {
+  const userId = req.session.userId;
+  try {
+    const conn = await getConnection();
+    // Join Friendships with Users to get friend names/emails
+    const [rows] = await conn.query(
+      `SELECT u.user_id, u.name, u.email
+       FROM Friendships f
+       JOIN Users u ON u.user_id = f.friend_id
+       WHERE f.user_id = ?`,
+      [userId]
+    );
+    await conn.end();
+    res.json(rows);
+  } catch (err) {
+    console.error('Error fetching friends:', err);
+    res.status(500).json({ error: 'Failed to fetch friends' });
+  }
+});
+
+// Get pending friend requests for the current user
+app.get('/api/friends/requests', requireAuth, async (req, res) => {
+  const userId = req.session.userId;
+  try {
+    const conn = await getConnection();
+    const [rows] = await conn.query(
+      `SELECT fr.request_id, fr.sender_id, u.name AS sender_name, u.email AS sender_email, fr.requested_at
+       FROM Friend_Requests fr
+       JOIN Users u ON fr.sender_id = u.user_id
+       WHERE fr.receiver_id = ? AND fr.status = 'pending'`,
+      [userId]
+    );
+    await conn.end();
+    res.json(rows);
+  } catch (err) {
+    console.error('Error fetching friend requests:', err);
+    res.status(500).json({ error: 'Failed to fetch friend requests' });
+  }
+});
+
+// Send a friend request by email
+app.post('/api/friends/request', requireAuth, async (req, res) => {
+  const { email } = req.body;
+  const senderId = req.session.userId;
+
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required' });
+  }
+
+  try {
+    const conn = await getConnection();
+    // Find the recipient by email
+    const [users] = await conn.query('SELECT user_id FROM Users WHERE email = ?', [email]);
+    if (users.length === 0) {
+      await conn.end();
+      return res.status(404).json({ error: 'User not found' });
+    }
+    const receiverId = users[0].user_id;
+
+    // Prevent sending request to self
+    if (receiverId === senderId) {
+      await conn.end();
+      return res.status(400).json({ error: 'You cannot send a friend request to yourself' });
+    }
+
+    // Check if already friends
+    const [existingFriend] = await conn.query(
+      'SELECT * FROM Friendships WHERE user_id = ? AND friend_id = ?',
+      [senderId, receiverId]
+    );
+    if (existingFriend.length > 0) {
+      await conn.end();
+      return res.status(400).json({ error: 'You are already friends' });
+    }
+
+    // Check if a pending request already exists in either direction
+    const [existingRequest] = await conn.query(
+      `SELECT * FROM Friend_Requests
+       WHERE ((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?))
+         AND status = 'pending'`,
+      [senderId, receiverId, receiverId, senderId]
+    );
+    if (existingRequest.length > 0) {
+      await conn.end();
+      return res.status(400).json({ error: 'Friend request already pending' });
+    }
+
+    // Insert new friend request
+    await conn.query(
+      'INSERT INTO Friend_Requests (sender_id, receiver_id, status, requested_at) VALUES (?, ?, \'pending\', NOW())',
+      [senderId, receiverId]
+    );
+    await conn.end();
+    res.json({ message: 'Friend request sent' });
+  } catch (err) {
+    console.error('Error sending friend request:', err);
+    res.status(500).json({ error: 'Failed to send friend request' });
+  }
+});
+
+// Accept a friend request
+app.post('/api/friends/accept', requireAuth, async (req, res) => {
+  const { requestId } = req.body;
+  const receiverId = req.session.userId;
+
+  if (!requestId) {
+    return res.status(400).json({ error: 'Request ID is required' });
+  }
+
+  try {
+    const conn = await getConnection();
+    // Verify request belongs to user
+    const [requests] = await conn.query(
+      'SELECT * FROM Friend_Requests WHERE request_id = ? AND receiver_id = ? AND status = \'pending\'',
+      [requestId, receiverId]
+    );
+    if (requests.length === 0) {
+      await conn.end();
+      return res.status(404).json({ error: 'Friend request not found' });
+    }
+
+    const { sender_id: senderId } = requests[0];
+
+    // Update request status
+    await conn.query(
+      'UPDATE Friend_Requests SET status = \'accepted\', responded_at = NOW() WHERE request_id = ?',
+      [requestId]
+    );
+    // Create mutual friendship (two rows)
+    await conn.query(
+      'INSERT INTO Friendships (user_id, friend_id, created_at) VALUES (?, ?, NOW()), (?, ?, NOW())',
+      [senderId, receiverId, receiverId, senderId]
+    );
+    await conn.end();
+    res.json({ message: 'Friend request accepted' });
+  } catch (err) {
+    console.error('Error accepting friend request:', err);
+    res.status(500).json({ error: 'Failed to accept friend request' });
+  }
+});
+
+// Remove a friend (unfriend)
+app.delete('/api/friends/:friendId', requireAuth, async (req, res) => {
+  const userId = req.session.userId;
+  const { friendId } = req.params;
+
+  try {
+    const conn = await getConnection();
+    // Delete both directions of friendship
+    await conn.query(
+      'DELETE FROM Friendships WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)',
+      [userId, friendId, friendId, userId]
+    );
+    await conn.end();
+    res.json({ message: 'Friend removed' });
+  } catch (err) {
+    console.error('Error removing friend:', err);
+    res.status(500).json({ error: 'Failed to remove friend' });
+  }
+});
+
 
 // SETTINGS API ROUTES
 

@@ -46,7 +46,12 @@ body {
 }
 
 /* Sign up button */
-#sign {
+#signUpLink {
+  background: blueviolet;
+  border-radius: 8px;
+}
+
+#logoutLink {
   background: blueviolet;
   border-radius: 8px;
 }

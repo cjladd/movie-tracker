@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Friends – MovieNightPlanner</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+    h1 { margin-bottom: 20px; }
+    .section { margin-bottom: 40px; }
+    .friend-list, .request-list { display: grid; gap: 15px; }
+    .card { background: #111; padding: 15px; border-radius: 6px; color: #fff; display: flex; justify-content: space-between; align-items: center; }
+    .card button { background: blueviolet; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+    .card button.secondary { background: #333; }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <h1 class="logo">MovieNightPlanner</h1>
+    <nav class="main-nav">
+      <a href="website.html">Home</a>
+      <a href="Binge_Bank.html">Binge Bank</a>
+      <a href="Stream_team.html">Stream Team</a>
+      <a href="Friends.html">Friends</a>
+      <a href="heads_up.html">Heads up</a>
+      <a href="Setting.html">Setting</a>
+      <a href="Log_In.html" id="loginLink">Log In</a>
+      <a href="Sign_Up.html" id="signUpLink">Sign Up</a>
+      <a href="#" id="logoutLink" style="display: none;">Sign Out</a>
+    </nav>
+  </header>
+
+  <div class="container">
+    <h1>Friends & Invites</h1>
+
+    <div class="section">
+      <h2>Send Friend Request</h2>
+      <input type="email" id="friendEmail" placeholder="Enter email..." style="width:70%;padding:10px;">
+      <button id="sendRequestBtn">Send Request</button>
+      <div class="success-message" id="friendSuccess" style="display:none;margin-top:10px;"></div>
+      <div class="error-message" id="friendError" style="display:none;margin-top:10px;"></div>
+    </div>
+
+    <div class="section">
+      <h2>Pending Requests</h2>
+      <div id="requestList" class="request-list"></div>
+    </div>
+
+    <div class="section">
+      <h2>Your Friends</h2>
+      <div id="friendList" class="friend-list"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      loadFriends();
+      loadRequests();
+      document.getElementById('sendRequestBtn').onclick = handleSendRequest;
+    });
+
+    async function loadFriends() {
+      try {
+        const friends = await getFriends();
+        const list = document.getElementById('friendList');
+        if (friends.length === 0) {
+          list.innerHTML = '<div class="card">You have no friends yet.</div>';
+        } else {
+          list.innerHTML = friends.map(f => `
+            <div class="card">
+              <span>${escapeHtml(f.name)} (${escapeHtml(f.email)})</span>
+              <button class="secondary" onclick="removeFriendHandler(${f.user_id})">Remove</button>
+            </div>
+          `).join('');
+        }
+      } catch (err) {
+        document.getElementById('friendList').innerHTML = '<div class="card">Error loading friends.</div>';
+      }
+    }
+
+    async function loadRequests() {
+      try {
+        const requests = await getFriendRequests();
+        const list = document.getElementById('requestList');
+        if (requests.length === 0) {
+          list.innerHTML = '<div class="card">No pending requests.</div>';
+        } else {
+          list.innerHTML = requests.map(r => `
+            <div class="card">
+              <span>${escapeHtml(r.sender_name)} (${escapeHtml(r.sender_email)})</span>
+              <button onclick="acceptRequestHandler(${r.request_id})">Accept</button>
+            </div>
+          `).join('');
+        }
+      } catch (err) {
+        document.getElementById('requestList').innerHTML = '<div class="card">Error loading requests.</div>';
+      }
+    }
+
+    async function handleSendRequest() {
+      const email = document.getElementById('friendEmail').value.trim();
+      const successDiv = document.getElementById('friendSuccess');
+      const errorDiv = document.getElementById('friendError');
+      if (!email) {
+        errorDiv.textContent = 'Please enter an email';
+        errorDiv.style.display = 'block';
+        return;
+      }
+      try {
+        await sendFriendRequest(email);
+        document.getElementById('friendEmail').value = '';
+        successDiv.textContent = 'Request sent!';
+        successDiv.style.display = 'block';
+        errorDiv.style.display = 'none';
+        loadRequests();
+      } catch (err) {
+        errorDiv.textContent = err.message;
+        errorDiv.style.display = 'block';
+        successDiv.style.display = 'none';
+      }
+    }
+
+    async function acceptRequestHandler(requestId) {
+      try {
+        await acceptFriendRequest(requestId);
+        loadRequests();
+        loadFriends();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function removeFriendHandler(friendId) {
+      if (!confirm('Are you sure you want to remove this friend?')) return;
+      try {
+        await removeFriend(friendId);
+        loadFriends();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+  </script>
+</body>
+</html>
