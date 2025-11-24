@@ -1,3 +1,4 @@
+
 CREATE DATABASE movie_night_planner;
 USE movie_night_planner;
 
@@ -91,4 +92,26 @@ CREATE TABLE Availability (
     PRIMARY KEY (night_id, user_id),
     FOREIGN KEY (night_id) REFERENCES Movie_Nights(night_id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE
+);
+
+-- Table for pending friend requests
+CREATE TABLE Friend_Requests (
+    request_id INT AUTO_INCREMENT PRIMARY KEY,
+    sender_id INT NOT NULL,
+    receiver_id INT NOT NULL,
+    status ENUM('pending', 'accepted', 'declined') DEFAULT 'pending',
+    requested_at DATETIME NOT NULL,
+    responded_at DATETIME,
+    FOREIGN KEY (sender_id) REFERENCES Users(user_id),
+    FOREIGN KEY (receiver_id) REFERENCES Users(user_id)
+);
+
+-- Table for established friendships (store both directions)
+CREATE TABLE Friendships (
+    user_id INT NOT NULL,
+    friend_id INT NOT NULL,
+    created_at DATETIME NOT NULL,
+    PRIMARY KEY (user_id, friend_id),
+    FOREIGN KEY (user_id) REFERENCES Users(user_id),
+    FOREIGN KEY (friend_id) REFERENCES Users(user_id)
 );
