@@ -9,6 +9,13 @@ Collaborative movie night app: create groups, build a watchlist, vote on movies,
 - Group watchlists + voting
 - TMDB integration for seeding/displaying featured movies (hero card + grid)
 - Static frontend served by the backend
+- Real-time collaborative voting system with star ratings
+- Movie night scheduling and availability tracking
+- TMDB movie search and discovery
+- Group member management and invitations
+- Vote aggregation and consensus calculation
+- Responsive dark theme UI design
+
 
 ## 🧱 Tech Stack
 - **Backend:** Node.js, Express, mysql2, express-session, dotenv, cors
@@ -85,13 +92,25 @@ Open: `http://localhost:4000/` → serves `frontend/public/website.html`.
 - `POST /api/users/register` – name, email, password
 - `POST /api/users/login` – email, password
 - `POST /api/users/logout`
-- `GET  /api/users/me` – current session user
-- `GET  /api/groups?myGroups=true`
+- `GET  /api/users/profile` – current user profile (auth)
+- `PUT  /api/users/profile` – update user profile (auth)
+- `GET  /api/groups` – user's groups (auth)
 - `POST /api/groups` – create group (auth)
-- `POST /api/groups/:groupId/join` – join (auth)
+- `POST /api/groups/:groupId/members` – add member by email (auth)
+- `GET  /api/groups/:groupId/members` – get group members (auth)
 - `POST /api/groups/:groupId/watchlist` – add movie (auth)
-- `GET  /movies/featured` – 8 movies for homepage
-- `GET  /movies/hero` – highest-rated movie
-- `POST /tmdb/seed` – populate DB from TMDB (dev)
+- `GET  /api/groups/:groupId/watchlist` – get group watchlist (auth)
+- `POST /api/votes` – vote on movie (auth)
+- `GET  /api/groups/:groupId/movies/:movieId/votes` – get movie votes (auth)
+- `POST /api/groups/:groupId/movie-nights` – create movie night (auth)
+- `GET  /api/groups/:groupId/movie-nights` – get movie nights (auth)
+- `GET  /api/tmdb/search` – search movies via TMDB
+- `GET  /api/tmdb/popular` – get popular movies
+- `GET  /api/tmdb/trending` – get trending movies
+- `GET  /api/tmdb/movie/:tmdbId` – get movie details
+- `POST /api/tmdb/add-to-group` – add TMDB movie to group (auth)
+- `GET  /api/movies/featured` – 8 movies for homepage
+- `GET  /api/movies/hero` – highest-rated movie
+- `POST /api/tmdb/seed` – populate DB from TMDB
 
 ---
