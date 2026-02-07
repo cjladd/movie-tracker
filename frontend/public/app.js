@@ -1,5 +1,5 @@
-// API Base URL
-const API_URL = 'http://localhost:4000/api';
+// API Base URL — use relative path so it works on any domain
+const API_URL = '/api';
 
 // Store user data in localStorage after login
 let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
