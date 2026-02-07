@@ -120,3 +120,5 @@
 6. **SSL/HTTPS**: Railway provides HTTPS automatically. The session cookie is configured with `secure: true` in production, which requires HTTPS. This should work out of the box on Railway.
 
 7. **Frontend React app** (`frontend/src/`, `frontend/package.json`): There's an unused Create React App scaffolding in `frontend/src/`. The actual frontend is the static files in `frontend/public/`. You may want to remove the React scaffolding (`frontend/src/`, `frontend/package.json`) if you're not planning to use it.
+
+8. **bcrypt vs bcryptjs**: The app uses `bcrypt` (native C++ addon) which requires `python3`, `make`, and `g++` to compile in Alpine/Docker. If you hit build failures during deployment, switch to `bcryptjs` (pure JS, drop-in replacement) — just `npm uninstall bcrypt && npm install bcryptjs` and change the `require('bcrypt')` in `routes/auth.js` to `require('bcryptjs')`. The API is identical.
