@@ -2,6 +2,9 @@ const { Router } = require('express');
 const { pool } = require('../config/database');
 const { fetchFromTMDB, mapTMDBMovie, addImageUrls } = require('../config/tmdb');
 const { requireAuth } = require('../middleware/auth');
+const { validateParamId, requireFields } = require('../middleware/validate');
+const { verifyMembership, apiResponse, apiError, isPositiveInt } = require('../utils/helpers');
+const logger = require('../utils/logger');
 
 const router = Router();
 
@@ -9,22 +12,15 @@ const router = Router();
 router.post('/seed', async (req, res, next) => {
   try {
     const popularMovies = await fetchFromTMDB('/movie/popular');
+    const results = popularMovies.results || [];
 
     let insertedCount = 0;
-
-    // Ensure tmdb_id column exists (safe to call repeatedly)
-    try {
-      await pool.query('ALTER TABLE Movies ADD COLUMN tmdb_id INT UNIQUE');
-    } catch (_e) {
-      // Column already exists — ignore
-    }
-
-    for (const tmdbMovie of popularMovies.results) {
+    for (const tmdbMovie of results) {
       const movieData = mapTMDBMovie(tmdbMovie);
 
       const [existing] = await pool.query(
-        'SELECT movie_id FROM Movies WHERE title = ? OR (tmdb_id IS NOT NULL AND tmdb_id = ?)',
-        [movieData.title, movieData.tmdb_id]
+        'SELECT movie_id FROM Movies WHERE tmdb_id = ?',
+        [movieData.tmdb_id]
       );
 
       if (existing.length === 0) {
@@ -36,7 +32,8 @@ router.post('/seed', async (req, res, next) => {
       }
     }
 
-    res.json({ message: `Successfully seeded ${insertedCount} movies from TMDB` });
+    logger.info(`Seeded ${insertedCount} movies from TMDB`);
+    res.json(apiResponse({ insertedCount }, `Successfully seeded ${insertedCount} movies from TMDB`));
   } catch (err) {
     next(err);
   }
@@ -45,42 +42,38 @@ router.post('/seed', async (req, res, next) => {
 // Search movies via TMDB
 router.get('/search', async (req, res, next) => {
   const { query, page = 1 } = req.query;
-
-  if (!query) {
-    return res.status(400).json({ error: 'Search query is required' });
-  }
+  if (!query) return next(apiError('Search query is required', 400));
+  if (query.length > 200) return next(apiError('Search query too long', 400));
 
   try {
     const searchResults = await fetchFromTMDB(
       `/search/movie?query=${encodeURIComponent(query)}&page=${page}`
     );
-
-    res.json({
+    const results = searchResults.results || [];
+    res.json(apiResponse({
       ...searchResults,
-      results: searchResults.results.map(addImageUrls),
-    });
+      results: results.map(addImageUrls),
+    }));
   } catch (err) {
     next(err);
   }
 });
 
 // Get movie details by TMDB ID
-router.get('/movie/:tmdbId', async (req, res, next) => {
-  const { tmdbId } = req.params;
-
+router.get('/movie/:tmdbId', validateParamId('tmdbId'), async (req, res, next) => {
   try {
     const [movieDetails, credits] = await Promise.all([
-      fetchFromTMDB(`/movie/${tmdbId}`),
-      fetchFromTMDB(`/movie/${tmdbId}/credits`),
+      fetchFromTMDB(`/movie/${req.params.tmdbId}`),
+      fetchFromTMDB(`/movie/${req.params.tmdbId}/credits`).catch(() => ({ cast: [], crew: [] })),
     ]);
 
-    res.json({
+    res.json(apiResponse({
       ...addImageUrls(movieDetails),
-      cast: credits.cast.slice(0, 10),
-      crew: credits.crew.filter((p) =>
+      cast: (credits.cast || []).slice(0, 10),
+      crew: (credits.crew || []).filter((p) =>
         ['Director', 'Producer', 'Writer'].includes(p.job)
       ),
-    });
+    }));
   } catch (err) {
     next(err);
   }
@@ -89,13 +82,10 @@ router.get('/movie/:tmdbId', async (req, res, next) => {
 // Get popular movies
 router.get('/popular', async (req, res, next) => {
   const { page = 1 } = req.query;
-
   try {
-    const popularMovies = await fetchFromTMDB(`/movie/popular?page=${page}`);
-    res.json({
-      ...popularMovies,
-      results: popularMovies.results.map(addImageUrls),
-    });
+    const data = await fetchFromTMDB(`/movie/popular?page=${page}`);
+    const results = data.results || [];
+    res.json(apiResponse({ ...data, results: results.map(addImageUrls) }));
   } catch (err) {
     next(err);
   }
@@ -104,72 +94,63 @@ router.get('/popular', async (req, res, next) => {
 // Get trending movies
 router.get('/trending', async (req, res, next) => {
   try {
-    const trendingMovies = await fetchFromTMDB('/trending/movie/week');
-    res.json({
-      ...trendingMovies,
-      results: trendingMovies.results.map(addImageUrls),
-    });
+    const data = await fetchFromTMDB('/trending/movie/week');
+    const results = data.results || [];
+    res.json(apiResponse({ ...data, results: results.map(addImageUrls) }));
   } catch (err) {
     next(err);
   }
 });
 
 // Add TMDB movie to local database and group watchlist
-router.post('/add-to-group', requireAuth, async (req, res, next) => {
-  const { tmdbMovie, groupId } = req.body;
-  const userId = req.session.userId;
+router.post(
+  '/add-to-group',
+  requireAuth,
+  requireFields('tmdbMovie', 'groupId'),
+  async (req, res, next) => {
+    const { tmdbMovie, groupId } = req.body;
+    const userId = req.session.userId;
 
-  if (!tmdbMovie || !groupId) {
-    return res.status(400).json({ error: 'Movie data and group ID are required' });
-  }
+    if (!isPositiveInt(groupId)) return next(apiError('Invalid groupId', 400));
 
-  try {
-    // Check membership
-    const [membership] = await pool.query(
-      'SELECT 1 FROM Group_Members WHERE group_id = ? AND user_id = ?',
-      [groupId, userId]
-    );
-    if (membership.length === 0) {
-      return res.status(403).json({ error: 'Not a member of this group' });
-    }
+    try {
+      if (!(await verifyMembership(groupId, userId))) {
+        return next(apiError('Not a member of this group', 403));
+      }
 
-    // Upsert movie
-    let movieId;
-    const [existingMovie] = await pool.query(
-      'SELECT movie_id FROM Movies WHERE tmdb_id = ?',
-      [tmdbMovie.id]
-    );
-
-    if (existingMovie.length > 0) {
-      movieId = existingMovie[0].movie_id;
-    } else {
-      const movieData = mapTMDBMovie(tmdbMovie);
-      const [result] = await pool.query(
-        'INSERT INTO Movies (title, runtime_minutes, genre, release_year, rating, poster_url, tmdb_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [movieData.title, movieData.runtime_minutes, movieData.genre, movieData.release_year, movieData.rating, movieData.poster_url, movieData.tmdb_id]
+      // Upsert movie
+      let movieId;
+      const [existingMovie] = await pool.query(
+        'SELECT movie_id FROM Movies WHERE tmdb_id = ?',
+        [tmdbMovie.id]
       );
-      movieId = result.insertId;
+
+      if (existingMovie.length > 0) {
+        movieId = existingMovie[0].movie_id;
+      } else {
+        const movieData = mapTMDBMovie(tmdbMovie);
+        const [result] = await pool.query(
+          'INSERT INTO Movies (title, runtime_minutes, genre, release_year, rating, poster_url, tmdb_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          [movieData.title, movieData.runtime_minutes, movieData.genre, movieData.release_year, movieData.rating, movieData.poster_url, movieData.tmdb_id]
+        );
+        movieId = result.insertId;
+      }
+
+      // Use INSERT IGNORE for race-condition safety
+      const [result] = await pool.query(
+        'INSERT IGNORE INTO Group_Watchlist (group_id, movie_id, added_by, added_at) VALUES (?, ?, ?, NOW())',
+        [groupId, movieId, userId]
+      );
+
+      if (result.affectedRows === 0) {
+        return next(apiError('Movie already in group watchlist', 400));
+      }
+
+      res.json(apiResponse({ movieId }, 'Movie added to group watchlist successfully'));
+    } catch (err) {
+      next(err);
     }
-
-    // Check if already in watchlist
-    const [existingWatchlist] = await pool.query(
-      'SELECT 1 FROM Group_Watchlist WHERE group_id = ? AND movie_id = ?',
-      [groupId, movieId]
-    );
-    if (existingWatchlist.length > 0) {
-      return res.status(400).json({ error: 'Movie already in group watchlist' });
-    }
-
-    // Add to watchlist
-    await pool.query(
-      'INSERT INTO Group_Watchlist (group_id, movie_id, added_by, added_at) VALUES (?, ?, ?, NOW())',
-      [groupId, movieId, userId]
-    );
-
-    res.json({ message: 'Movie added to group watchlist successfully', movieId });
-  } catch (err) {
-    next(err);
   }
-});
+);
 
 module.exports = router;

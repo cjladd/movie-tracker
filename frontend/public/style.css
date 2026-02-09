@@ -1,11 +1,30 @@
-/* Page + header layout */
+/* ── Base Reset & Layout ─────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
   background: #000;
   color: #fff;
-  font-family: sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+    Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
+/* ── Focus Styles for Accessibility ──────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid blueviolet;
+  outline-offset: 2px;
+}
+
+a:focus:not(:focus-visible),
+button:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ── Header & Navigation ─────────────────────────────────────────────────── */
 .header {
   display: flex;
   flex-direction: column;
@@ -15,40 +34,38 @@ body {
 
 .logo {
   margin: 0;
+  font-size: 24px;
 }
 
-/* Nav row */
 .main-nav {
   align-self: flex-end;
-  /* nav on the right under the logo */
   display: flex;
-  gap: 32px;
+  gap: 24px;
   align-items: center;
-  position: relative;
+  flex-wrap: wrap;
 }
 
-/* Each top-level menu item is its own mini-container */
-.item {
-  position: relative;
-  /* anchor for submenu */
-  display: inline-block;
-  /* keeps each item together */
-}
-
-/* Top links */
 .menu-link,
-.main-nav>a {
-  /* includes #sign */
+.main-nav > a {
   color: #fff;
   text-decoration: none;
   padding: 8px 12px;
   white-space: nowrap;
+  border-radius: 4px;
+  transition: background 0.2s, color 0.2s;
 }
 
-/* Sign up button */
+.main-nav > a:hover {
+  background: rgba(138, 43, 226, 0.15);
+}
+
 #signUpLink {
   background: blueviolet;
   border-radius: 8px;
+}
+
+#signUpLink:hover {
+  background: #7b3ff2;
 }
 
 #logoutLink {
@@ -56,12 +73,20 @@ body {
   border-radius: 8px;
 }
 
-/* Submenu panel (hidden by default) */
+#logoutLink:hover {
+  background: #7b3ff2;
+}
+
+/* ── Dropdown Menus ──────────────────────────────────────────────────────── */
+.item {
+  position: relative;
+  display: inline-block;
+}
+
 .submenu {
   display: none;
   position: absolute;
   top: 100%;
-  /* directly below the link */
   left: 0;
   min-width: 180px;
   background: #111;
@@ -69,29 +94,60 @@ body {
   padding: 6px 0;
   box-shadow: 0 8px 20px rgba(0, 0, 0, .35);
   z-index: 1000;
-  /* stay above page content */
 }
 
-/* Submenu items */
 .submenu a {
   display: block;
   padding: 8px 12px;
   color: #fff;
   text-decoration: none;
+  transition: background 0.2s;
 }
 
 .submenu a:hover {
   background: #222;
 }
 
-/* Show submenu on hover/focus; keep open while hovering it */
 .item:hover .submenu,
 .item:focus-within .submenu {
   display: block;
 }
 
-/* If a menu is near the right edge, flip it */
 .item.end .submenu {
   left: auto;
   right: 0;
+}
+
+/* ── Responsive Navigation ───────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .header {
+    padding: 12px 16px;
+  }
+
+  .main-nav {
+    align-self: stretch;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .main-nav > a {
+    padding: 6px 10px;
+    font-size: 14px;
+  }
+
+  .logo {
+    text-align: center;
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .main-nav {
+    gap: 4px;
+  }
+
+  .main-nav > a {
+    padding: 4px 8px;
+    font-size: 13px;
+  }
 }

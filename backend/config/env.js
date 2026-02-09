@@ -27,6 +27,7 @@ module.exports = {
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
+    poolSize: parseInt(process.env.DB_POOL_SIZE, 10) || 10,
   },
 
   session: {
@@ -43,5 +44,10 @@ module.exports = {
     origins: process.env.CORS_ORIGINS
       ? process.env.CORS_ORIGINS.split(',').map((s) => s.trim())
       : ['http://localhost:3000', 'http://localhost:4000'],
+  },
+
+  rateLimit: {
+    general: parseInt(process.env.RATE_LIMIT_GENERAL, 10) || 200,
+    auth: parseInt(process.env.RATE_LIMIT_AUTH, 10) || 10,
   },
 };

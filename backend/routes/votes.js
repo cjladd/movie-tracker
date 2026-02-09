@@ -1,42 +1,46 @@
 const { Router } = require('express');
 const { pool } = require('../config/database');
 const { requireAuth } = require('../middleware/auth');
+const { requireFields } = require('../middleware/validate');
+const { verifyMembership, apiResponse, apiError, isPositiveInt } = require('../utils/helpers');
+const { VOTE_MIN, VOTE_MAX } = require('../utils/constants');
 
 const router = Router();
 
-// Vote on a movie
-router.post('/', requireAuth, async (req, res, next) => {
-  const { groupId, movieId, voteValue } = req.body;
-  const userId = req.session.userId;
+router.post(
+  '/',
+  requireAuth,
+  requireFields('groupId', 'movieId', 'voteValue'),
+  async (req, res, next) => {
+    const { groupId, movieId, voteValue } = req.body;
+    const userId = req.session.userId;
 
-  if (!groupId || !movieId || !voteValue) {
-    return res.status(400).json({ error: 'Group ID, movie ID, and vote value are required' });
-  }
-
-  if (voteValue < 1 || voteValue > 5) {
-    return res.status(400).json({ error: 'Vote value must be between 1 and 5' });
-  }
-
-  try {
-    const [membership] = await pool.query(
-      'SELECT 1 FROM Group_Members WHERE group_id = ? AND user_id = ?',
-      [groupId, userId]
-    );
-    if (membership.length === 0) {
-      return res.status(403).json({ error: 'Not a member of this group' });
+    if (!isPositiveInt(groupId) || !isPositiveInt(movieId)) {
+      return next(apiError('Invalid groupId or movieId', 400));
     }
 
-    await pool.query(
-      `INSERT INTO Movie_Votes (user_id, group_id, movie_id, vote_value, voted_at)
-       VALUES (?, ?, ?, ?, NOW())
-       ON DUPLICATE KEY UPDATE vote_value = ?, voted_at = NOW()`,
-      [userId, groupId, movieId, voteValue, voteValue]
-    );
+    const vote = parseInt(voteValue, 10);
+    if (!Number.isInteger(vote) || vote < VOTE_MIN || vote > VOTE_MAX) {
+      return next(apiError(`Vote value must be between ${VOTE_MIN} and ${VOTE_MAX}`, 400));
+    }
 
-    res.json({ message: 'Vote recorded successfully' });
-  } catch (err) {
-    next(err);
+    try {
+      if (!(await verifyMembership(groupId, userId))) {
+        return next(apiError('Not a member of this group', 403));
+      }
+
+      await pool.query(
+        `INSERT INTO Movie_Votes (user_id, group_id, movie_id, vote_value, voted_at)
+         VALUES (?, ?, ?, ?, NOW())
+         ON DUPLICATE KEY UPDATE vote_value = ?, voted_at = NOW()`,
+        [userId, groupId, movieId, vote, vote]
+      );
+
+      res.json(apiResponse(null, 'Vote recorded successfully'));
+    } catch (err) {
+      next(err);
+    }
   }
-});
+);
 
 module.exports = router;

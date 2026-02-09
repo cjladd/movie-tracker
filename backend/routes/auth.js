@@ -1,89 +1,137 @@
 const { Router } = require('express');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const { pool } = require('../config/database');
 const { requireAuth } = require('../middleware/auth');
+const { requireFields, validateEmail, sanitizeBody } = require('../middleware/validate');
+const { getUserByEmail, apiResponse, apiError } = require('../utils/helpers');
+const { SALT_ROUNDS, PASSWORD_MIN_LENGTH, ACCOUNT_LOCKOUT, PASSWORD_RESET_EXPIRY_HOURS } = require('../utils/constants');
+const logger = require('../utils/logger');
 
 const router = Router();
-const SALT_ROUNDS = 10;
 
 // Register
-router.post('/register', async (req, res, next) => {
-  const { name, email, password } = req.body;
+router.post(
+  '/register',
+  sanitizeBody('name', 'email'),
+  requireFields('name', 'email', 'password'),
+  validateEmail(),
+  async (req, res, next) => {
+    const { name, email, password } = req.body;
 
-  if (!name || !email || !password) {
-    return res.status(400).json({ error: 'All fields required' });
-  }
-
-  try {
-    const [existing] = await pool.query('SELECT user_id FROM Users WHERE email = ?', [email]);
-    if (existing.length > 0) {
-      return res.status(400).json({ error: 'Email already exists' });
+    if (password.length < PASSWORD_MIN_LENGTH) {
+      return next(apiError(`Password must be at least ${PASSWORD_MIN_LENGTH} characters`, 400));
+    }
+    if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
+      return next(apiError('Password must contain uppercase, lowercase, and a number', 400));
     }
 
-    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-    const [result] = await pool.query(
-      'INSERT INTO Users (name, email, password, created_at) VALUES (?, ?, ?, NOW())',
-      [name, email, hashedPassword]
-    );
+    try {
+      const existing = await getUserByEmail(email);
+      if (existing) {
+        return next(apiError('Email already exists', 400));
+      }
 
-    res.status(201).json({
-      message: 'User registered successfully',
-      userId: result.insertId,
-    });
-  } catch (err) {
-    next(err);
+      const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+      const [result] = await pool.query(
+        'INSERT INTO Users (name, email, password, created_at) VALUES (?, ?, ?, NOW())',
+        [name, email, hashedPassword]
+      );
+
+      logger.info(`User registered: ${result.insertId}`);
+      res.status(201).json(apiResponse({ userId: result.insertId }, 'User registered successfully'));
+    } catch (err) {
+      next(err);
+    }
   }
-});
+);
 
 // Login
-router.post('/login', async (req, res, next) => {
-  const { email, password } = req.body;
+router.post(
+  '/login',
+  sanitizeBody('email'),
+  requireFields('email', 'password'),
+  async (req, res, next) => {
+    const { email, password } = req.body;
 
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email and password required' });
-  }
+    try {
+      const user = await getUserByEmail(email);
+      if (!user) {
+        return next(apiError('Invalid credentials', 401));
+      }
 
-  try {
-    const [rows] = await pool.query('SELECT * FROM Users WHERE email = ?', [email]);
-    if (rows.length === 0) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      // Account lockout check
+      if (user.locked_until && new Date(user.locked_until) > new Date()) {
+        const minutesLeft = Math.ceil((new Date(user.locked_until) - new Date()) / 60000);
+        return next(apiError(`Account locked. Try again in ${minutesLeft} minute(s)`, 423));
+      }
+
+      const passwordMatch = await bcrypt.compare(password, user.password);
+      if (!passwordMatch) {
+        // Increment failed attempts
+        const attempts = (user.failed_login_attempts || 0) + 1;
+        const lockUntil = attempts >= ACCOUNT_LOCKOUT.MAX_ATTEMPTS
+          ? new Date(Date.now() + ACCOUNT_LOCKOUT.LOCKOUT_MINUTES * 60000)
+          : null;
+
+        await pool.query(
+          'UPDATE Users SET failed_login_attempts = ?, locked_until = ? WHERE user_id = ?',
+          [attempts, lockUntil, user.user_id]
+        );
+
+        if (lockUntil) {
+          return next(apiError(`Too many failed attempts. Account locked for ${ACCOUNT_LOCKOUT.LOCKOUT_MINUTES} minutes`, 423));
+        }
+        return next(apiError('Invalid credentials', 401));
+      }
+
+      // Reset failed attempts on success
+      await pool.query(
+        'UPDATE Users SET failed_login_attempts = 0, locked_until = NULL WHERE user_id = ?',
+        [user.user_id]
+      );
+
+      // Regenerate session to prevent session fixation
+      req.session.regenerate((err) => {
+        if (err) return next(err);
+
+        req.session.userId = user.user_id;
+        logger.info(`User logged in: ${user.user_id}`);
+
+        res.json(apiResponse(
+          { id: user.user_id, name: user.name, email: user.email },
+          'Login successful'
+        ));
+      });
+    } catch (err) {
+      next(err);
     }
-
-    const user = rows[0];
-    const passwordMatch = await bcrypt.compare(password, user.password);
-    if (!passwordMatch) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    req.session.userId = user.user_id;
-    req.session.user = {
-      id: user.user_id,
-      name: user.name,
-      email: user.email,
-    };
-
-    res.json({
-      message: 'Login successful',
-      user: { id: user.user_id, name: user.name, email: user.email },
-    });
-  } catch (err) {
-    next(err);
   }
-});
+);
 
 // Logout
-router.post('/logout', (req, res) => {
+router.post('/logout', (req, res, next) => {
+  const userId = req.session.userId;
   req.session.destroy((err) => {
-    if (err) {
-      return res.status(500).json({ error: 'Could not log out' });
-    }
-    res.json({ message: 'Logout successful' });
+    if (err) return next(err);
+    logger.info(`User logged out: ${userId}`);
+    res.json(apiResponse(null, 'Logout successful'));
   });
 });
 
-// Get current user session
-router.get('/me', requireAuth, (req, res) => {
-  res.json(req.session.user);
+// Get current session user
+router.get('/me', requireAuth, async (req, res, next) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT user_id, name, email FROM Users WHERE user_id = ? AND deleted_at IS NULL',
+      [req.session.userId]
+    );
+    if (rows.length === 0) return next(apiError('User not found', 404));
+    const user = rows[0];
+    res.json(apiResponse({ id: user.user_id, name: user.name, email: user.email }));
+  } catch (err) {
+    next(err);
+  }
 });
 
 // Get profile
@@ -92,64 +140,56 @@ router.get('/profile', requireAuth, async (req, res, next) => {
     const [rows] = await pool.query(
       `SELECT user_id, name, email, bio, favorite_genres,
               email_notifications, group_notifications, vote_notifications, public_profile
-       FROM Users WHERE user_id = ?`,
+       FROM Users WHERE user_id = ? AND deleted_at IS NULL`,
       [req.session.userId]
     );
+    if (rows.length === 0) return next(apiError('User not found', 404));
 
-    if (rows.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const user = rows[0];
-    res.json({
-      id: user.user_id,
-      name: user.name,
-      email: user.email,
-      bio: user.bio || '',
-      favorite_genres: user.favorite_genres || '',
-      email_notifications: !!user.email_notifications,
-      group_notifications: !!user.group_notifications,
-      vote_notifications: !!user.vote_notifications,
-      public_profile: !!user.public_profile,
-    });
+    const u = rows[0];
+    res.json(apiResponse({
+      id: u.user_id,
+      name: u.name,
+      email: u.email,
+      bio: u.bio || '',
+      favorite_genres: u.favorite_genres || '',
+      email_notifications: !!u.email_notifications,
+      group_notifications: !!u.group_notifications,
+      vote_notifications: !!u.vote_notifications,
+      public_profile: !!u.public_profile,
+    }));
   } catch (err) {
     next(err);
   }
 });
 
 // Update profile
-router.put('/profile', requireAuth, async (req, res, next) => {
-  const { name, email, bio, favorite_genres } = req.body;
+router.put(
+  '/profile',
+  requireAuth,
+  sanitizeBody('name', 'email', 'bio', 'favorite_genres'),
+  requireFields('name', 'email'),
+  validateEmail(),
+  async (req, res, next) => {
+    const { name, email, bio, favorite_genres } = req.body;
 
-  if (!name || !email) {
-    return res.status(400).json({ error: 'Name and email are required' });
-  }
+    try {
+      const [existing] = await pool.query(
+        'SELECT user_id FROM Users WHERE email = ? AND user_id != ? AND deleted_at IS NULL',
+        [email, req.session.userId]
+      );
+      if (existing.length > 0) return next(apiError('Email already exists', 400));
 
-  try {
-    const [existing] = await pool.query(
-      'SELECT user_id FROM Users WHERE email = ? AND user_id != ?',
-      [email, req.session.userId]
-    );
+      await pool.query(
+        'UPDATE Users SET name = ?, email = ?, bio = ?, favorite_genres = ? WHERE user_id = ?',
+        [name, email, bio || null, favorite_genres || null, req.session.userId]
+      );
 
-    if (existing.length > 0) {
-      return res.status(400).json({ error: 'Email already exists' });
+      res.json(apiResponse({ id: req.session.userId, name, email }, 'Profile updated successfully'));
+    } catch (err) {
+      next(err);
     }
-
-    await pool.query(
-      'UPDATE Users SET name = ?, email = ?, bio = ?, favorite_genres = ? WHERE user_id = ?',
-      [name, email, bio || null, favorite_genres || null, req.session.userId]
-    );
-
-    req.session.user = { id: req.session.userId, name, email };
-
-    res.json({
-      message: 'Profile updated successfully',
-      user: { id: req.session.userId, name, email },
-    });
-  } catch (err) {
-    next(err);
   }
-});
+);
 
 // Update preferences
 router.put('/preferences', requireAuth, async (req, res, next) => {
@@ -167,8 +207,103 @@ router.put('/preferences', requireAuth, async (req, res, next) => {
         req.session.userId,
       ]
     );
+    res.json(apiResponse(null, 'Preferences updated successfully'));
+  } catch (err) {
+    next(err);
+  }
+});
 
-    res.json({ message: 'Preferences updated successfully' });
+// Delete account (soft delete)
+router.delete('/profile', requireAuth, async (req, res, next) => {
+  try {
+    await pool.query('UPDATE Users SET deleted_at = NOW() WHERE user_id = ?', [req.session.userId]);
+    req.session.destroy(() => {
+      logger.info(`User deleted account: ${req.session?.userId}`);
+      res.json(apiResponse(null, 'Account deleted'));
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Request password reset
+router.post(
+  '/forgot-password',
+  sanitizeBody('email'),
+  requireFields('email'),
+  validateEmail(),
+  async (req, res, next) => {
+    try {
+      const user = await getUserByEmail(req.body.email);
+      // Always return success to prevent email enumeration
+      if (!user) {
+        return res.json(apiResponse(null, 'If that email exists, a reset link has been generated'));
+      }
+
+      const token = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + PASSWORD_RESET_EXPIRY_HOURS * 3600000);
+
+      await pool.query(
+        'INSERT INTO Password_Resets (user_id, token, expires_at) VALUES (?, ?, ?)',
+        [user.user_id, token, expiresAt]
+      );
+
+      // TODO: Send email with reset link containing token
+      // For now, log the token (remove in production)
+      logger.info(`Password reset token for user ${user.user_id}: ${token}`);
+
+      res.json(apiResponse({ token }, 'If that email exists, a reset link has been generated'));
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// Reset password with token
+router.post(
+  '/reset-password',
+  requireFields('token', 'password'),
+  async (req, res, next) => {
+    const { token, password } = req.body;
+
+    if (password.length < PASSWORD_MIN_LENGTH) {
+      return next(apiError(`Password must be at least ${PASSWORD_MIN_LENGTH} characters`, 400));
+    }
+
+    try {
+      const [rows] = await pool.query(
+        'SELECT * FROM Password_Resets WHERE token = ? AND used = FALSE AND expires_at > NOW()',
+        [token]
+      );
+      if (rows.length === 0) return next(apiError('Invalid or expired reset token', 400));
+
+      const resetRecord = rows[0];
+      const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+
+      await pool.query('UPDATE Users SET password = ? WHERE user_id = ?', [hashedPassword, resetRecord.user_id]);
+      await pool.query('UPDATE Password_Resets SET used = TRUE WHERE reset_id = ?', [resetRecord.reset_id]);
+
+      logger.info(`Password reset completed for user ${resetRecord.user_id}`);
+      res.json(apiResponse(null, 'Password reset successful'));
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// Search users (for friend discovery)
+router.get('/search', requireAuth, async (req, res, next) => {
+  const { q } = req.query;
+  if (!q || q.length < 2) return next(apiError('Search query must be at least 2 characters', 400));
+
+  try {
+    const [rows] = await pool.query(
+      `SELECT user_id, name, email FROM Users
+       WHERE (name LIKE ? OR email LIKE ?) AND user_id != ? AND deleted_at IS NULL AND public_profile = TRUE
+       LIMIT 20`,
+      [`%${q}%`, `%${q}%`, req.session.userId]
+    );
+    res.json(apiResponse(rows));
   } catch (err) {
     next(err);
   }

@@ -1,5 +1,6 @@
 const mysql = require('mysql2/promise');
 const env = require('./env');
+const logger = require('../utils/logger');
 
 const pool = mysql.createPool({
   host: env.db.host,
@@ -8,10 +9,14 @@ const pool = mysql.createPool({
   password: env.db.password,
   database: env.db.database,
   waitForConnections: true,
-  connectionLimit: 10,
+  connectionLimit: env.db.poolSize,
   queueLimit: 0,
   enableKeepAlive: true,
   keepAliveInitialDelay: 10000,
+});
+
+pool.on('connection', () => {
+  logger.debug('New database connection established');
 });
 
 async function testConnection() {
@@ -20,4 +25,19 @@ async function testConnection() {
   conn.release();
 }
 
-module.exports = { pool, testConnection };
+async function withTransaction(callback) {
+  const conn = await pool.getConnection();
+  await conn.beginTransaction();
+  try {
+    const result = await callback(conn);
+    await conn.commit();
+    return result;
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
+}
+
+module.exports = { pool, testConnection, withTransaction };

@@ -1,6 +1,8 @@
+const { apiError } = require('../utils/helpers');
+
 function requireAuth(req, res, next) {
   if (!req.session.userId) {
-    return res.status(401).json({ error: 'Authentication required' });
+    return next(apiError('Authentication required', 401));
   }
   next();
 }

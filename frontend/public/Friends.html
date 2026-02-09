@@ -3,9 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Friends – MovieNightPlanner</title>
+  <meta name="description" content="Friends - Manage your friends and send invites on MovieNightPlanner.">
+  <meta property="og:title" content="Friends - MovieNightPlanner" />
+  <meta property="og:description" content="Manage your friends and send invites on MovieNightPlanner." />
+  <meta property="og:type" content="website" />
+  <link rel="canonical" href="Friends.html" />
+  <title>Friends - MovieNightPlanner</title>
   <link rel="stylesheet" href="style.css">
   <style>
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
     .container { max-width: 800px; margin: 0 auto; padding: 20px; }
     h1 { margin-bottom: 20px; }
     .section { margin-bottom: 40px; }
@@ -18,16 +24,16 @@
 <body>
   <header class="header">
     <h1 class="logo">MovieNightPlanner</h1>
-    <nav class="main-nav">
-      <a href="website.html">Home</a>
-      <a href="Binge_Bank.html">Binge Bank</a>
-      <a href="Stream_team.html">Stream Team</a>
-      <a href="Friends.html">Friends</a>
-      <a href="heads_up.html">Heads up</a>
-      <a href="Setting.html">Setting</a>
-      <a href="Log_In.html" id="loginLink">Log In</a>
-      <a href="Sign_Up.html" id="signUpLink">Sign Up</a>
-      <a href="#" id="logoutLink" style="display: none;">Sign Out</a>
+    <nav class="main-nav" aria-label="Main navigation">
+        <a href="website.html">Home</a>
+        <a href="Binge_Bank.html">Binge Bank</a>
+        <a href="Stream_team.html">Stream Team</a>
+        <a href="Friends.html">Friends</a>
+        <a href="heads_up.html">Heads Up</a>
+        <a href="Setting.html">Settings</a>
+        <a href="Log_In.html" id="loginLink">Log In</a>
+        <a href="Sign_Up.html" id="signUpLink">Sign Up</a>
+        <a href="#" id="logoutLink" style="display: none;">Sign Out</a>
     </nav>
   </header>
 
@@ -36,6 +42,7 @@
 
     <div class="section">
       <h2>Send Friend Request</h2>
+      <label for="friendEmail" class="sr-only">Friend email address</label>
       <input type="email" id="friendEmail" placeholder="Enter email..." style="width:70%;padding:10px;">
       <button id="sendRequestBtn">Send Request</button>
       <div class="success-message" id="friendSuccess" style="display:none;margin-top:10px;"></div>
@@ -44,12 +51,12 @@
 
     <div class="section">
       <h2>Pending Requests</h2>
-      <div id="requestList" class="request-list"></div>
+      <ul id="requestList" class="request-list"></ul>
     </div>
 
     <div class="section">
       <h2>Your Friends</h2>
-      <div id="friendList" class="friend-list"></div>
+      <ul id="friendList" class="friend-list"></ul>
     </div>
   </div>
 
@@ -66,17 +73,17 @@
         const friends = await getFriends();
         const list = document.getElementById('friendList');
         if (friends.length === 0) {
-          list.innerHTML = '<div class="card">You have no friends yet.</div>';
+          list.innerHTML = '<li class="card">You have no friends yet.</li>';
         } else {
           list.innerHTML = friends.map(f => `
-            <div class="card">
+            <li class="card">
               <span>${escapeHtml(f.name)} (${escapeHtml(f.email)})</span>
               <button class="secondary" onclick="removeFriendHandler(${f.user_id})">Remove</button>
-            </div>
+            </li>
           `).join('');
         }
       } catch (err) {
-        document.getElementById('friendList').innerHTML = '<div class="card">Error loading friends.</div>';
+        document.getElementById('friendList').innerHTML = '<li class="card">Error loading friends.</li>';
       }
     }
 
@@ -85,17 +92,17 @@
         const requests = await getFriendRequests();
         const list = document.getElementById('requestList');
         if (requests.length === 0) {
-          list.innerHTML = '<div class="card">No pending requests.</div>';
+          list.innerHTML = '<li class="card">No pending requests.</li>';
         } else {
           list.innerHTML = requests.map(r => `
-            <div class="card">
+            <li class="card">
               <span>${escapeHtml(r.sender_name)} (${escapeHtml(r.sender_email)})</span>
               <button onclick="acceptRequestHandler(${r.request_id})">Accept</button>
-            </div>
+            </li>
           `).join('');
         }
       } catch (err) {
-        document.getElementById('requestList').innerHTML = '<div class="card">Error loading requests.</div>';
+        document.getElementById('requestList').innerHTML = '<li class="card">Error loading requests.</li>';
       }
     }
 

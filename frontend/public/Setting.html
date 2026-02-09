@@ -4,9 +4,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Settings - Manage your profile information and notification preferences on MovieNightPlanner.">
+    <meta property="og:title" content="Settings - MovieNightPlanner" />
+    <meta property="og:description" content="Manage your profile information and notification preferences on MovieNightPlanner." />
+    <meta property="og:type" content="website" />
+    <link rel="canonical" href="Setting.html" />
     <title>Settings - MovieNightPlanner</title>
     <link rel="stylesheet" href="style.css">
     <style>
+        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
         .container {
             max-width: 800px;
             margin: 0 auto;
@@ -200,13 +207,13 @@
 <body>
     <header class="header">
         <h1 class="logo">MovieNightPlanner</h1>
-        <nav class="main-nav">
+        <nav class="main-nav" aria-label="Main navigation">
             <a href="website.html">Home</a>
             <a href="Binge_Bank.html">Binge Bank</a>
             <a href="Stream_team.html">Stream Team</a>
             <a href="Friends.html">Friends</a>
-            <a href="heads_up.html">Heads up</a>
-            <a href="Setting.html">Setting</a>
+            <a href="heads_up.html">Heads Up</a>
+            <a href="Setting.html">Settings</a>
             <a href="Log_In.html" id="loginLink">Log In</a>
             <a href="Sign_Up.html" id="signUpLink">Sign Up</a>
             <a href="#" id="logoutLink" style="display: none;">Sign Out</a>
@@ -220,7 +227,6 @@
         <div class="error-message" id="errorMessage"></div>
 
         <div id="content">
-            <!-- Content will be loaded here -->
         </div>
     </div>
 
@@ -253,18 +259,7 @@
 
         async function loadUserProfile() {
             try {
-                const response = await fetch('/api/users/profile', {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to load profile');
-                }
-
-                userProfile = await response.json();
+                userProfile = await apiCall('/users/profile');
                 return userProfile;
             } catch (error) {
                 console.error('Error loading profile:', error);
@@ -285,11 +280,9 @@
             }
 
             try {
-                // Load user profile data from backend
                 await loadUserProfile();
 
-                content.innerHTML = `                
-                    <!-- Profile Section -->
+                content.innerHTML = `
                     <div class="settings-section">
                         <h2 class="section-title">Profile Information</h2>
                         <form id="profileForm">
@@ -317,8 +310,7 @@
                             </button>
                         </form>
                     </div>
-                    
-                    <!-- Preferences Section -->
+
                     <div class="settings-section">
                         <h2 class="section-title">Notification Preferences</h2>
                         <form id="preferencesForm">
@@ -360,7 +352,6 @@
                     </div>
                 `;
 
-                // Add form handlers
                 document.getElementById('profileForm').addEventListener('submit', saveProfile);
                 document.getElementById('preferencesForm').addEventListener('submit', savePreferences);
 
@@ -394,38 +385,22 @@
                 return;
             }
 
-            // Show loading state
             profileSaveBtn.disabled = true;
             profileBtnText.textContent = 'Saving...';
             profileLoading.style.display = 'inline-block';
 
             try {
-                const response = await fetch('/api/users/profile', {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        name,
-                        email,
-                        bio,
-                        favorite_genres: favoriteGenres
-                    })
+                const result = await apiCall('/users/profile', 'PUT', {
+                    name,
+                    email,
+                    bio,
+                    favorite_genres: favoriteGenres
                 });
 
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to update profile');
-                }
-
-                const result = await response.json();
-
-                // Update local user data
-                currentUser.name = result.user.name;
-                currentUser.email = result.user.email;
+                currentUser.name = result.name || name;
+                currentUser.email = result.email || email;
                 localStorage.setItem('currentUser', JSON.stringify(currentUser));
 
-                // Update userProfile
                 userProfile.name = name;
                 userProfile.email = email;
                 userProfile.bio = bio;
@@ -433,13 +408,11 @@
 
                 showSuccess('Profile updated successfully!');
 
-                // Update UI
                 updateAuthUI();
 
             } catch (error) {
                 showError(error.message);
             } finally {
-                // Reset button state
                 profileSaveBtn.disabled = false;
                 profileBtnText.textContent = 'Save Profile';
                 profileLoading.style.display = 'none';
@@ -459,31 +432,18 @@
             const voteNotifications = document.getElementById('voteNotif').checked;
             const publicProfile = document.getElementById('publicProfile').checked;
 
-            // Show loading state
             prefSaveBtn.disabled = true;
             prefBtnText.textContent = 'Saving...';
             prefLoading.style.display = 'inline-block';
 
             try {
-                const response = await fetch('/api/users/preferences', {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        email_notifications: emailNotifications,
-                        group_notifications: groupNotifications,
-                        vote_notifications: voteNotifications,
-                        public_profile: publicProfile
-                    })
+                await apiCall('/users/preferences', 'PUT', {
+                    email_notifications: emailNotifications,
+                    group_notifications: groupNotifications,
+                    vote_notifications: voteNotifications,
+                    public_profile: publicProfile
                 });
 
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to update preferences');
-                }
-
-                // Update userProfile
                 userProfile.email_notifications = emailNotifications;
                 userProfile.group_notifications = groupNotifications;
                 userProfile.vote_notifications = voteNotifications;
@@ -494,25 +454,12 @@
             } catch (error) {
                 showError(error.message);
             } finally {
-                // Reset button state
                 prefSaveBtn.disabled = false;
                 prefBtnText.textContent = 'Save Preferences';
                 prefLoading.style.display = 'none';
             }
         }
 
-        function escapeHtml(text) {
-            const map = {
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#039;'
-            };
-            return text ? text.toString().replace(/[&<>"']/g, m => map[m]) : '';
-        }
-
-        // Load settings on page load
         loadSettings();
     </script>
 </body>

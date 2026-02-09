@@ -1,5 +1,6 @@
 const axios = require('axios');
 const env = require('./env');
+const logger = require('../utils/logger');
 
 const TMDB_IMAGE_URL = `${env.tmdb.imageBase}/w780`;
 const TMDB_BACKDROP_URL = `${env.tmdb.imageBase}/w1280`;
@@ -13,9 +14,26 @@ const tmdbClient = axios.create({
   timeout: 10000,
 });
 
-async function fetchFromTMDB(endpoint) {
-  const response = await tmdbClient.get(endpoint);
-  return response.data;
+async function fetchFromTMDB(endpoint, retries = 2) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const start = Date.now();
+      const response = await tmdbClient.get(endpoint);
+      logger.debug(`TMDB ${endpoint} completed in ${Date.now() - start}ms`);
+      return response.data;
+    } catch (error) {
+      if (attempt === retries) {
+        logger.error(`TMDB API failed after ${retries + 1} attempts: ${endpoint}`, {
+          status: error.response?.status,
+          message: error.message,
+        });
+        throw error;
+      }
+      const delay = Math.pow(2, attempt) * 500;
+      logger.warn(`TMDB retry ${attempt + 1} for ${endpoint} in ${delay}ms`);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
 }
 
 function mapTMDBMovie(tmdbMovie) {

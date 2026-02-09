@@ -2,14 +2,18 @@ const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const session = require('express-session');
+const MySQLStore = require('express-mysql-session')(session);
 const helmet = require('helmet');
 const compression = require('compression');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
+const cookieParser = require('cookie-parser');
 
 const env = require('./config/env');
-const { testConnection } = require('./config/database');
+const { pool, testConnection } = require('./config/database');
 const { errorHandler } = require('./middleware/errorHandler');
+const { requestId } = require('./middleware/requestId');
+const logger = require('./utils/logger');
 
 // Route modules
 const authRoutes = require('./routes/auth');
@@ -24,41 +28,48 @@ const app = express();
 
 // --------------- Security & performance middleware ---------------
 
-// Trust proxy so rate-limit and secure cookies work behind Railway / reverse proxy
 app.set('trust proxy', 1);
 
 app.use(
   helmet({
-    contentSecurityPolicy: false, // disabled so inline scripts in static HTML work
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+        imgSrc: ["'self'", 'data:', 'https://image.tmdb.org'],
+        connectSrc: ["'self'"],
+      },
+    },
     crossOriginEmbedderPolicy: false,
   })
 );
 
 app.use(compression());
+app.use(requestId);
 
-if (env.isProduction) {
-  app.use(morgan('combined'));
-} else {
-  app.use(morgan('dev'));
-}
+const morganFormat = env.isProduction ? 'combined' : 'dev';
+app.use(morgan(morganFormat, {
+  stream: { write: (msg) => logger.info(msg.trim()) },
+}));
 
-// Rate limiting — general
+// Rate limiting
 const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 200,
+  windowMs: 15 * 60 * 1000,
+  max: env.rateLimit.general,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many requests, please try again later.' },
+  message: { success: false, error: 'Too many requests, please try again later.' },
 });
 app.use('/api/', generalLimiter);
 
-// Stricter rate limit for auth endpoints
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20,
+  max: env.rateLimit.auth,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many authentication attempts, please try again later.' },
+  message: { success: false, error: 'Too many authentication attempts, please try again later.' },
 });
 app.use('/api/users/login', authLimiter);
 app.use('/api/users/register', authLimiter);
@@ -67,6 +78,7 @@ app.use('/api/users/register', authLimiter);
 
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // --------------- CORS ---------------
 
@@ -79,18 +91,22 @@ app.use(
   })
 );
 
-// --------------- Sessions ---------------
+// --------------- Sessions (MySQL-backed) ---------------
+
+const sessionStore = new MySQLStore({}, pool);
 
 app.use(
   session({
+    key: 'movie_tracker_sid',
     secret: env.session.secret,
+    store: sessionStore,
     resave: false,
     saveUninitialized: false,
     proxy: env.isProduction,
     cookie: {
       secure: env.isProduction,
       httpOnly: true,
-      maxAge: 1000 * 60 * 60 * 24, // 24 hours
+      maxAge: 1000 * 60 * 60 * 24,
       sameSite: env.isProduction ? 'none' : 'lax',
     },
   })
@@ -98,14 +114,23 @@ app.use(
 
 // --------------- Static files ---------------
 
-app.use(express.static(path.join(__dirname, '../frontend/public')));
+app.use(express.static(path.join(__dirname, '../frontend/public'), {
+  maxAge: env.isProduction ? '1d' : 0,
+}));
 
 // --------------- Health check ---------------
 
 app.get('/health', async (_req, res) => {
   try {
     await testConnection();
-    res.json({ status: 'ok', uptime: process.uptime() });
+    res.json({
+      status: 'ok',
+      uptime: process.uptime(),
+      environment: env.nodeEnv,
+      pool: {
+        threadId: pool.pool?._freeConnections?.length ?? 'unknown',
+      },
+    });
   } catch {
     res.status(503).json({ status: 'error', message: 'Database unreachable' });
   }
@@ -113,8 +138,8 @@ app.get('/health', async (_req, res) => {
 
 // --------------- API routes ---------------
 
-app.get('/api', (req, res) => {
-  res.json({ status: 'Movie Tracker API is running', authenticated: !!req.session.userId });
+app.get('/api', (_req, res) => {
+  res.json({ success: true, status: 'Movie Tracker API v1' });
 });
 
 app.use('/api/users', authRoutes);
@@ -140,24 +165,25 @@ app.use(errorHandler);
 async function start() {
   try {
     await testConnection();
-    console.log('Database connected');
+    logger.info('Database connected');
   } catch (err) {
-    console.error('Database connection failed:', err.message);
+    logger.error('Database connection failed', { error: err.message });
     process.exit(1);
   }
 
   const server = app.listen(env.port, () => {
-    console.log(`Server running on port ${env.port} [${env.nodeEnv}]`);
+    logger.info(`Server running on port ${env.port} [${env.nodeEnv}]`);
   });
 
-  // Graceful shutdown
   const shutdown = (signal) => {
-    console.log(`${signal} received — shutting down`);
+    logger.info(`${signal} received — shutting down`);
     server.close(() => {
-      console.log('HTTP server closed');
-      process.exit(0);
+      logger.info('HTTP server closed');
+      pool.end().then(() => {
+        logger.info('Database pool closed');
+        process.exit(0);
+      });
     });
-    // Force exit after 10 s if connections are hanging
     setTimeout(() => process.exit(1), 10000);
   };
 
