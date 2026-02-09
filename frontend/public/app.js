@@ -3,6 +3,7 @@ const API_URL = '/api';
 
 // Store user data in localStorage after login
 let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
+const THEME_KEY = 'mnp_theme';
 
 // ── Core API Helper ──────────────────────────────────────────────────────────
 
@@ -115,6 +116,89 @@ async function logout() {
 
 function checkAuth() {
     return !!currentUser;
+}
+
+function getPreferredTheme() {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === 'light' || saved === 'dark') return saved;
+    return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+}
+
+function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem(THEME_KEY, theme);
+}
+
+function initThemeToggle() {
+    const header = document.querySelector('.header');
+    if (!header) return;
+
+    let actions = header.querySelector('.nav-actions');
+    if (!actions) {
+        actions = document.createElement('div');
+        actions.className = 'nav-actions';
+        header.appendChild(actions);
+    }
+
+    let toggle = document.getElementById('themeToggle');
+    if (!toggle) {
+        toggle = document.createElement('button');
+        toggle.id = 'themeToggle';
+        toggle.className = 'btn-icon theme-toggle';
+        toggle.type = 'button';
+        actions.appendChild(toggle);
+    }
+
+    const setIcon = () => {
+        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        toggle.textContent = isLight ? '🌙' : '☀';
+        toggle.setAttribute('aria-label', isLight ? 'Switch to dark mode' : 'Switch to light mode');
+        toggle.title = isLight ? 'Switch to dark mode' : 'Switch to light mode';
+    };
+
+    toggle.addEventListener('click', () => {
+        const nextTheme = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+        applyTheme(nextTheme);
+        setIcon();
+    });
+
+    setIcon();
+}
+
+function initMobileNavToggle() {
+    const header = document.querySelector('.header');
+    const nav = document.querySelector('.main-nav');
+    if (!header || !nav) return;
+
+    let menuToggle = document.getElementById('navMobileToggle');
+    if (!menuToggle) {
+        menuToggle = document.createElement('button');
+        menuToggle.id = 'navMobileToggle';
+        menuToggle.type = 'button';
+        menuToggle.className = 'btn-icon nav-mobile-toggle';
+        menuToggle.setAttribute('aria-label', 'Toggle navigation menu');
+        menuToggle.textContent = '☰';
+        header.appendChild(menuToggle);
+    }
+
+    menuToggle.addEventListener('click', () => {
+        const isOpen = nav.classList.toggle('nav-open');
+        menuToggle.textContent = isOpen ? '✕' : '☰';
+    });
+}
+
+function setActiveNavLink() {
+    const pageName = window.location.pathname.split('/').pop() || 'website.html';
+    const links = document.querySelectorAll('.main-nav > a');
+    links.forEach((link) => {
+        const href = link.getAttribute('href');
+        if (!href || href.startsWith('#')) return;
+        if (href === pageName || (pageName === 'index.html' && href === 'website.html')) {
+            link.classList.add('active');
+        } else {
+            link.classList.remove('active');
+        }
+    });
 }
 
 // ── Group Management Functions ───────────────────────────────────────────────
@@ -416,8 +500,11 @@ function updateAuthUI() {
 // ── Initialization ───────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
+    applyTheme(getPreferredTheme());
     updateAuthNav();
-    updateAuthUI();
+    initThemeToggle();
+    initMobileNavToggle();
+    setActiveNavLink();
 
     const pageName = window.location.pathname.split('/').pop() || 'website.html';
 

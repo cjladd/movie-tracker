@@ -2,6 +2,7 @@
 @import url('./css/reset.css');
 @import url('./css/animations.css');
 @import url('./css/components.css');
+@import url('./css/nav.css');
 
 /* ── Base Reset & Layout ─────────────────────────────────────────────────── */
 *, *::before, *::after {
