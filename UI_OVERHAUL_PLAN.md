@@ -255,8 +255,8 @@ frontend/public/
 1. [x] **Tokens + Reset + Animations** — Foundation updates
 2. [x] **`components.css`** — Buttons, cards, forms, modals, toasts
 3. [x] **`nav.css` + theme toggle** — Shared nav with dark/light mode
-4. [ ] **`app.js` updates** — Toast system, scroll observer, theme persistence
-5. **Landing page** (`website.html`) — Showcase the new design system
+4. [x] **`app.js` updates** — Toast system, scroll observer, theme persistence
+5. [ ] **Landing page** (`website.html`) — Showcase the new design system
 6. **Auth pages** (`Log_In.html`, `Sign_Up.html`) — Quick wins, glass cards
 7. **Binge Bank** (`Binge_Bank.html`) — Core feature, poster cards
 8. **Stream Team** (`Stream_team.html`) — Groups with tabs

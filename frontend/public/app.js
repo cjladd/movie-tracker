@@ -98,6 +98,7 @@ async function login(email, password) {
     const user = await apiCall('/users/login', 'POST', { email, password });
     currentUser = user;
     localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    showToast('Logged in successfully', 'success');
     setTimeout(() => { window.location.href = 'website.html'; }, 1000);
     return user;
 }
@@ -105,8 +106,10 @@ async function login(email, password) {
 async function logout() {
     try {
         await apiCall('/users/logout', 'POST');
+        showToast('Logged out', 'info');
     } catch (err) {
         console.error('Logout failed:', err);
+        showToast('Logout request failed, local session cleared', 'warning');
     }
     currentUser = null;
     localStorage.removeItem('currentUser');
@@ -199,6 +202,53 @@ function setActiveNavLink() {
             link.classList.remove('active');
         }
     });
+}
+
+function ensureToastContainer() {
+    let container = document.getElementById('toastContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+    }
+    return container;
+}
+
+function showToast(message, type = 'info', duration = 4000) {
+    const container = ensureToastContainer();
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.setAttribute('role', 'status');
+    toast.setAttribute('aria-live', 'polite');
+    toast.textContent = message;
+    container.appendChild(toast);
+
+    window.setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(12px)';
+        toast.style.transition = 'opacity 180ms ease, transform 180ms ease';
+        window.setTimeout(() => toast.remove(), 180);
+    }, duration);
+}
+
+function initScrollObserver() {
+    const targets = document.querySelectorAll('[data-animate]');
+    if (targets.length === 0 || !('IntersectionObserver' in window)) {
+        targets.forEach((el) => el.classList.add('is-visible'));
+        return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('is-visible');
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.12, rootMargin: '0px 0px -5% 0px' });
+
+    targets.forEach((el) => observer.observe(el));
 }
 
 // ── Group Management Functions ───────────────────────────────────────────────
@@ -505,6 +555,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initThemeToggle();
     initMobileNavToggle();
     setActiveNavLink();
+    initScrollObserver();
 
     const pageName = window.location.pathname.split('/').pop() || 'website.html';
 
