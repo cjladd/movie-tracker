@@ -253,8 +253,8 @@ frontend/public/
 ## Implementation Order
 
 1. [x] **Tokens + Reset + Animations** — Foundation updates
-2. [ ] **`components.css`** — Buttons, cards, forms, modals, toasts
-3. **`nav.css` + theme toggle** — Shared nav with dark/light mode
+2. [x] **`components.css`** — Buttons, cards, forms, modals, toasts
+3. [ ] **`nav.css` + theme toggle** — Shared nav with dark/light mode
 4. **`app.js` updates** — Toast system, scroll observer, theme persistence
 5. **Landing page** (`website.html`) — Showcase the new design system
 6. **Auth pages** (`Log_In.html`, `Sign_Up.html`) — Quick wins, glass cards
