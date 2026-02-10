@@ -264,7 +264,7 @@ frontend/public/
 10. [x] **Friends** (`Friends.html`) — Friend cards
 11. [x] **Settings** (`Setting.html`) — Sectioned layout
 12. [x] **Responsive pass** — All pages at 1024/768/480
-13. [ ] **Polish pass** — Reduced motion, performance, accessibility audit
+13. [x] **Polish pass** — Reduced motion, performance, accessibility audit
 
 ---
 

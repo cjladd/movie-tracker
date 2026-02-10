@@ -4,6 +4,7 @@ const API_URL = '/api';
 // Store user data in localStorage after login
 let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
 const THEME_KEY = 'mnp_theme';
+const LAST_SEED_KEY = 'mnp_last_seed_at';
 
 // ── Core API Helper ──────────────────────────────────────────────────────────
 
@@ -19,7 +20,12 @@ async function apiCall(endpoint, method = 'GET', data = null) {
     }
 
     const response = await fetch(`${API_URL}${endpoint}`, options);
-    const result = await response.json();
+    let result = {};
+    try {
+        result = await response.json();
+    } catch (_e) {
+        result = {};
+    }
 
     if (!response.ok) {
         throw new Error(result.error || result.message || 'API call failed');
@@ -180,13 +186,29 @@ function initMobileNavToggle() {
         menuToggle.type = 'button';
         menuToggle.className = 'btn-icon nav-mobile-toggle';
         menuToggle.setAttribute('aria-label', 'Toggle navigation menu');
+        menuToggle.setAttribute('aria-expanded', 'false');
         menuToggle.textContent = 'Menu';
         header.appendChild(menuToggle);
     }
 
+    const closeNav = () => {
+        nav.classList.remove('nav-open');
+        menuToggle.textContent = 'Menu';
+        menuToggle.setAttribute('aria-expanded', 'false');
+    };
+
     menuToggle.addEventListener('click', () => {
         const isOpen = nav.classList.toggle('nav-open');
         menuToggle.textContent = isOpen ? 'Close' : 'Menu';
+        menuToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+
+    nav.querySelectorAll('a').forEach((link) => {
+        link.addEventListener('click', closeNav);
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closeNav();
     });
 }
 
@@ -198,8 +220,10 @@ function setActiveNavLink() {
         if (!href || href.startsWith('#')) return;
         if (href === pageName || (pageName === 'index.html' && href === 'website.html')) {
             link.classList.add('active');
+            link.setAttribute('aria-current', 'page');
         } else {
             link.classList.remove('active');
+            link.removeAttribute('aria-current');
         }
     });
 }
@@ -219,8 +243,8 @@ function showToast(message, type = 'info', duration = 4000) {
     const container = ensureToastContainer();
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    toast.setAttribute('role', 'status');
-    toast.setAttribute('aria-live', 'polite');
+    toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+    toast.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
     toast.textContent = message;
     container.appendChild(toast);
 
@@ -234,7 +258,8 @@ function showToast(message, type = 'info', duration = 4000) {
 
 function initScrollObserver() {
     const targets = document.querySelectorAll('[data-animate]');
-    if (targets.length === 0 || !('IntersectionObserver' in window)) {
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (targets.length === 0 || !('IntersectionObserver' in window) || reduceMotion) {
         targets.forEach((el) => el.classList.add('is-visible'));
         return;
     }
@@ -249,6 +274,14 @@ function initScrollObserver() {
     }, { threshold: 0.12, rootMargin: '0px 0px -5% 0px' });
 
     targets.forEach((el) => observer.observe(el));
+}
+
+function shouldSeedMovies() {
+    const last = localStorage.getItem(LAST_SEED_KEY);
+    if (!last) return true;
+    const elapsed = Date.now() - Number(last);
+    const oneDay = 24 * 60 * 60 * 1000;
+    return Number.isNaN(elapsed) || elapsed > oneDay;
 }
 
 // ── Group Management Functions ───────────────────────────────────────────────
@@ -409,7 +442,10 @@ async function getMovie(movieId) {
 
 async function loadHomepageContent() {
     try {
-        await seedDatabaseWithTMDBMovies();
+        if (shouldSeedMovies()) {
+            await seedDatabaseWithTMDBMovies();
+            localStorage.setItem(LAST_SEED_KEY, String(Date.now()));
+        }
 
         const [featuredMovies, trending] = await Promise.all([
             getFeaturedMovies(),
