@@ -1,147 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Create your MovieNightPlanner account to start planning movie nights, joining groups, and discovering films with friends." />
-    <meta property="og:title" content="Sign Up - MovieNightPlanner" />
-    <meta property="og:description" content="Create your MovieNightPlanner account to start planning movie nights, joining groups, and discovering films with friends." />
-    <meta property="og:type" content="website" />
-    <link rel="canonical" href="Sign_Up.html" />
+    <meta name="description" content="Create your MovieNightPlanner account to start planning movie nights, joining groups, and discovering films with friends.">
+    <meta property="og:title" content="Sign Up - MovieNightPlanner">
+    <meta property="og:description" content="Create your MovieNightPlanner account to start planning movie nights, joining groups, and discovering films with friends.">
+    <meta property="og:type" content="website">
+    <link rel="canonical" href="Sign_Up.html">
     <title>Sign Up - MovieNightPlanner</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
-
-        .signup-container {
-            max-width: 400px;
-            margin: 50px auto;
-            padding: 30px;
-            background: #111;
-            border-radius: 12px;
-            box-shadow: 0 8px 20px rgba(138, 43, 226, 0.2);
-        }
-
-        .signup-container h2 {
-            text-align: center;
-            margin-bottom: 30px;
-            color: #fff;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: #ccc;
-            font-size: 14px;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #333;
-            border-radius: 6px;
-            background: #1a1a1a;
-            color: #fff;
-            font-size: 16px;
-            transition: border-color 0.3s;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: blueviolet;
-        }
-
-        .submit-btn {
-            width: 100%;
-            padding: 14px;
-            background: blueviolet;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: bold;
-            transition: all 0.3s;
-            margin-top: 10px;
-        }
-
-        .submit-btn:hover {
-            background: #7b3ff2;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(138, 43, 226, 0.4);
-        }
-
-        .submit-btn:disabled {
-            background: #555;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .form-footer {
-            text-align: center;
-            margin-top: 25px;
-            color: #ccc;
-        }
-
-        .form-footer a {
-            color: blueviolet;
-            text-decoration: none;
-            transition: color 0.3s;
-        }
-
-        .form-footer a:hover {
-            color: #7b3ff2;
-            text-decoration: underline;
-        }
-
-        .error-message {
-            background: rgba(255, 68, 68, 0.1);
-            border: 1px solid #ff4444;
-            color: #ff6666;
-            padding: 10px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            display: none;
-            font-size: 14px;
-        }
-
-        .success-message {
-            background: rgba(76, 175, 80, 0.1);
-            border: 1px solid #4caf50;
-            color: #66bb6a;
-            padding: 10px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            display: none;
-            font-size: 14px;
-        }
-
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255, 255, 255, .3);
-            border-radius: 50%;
-            border-top-color: #fff;
-            animation: spin 1s ease-in-out infinite;
-            margin-left: 10px;
-            vertical-align: middle;
-            display: none;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="css/pages/auth.css">
 </head>
-
 <body>
     <header class="header">
         <h1 class="logo">MovieNightPlanner</h1>
@@ -154,48 +24,63 @@
             <a href="Setting.html">Settings</a>
             <a href="Log_In.html" id="loginLink">Log In</a>
             <a href="Sign_Up.html" id="signUpLink">Sign Up</a>
-            <a href="#" id="logoutLink" style="display: none;">Sign Out</a>
+            <a href="#" id="logoutLink" style="display:none;">Sign Out</a>
         </nav>
     </header>
 
-    <div class="signup-container">
-        <h2>Create Your Account</h2>
+    <main class="auth-main">
+        <section class="auth-card card animate-fade-in-up" data-animate>
+            <h2>Create your account</h2>
+            <p class="auth-subtitle">Set up your profile and start scheduling movie nights in minutes.</p>
 
-        <div class="error-message" id="errorMessage"></div>
-        <div class="success-message" id="successMessage"></div>
+            <div class="error-message" id="errorMessage"></div>
+            <div class="success-message" id="successMessage"></div>
 
-        <form id="signupForm">
-            <div class="form-group">
-                <label for="name">Name:</label>
-                <input type="text" id="name" name="name" required placeholder="Enter your full name">
+            <form id="signupForm" novalidate>
+                <div class="form-group">
+                    <label for="name">Name</label>
+                    <input type="text" id="name" name="name" required placeholder="Full name">
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required placeholder="you@example.com" autocomplete="email">
+                </div>
+
+                <hr class="form-divider">
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="input-wrap">
+                        <input type="password" id="password" name="password" required placeholder="At least 8 chars, upper/lowercase + number" autocomplete="new-password">
+                        <button type="button" class="btn-icon toggle-password" id="togglePassword" aria-label="Show password">Show</button>
+                    </div>
+                    <div class="password-strength">
+                        <div class="password-strength-track">
+                            <div id="passwordStrengthBar" class="password-strength-bar"></div>
+                        </div>
+                        <div id="passwordStrengthText" class="password-strength-text">Strength: waiting for input</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm password</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" required placeholder="Re-enter your password" autocomplete="new-password">
+                </div>
+
+                <div class="btn-row">
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <span id="btnText">Sign Up</span>
+                    </button>
+                    <span class="loading-spinner" id="loading"></span>
+                </div>
+            </form>
+
+            <div class="form-footer">
+                Already have an account? <a href="Log_In.html">Log In</a>
             </div>
-
-            <div class="form-group">
-                <label for="email">Email:</label>
-                <input type="email" id="email" name="email" required placeholder="Enter your email">
-            </div>
-
-            <div class="form-group">
-                <label for="password">Password:</label>
-                <input type="password" id="password" name="password" required placeholder="At least 6 characters">
-            </div>
-
-            <div class="form-group">
-                <label for="confirmPassword">Confirm Password:</label>
-                <input type="password" id="confirmPassword" name="confirmPassword" required
-                    placeholder="Re-enter your password">
-            </div>
-
-            <button type="submit" class="submit-btn" id="submitBtn">
-                <span id="btnText">Sign Up</span>
-                <span class="loading" id="loading"></span>
-            </button>
-        </form>
-
-        <div class="form-footer">
-            Already have an account? <a href="Log_In.html">Log In</a>
-        </div>
-    </div>
+        </section>
+    </main>
 
     <script src="app.js"></script>
     <script>
@@ -205,6 +90,11 @@
         const loading = document.getElementById('loading');
         const errorMessage = document.getElementById('errorMessage');
         const successMessage = document.getElementById('successMessage');
+        const passwordInput = document.getElementById('password');
+        const confirmPasswordInput = document.getElementById('confirmPassword');
+        const passwordStrengthBar = document.getElementById('passwordStrengthBar');
+        const passwordStrengthText = document.getElementById('passwordStrengthText');
+        const togglePassword = document.getElementById('togglePassword');
 
         function showError(message) {
             errorMessage.textContent = message;
@@ -223,18 +113,65 @@
             successMessage.style.display = 'none';
         }
 
+        function calculateStrength(password) {
+            let score = 0;
+            if (password.length >= 8) score += 1;
+            if (/[a-z]/.test(password)) score += 1;
+            if (/[A-Z]/.test(password)) score += 1;
+            if (/[0-9]/.test(password)) score += 1;
+            return score;
+        }
+
+        function updateStrengthMeter() {
+            const password = passwordInput.value;
+            const score = calculateStrength(password);
+            const pct = score * 25;
+
+            let label = 'Weak';
+            let color = '#f43f5e';
+            if (score >= 4) {
+                label = 'Strong';
+                color = '#10b981';
+            } else if (score >= 3) {
+                label = 'Good';
+                color = '#06b6d4';
+            } else if (score >= 2) {
+                label = 'Fair';
+                color = '#f59e0b';
+            }
+
+            passwordStrengthBar.style.width = `${pct}%`;
+            passwordStrengthBar.style.background = color;
+            passwordStrengthText.textContent = password ? `Strength: ${label}` : 'Strength: waiting for input';
+        }
+
+        function validatePassword(password) {
+            if (password.length < 8) return 'Password must be at least 8 characters long';
+            if (!/[A-Z]/.test(password)) return 'Password must include at least one uppercase letter';
+            if (!/[a-z]/.test(password)) return 'Password must include at least one lowercase letter';
+            if (!/[0-9]/.test(password)) return 'Password must include at least one number';
+            return null;
+        }
+
+        togglePassword.addEventListener('click', () => {
+            const isHidden = passwordInput.type === 'password';
+            passwordInput.type = isHidden ? 'text' : 'password';
+            togglePassword.textContent = isHidden ? 'Hide' : 'Show';
+            togglePassword.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+        });
+
+        passwordInput.addEventListener('input', updateStrengthMeter);
+
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-
             hideMessages();
 
             const name = document.getElementById('name').value.trim();
             const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
+            const password = passwordInput.value;
+            const confirmPassword = confirmPasswordInput.value;
 
-            // Validation
-            if (!name || !email || !password) {
+            if (!name || !email || !password || !confirmPassword) {
                 showError('All fields are required');
                 return;
             }
@@ -244,40 +181,34 @@
                 return;
             }
 
-            if (password.length < 6) {
-                showError('Password must be at least 6 characters long');
+            const passwordError = validatePassword(password);
+            if (passwordError) {
+                showError(passwordError);
                 return;
             }
 
-            // Show loading state
             submitBtn.disabled = true;
-            btnText.textContent = 'Creating Account...';
+            submitBtn.classList.add('is-loading');
+            btnText.textContent = 'Creating account...';
             loading.style.display = 'inline-block';
 
             try {
                 await register(name, email, password);
-                showSuccess('Account created successfully! Redirecting to login...');
-
-                // Redirect after 2 seconds
+                showSuccess('Account created successfully. Redirecting to login...');
                 setTimeout(() => {
-                    window.location.href = 'Log_In.html';
-                }, 2000);
-
+                    window.location.href = 'Log_In.html?registered=true';
+                }, 1200);
             } catch (error) {
                 showError(error.message || 'Registration failed. Please try again.');
             } finally {
-                // Reset button state
                 submitBtn.disabled = false;
+                submitBtn.classList.remove('is-loading');
                 btnText.textContent = 'Sign Up';
                 loading.style.display = 'none';
             }
         });
 
-        // Clear error messages on input
-        form.addEventListener('input', () => {
-            hideMessages();
-        });
+        form.addEventListener('input', hideMessages);
     </script>
 </body>
-
 </html>

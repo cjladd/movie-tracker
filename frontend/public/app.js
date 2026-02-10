@@ -154,7 +154,7 @@ function initThemeToggle() {
 
     const setIcon = () => {
         const isLight = document.documentElement.getAttribute('data-theme') === 'light';
-        toggle.textContent = isLight ? '🌙' : '☀';
+        toggle.textContent = isLight ? 'Dark' : 'Light';
         toggle.setAttribute('aria-label', isLight ? 'Switch to dark mode' : 'Switch to light mode');
         toggle.title = isLight ? 'Switch to dark mode' : 'Switch to light mode';
     };
@@ -180,13 +180,13 @@ function initMobileNavToggle() {
         menuToggle.type = 'button';
         menuToggle.className = 'btn-icon nav-mobile-toggle';
         menuToggle.setAttribute('aria-label', 'Toggle navigation menu');
-        menuToggle.textContent = '☰';
+        menuToggle.textContent = 'Menu';
         header.appendChild(menuToggle);
     }
 
     menuToggle.addEventListener('click', () => {
         const isOpen = nav.classList.toggle('nav-open');
-        menuToggle.textContent = isOpen ? '✕' : '☰';
+        menuToggle.textContent = isOpen ? 'Close' : 'Menu';
     });
 }
 
