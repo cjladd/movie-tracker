@@ -91,15 +91,16 @@ app.use(
   })
 );
 
-// --------------- Sessions (MySQL-backed) ---------------
-
-const sessionStore = new MySQLStore({}, pool);
+// --------------- Sessions ---------------
+// In local/dev environments, default to memory store to avoid hard failures when the
+// MySQL sessions table is missing. Production still uses MySQL-backed sessions.
+const sessionStore = env.isProduction ? new MySQLStore({}, pool) : null;
 
 app.use(
   session({
     key: 'movie_tracker_sid',
     secret: env.session.secret,
-    store: sessionStore,
+    store: sessionStore || undefined,
     resave: false,
     saveUninitialized: false,
     proxy: env.isProduction,
@@ -173,6 +174,7 @@ async function start() {
 
   const server = app.listen(env.port, () => {
     logger.info(`Server running on port ${env.port} [${env.nodeEnv}]`);
+    logger.info(`→ http://localhost:${env.port}`);
   });
 
   const shutdown = (signal) => {

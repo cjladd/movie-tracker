@@ -2,11 +2,26 @@ const { pool } = require('../config/database');
 const { PAGINATION } = require('./constants');
 
 async function getUserByEmail(email) {
-  const [rows] = await pool.query(
-    'SELECT user_id, name, email, password, failed_login_attempts, locked_until FROM Users WHERE email = ? AND deleted_at IS NULL',
-    [email]
-  );
-  return rows[0] || null;
+  try {
+    const [rows] = await pool.query(
+      'SELECT user_id, name, email, password, failed_login_attempts, locked_until FROM Users WHERE email = ? AND deleted_at IS NULL',
+      [email]
+    );
+    return rows[0] || null;
+  } catch (err) {
+    // Backward-compatibility for older schemas that do not include lockout/soft-delete columns.
+    if (err.code !== 'ER_BAD_FIELD_ERROR') throw err;
+    const [rows] = await pool.query(
+      'SELECT user_id, name, email, password FROM Users WHERE email = ?',
+      [email]
+    );
+    if (!rows[0]) return null;
+    return {
+      ...rows[0],
+      failed_login_attempts: 0,
+      locked_until: null,
+    };
+  }
 }
 
 async function getUserById(userId) {

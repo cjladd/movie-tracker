@@ -10,6 +10,22 @@ const logger = require('../utils/logger');
 
 const router = Router();
 
+function isMissingColumnError(err) {
+  return err && err.code === 'ER_BAD_FIELD_ERROR';
+}
+
+async function safeUpdateLoginSecurity(userId, attempts, lockUntil) {
+  try {
+    await pool.query(
+      'UPDATE Users SET failed_login_attempts = ?, locked_until = ? WHERE user_id = ?',
+      [attempts, lockUntil, userId]
+    );
+  } catch (err) {
+    if (!isMissingColumnError(err)) throw err;
+    logger.warn('Login security columns missing; skipping failed-attempt tracking');
+  }
+}
+
 // Register
 router.post(
   '/register',
@@ -74,10 +90,7 @@ router.post(
           ? new Date(Date.now() + ACCOUNT_LOCKOUT.LOCKOUT_MINUTES * 60000)
           : null;
 
-        await pool.query(
-          'UPDATE Users SET failed_login_attempts = ?, locked_until = ? WHERE user_id = ?',
-          [attempts, lockUntil, user.user_id]
-        );
+        await safeUpdateLoginSecurity(user.user_id, attempts, lockUntil);
 
         if (lockUntil) {
           return next(apiError(`Too many failed attempts. Account locked for ${ACCOUNT_LOCKOUT.LOCKOUT_MINUTES} minutes`, 423));
@@ -86,23 +99,23 @@ router.post(
       }
 
       // Reset failed attempts on success
-      await pool.query(
-        'UPDATE Users SET failed_login_attempts = 0, locked_until = NULL WHERE user_id = ?',
-        [user.user_id]
-      );
+      await safeUpdateLoginSecurity(user.user_id, 0, null);
 
       // Regenerate session to prevent session fixation
-      req.session.regenerate((err) => {
-        if (err) return next(err);
-
-        req.session.userId = user.user_id;
-        logger.info(`User logged in: ${user.user_id}`);
-
-        res.json(apiResponse(
-          { id: user.user_id, name: user.name, email: user.email },
-          'Login successful'
-        ));
+      await new Promise((resolve, reject) => {
+        req.session.regenerate((err) => {
+          if (err) return reject(err);
+          resolve();
+        });
       });
+
+      req.session.userId = user.user_id;
+      logger.info(`User logged in: ${user.user_id}`);
+
+      res.json(apiResponse(
+        { id: user.user_id, name: user.name, email: user.email },
+        'Login successful'
+      ));
     } catch (err) {
       next(err);
     }
