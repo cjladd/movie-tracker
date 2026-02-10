@@ -259,8 +259,8 @@ frontend/public/
 5. [x] **Landing page** (`website.html`) — Showcase the new design system
 6. [x] **Auth pages** (`Log_In.html`, `Sign_Up.html`) — Quick wins, glass cards
 7. [x] **Binge Bank** (`Binge_Bank.html`) — Core feature, poster cards
-8. [ ] **Stream Team** (`Stream_team.html`) — Groups with tabs
-9. **Heads Up** (`heads_up.html`) — Movie nights
+8. [x] **Stream Team** (`Stream_team.html`) — Groups with tabs
+9. [ ] **Heads Up** (`heads_up.html`) — Movie nights
 10. **Friends** (`Friends.html`) — Friend cards
 11. **Settings** (`Setting.html`) — Sectioned layout
 12. **Responsive pass** — All pages at 1024/768/480
