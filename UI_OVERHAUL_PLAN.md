@@ -262,8 +262,8 @@ frontend/public/
 8. [x] **Stream Team** (`Stream_team.html`) — Groups with tabs
 9. [x] **Heads Up** (`heads_up.html`) — Movie nights
 10. [x] **Friends** (`Friends.html`) — Friend cards
-11. [ ] **Settings** (`Setting.html`) — Sectioned layout
-12. **Responsive pass** — All pages at 1024/768/480
+11. [x] **Settings** (`Setting.html`) — Sectioned layout
+12. [ ] **Responsive pass** — All pages at 1024/768/480
 13. **Polish pass** — Reduced motion, performance, accessibility audit
 
 ---

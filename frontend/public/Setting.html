@@ -1,209 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Settings - Manage your profile information and notification preferences on MovieNightPlanner.">
-    <meta property="og:title" content="Settings - MovieNightPlanner" />
-    <meta property="og:description" content="Manage your profile information and notification preferences on MovieNightPlanner." />
-    <meta property="og:type" content="website" />
-    <link rel="canonical" href="Setting.html" />
+    <meta name="description" content="Settings - Manage your profile and preferences on MovieNightPlanner.">
+    <meta property="og:title" content="Settings - MovieNightPlanner">
+    <meta property="og:description" content="Manage your profile and preferences on MovieNightPlanner.">
+    <meta property="og:type" content="website">
+    <link rel="canonical" href="Setting.html">
     <title>Settings - MovieNightPlanner</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
-
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .settings-section {
-            background: #111;
-            border-radius: 8px;
-            padding: 30px;
-            margin-bottom: 20px;
-        }
-
-        .section-title {
-            font-size: 22px;
-            margin-bottom: 25px;
-            color: #fff;
-            border-bottom: 1px solid #333;
-            padding-bottom: 10px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: #ccc;
-            font-size: 14px;
-        }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #333;
-            border-radius: 6px;
-            background: #1a1a1a;
-            color: #fff;
-            font-size: 16px;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: blueviolet;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .save-button {
-            background: blueviolet;
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: all 0.3s;
-        }
-
-        .save-button:hover {
-            background: #7b3ff2;
-            transform: translateY(-2px);
-        }
-
-        .save-button:disabled {
-            background: #555;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .preference-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 0;
-            border-bottom: 1px solid #222;
-        }
-
-        .preference-item:last-child {
-            border-bottom: none;
-        }
-
-        .preference-label {
-            color: #ccc;
-        }
-
-        .toggle-switch {
-            position: relative;
-            width: 50px;
-            height: 25px;
-        }
-
-        .toggle-switch input {
-            display: none;
-        }
-
-        .toggle-slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #333;
-            border-radius: 25px;
-            transition: 0.4s;
-        }
-
-        .toggle-slider:before {
-            position: absolute;
-            content: "";
-            height: 18px;
-            width: 18px;
-            left: 4px;
-            bottom: 3.5px;
-            background-color: white;
-            border-radius: 50%;
-            transition: 0.4s;
-        }
-
-        input:checked+.toggle-slider {
-            background-color: blueviolet;
-        }
-
-        input:checked+.toggle-slider:before {
-            transform: translateX(24px);
-        }
-
-        .login-prompt {
-            text-align: center;
-            padding: 60px 20px;
-            background: #111;
-            border-radius: 8px;
-        }
-
-        .login-prompt a {
-            color: blueviolet;
-            text-decoration: none;
-        }
-
-        .success-message {
-            background: rgba(76, 175, 80, 0.1);
-            border: 1px solid #4caf50;
-            color: #66bb6a;
-            padding: 10px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            display: none;
-        }
-
-        .error-message {
-            background: rgba(255, 68, 68, 0.1);
-            border: 1px solid #ff4444;
-            color: #ff6666;
-            padding: 10px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            display: none;
-        }
-
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255, 255, 255, .3);
-            border-radius: 50%;
-            border-top-color: #fff;
-            animation: spin 1s ease-in-out infinite;
-            margin-left: 10px;
-            vertical-align: middle;
-            display: none;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="css/pages/settings.css">
 </head>
-
 <body>
     <header class="header">
         <h1 class="logo">MovieNightPlanner</h1>
@@ -216,19 +24,23 @@
             <a href="Setting.html">Settings</a>
             <a href="Log_In.html" id="loginLink">Log In</a>
             <a href="Sign_Up.html" id="signUpLink">Sign Up</a>
-            <a href="#" id="logoutLink" style="display: none;">Sign Out</a>
+            <a href="#" id="logoutLink" style="display:none;">Sign Out</a>
         </nav>
     </header>
 
-    <div class="container">
-        <h1>Settings</h1>
+    <main class="se-main">
+        <section class="se-header card" data-animate>
+            <h2>Settings</h2>
+            <p>Control your profile, notifications, and account safety.</p>
+        </section>
 
-        <div class="success-message" id="successMessage"></div>
-        <div class="error-message" id="errorMessage"></div>
+        <section class="status-messages" data-animate>
+            <div class="success-message" id="successMessage"></div>
+            <div class="error-message" id="errorMessage"></div>
+        </section>
 
-        <div id="content">
-        </div>
-    </div>
+        <section id="content" class="settings-content" data-animate></section>
+    </main>
 
     <script src="app.js"></script>
     <script>
@@ -241,15 +53,15 @@
             successMessage.textContent = message;
             successMessage.style.display = 'block';
             errorMessage.style.display = 'none';
-            setTimeout(() => {
-                successMessage.style.display = 'none';
-            }, 3000);
+            if (typeof showToast === 'function') showToast(message, 'success');
+            setTimeout(() => { successMessage.style.display = 'none'; }, 3000);
         }
 
         function showError(message) {
             errorMessage.textContent = message;
             errorMessage.style.display = 'block';
             successMessage.style.display = 'none';
+            if (typeof showToast === 'function') showToast(message, 'error');
         }
 
         function hideMessages() {
@@ -258,22 +70,17 @@
         }
 
         async function loadUserProfile() {
-            try {
-                userProfile = await apiCall('/users/profile');
-                return userProfile;
-            } catch (error) {
-                console.error('Error loading profile:', error);
-                throw error;
-            }
+            userProfile = await apiCall('/users/profile');
+            return userProfile;
         }
 
         async function loadSettings() {
             if (!currentUser) {
                 content.innerHTML = `
-                    <div class="login-prompt">
+                    <div class="login-prompt card">
                         <h3>Please log in to access settings</h3>
-                        <p>Manage your profile and preferences</p>
-                        <a href="Log_In.html">Log In</a> or <a href="Sign_Up.html">Sign Up</a>
+                        <p>Manage your profile and account preferences.</p>
+                        <p><a href="Log_In.html">Log In</a> or <a href="Sign_Up.html">Sign Up</a></p>
                     </div>
                 `;
                 return;
@@ -281,10 +88,9 @@
 
             try {
                 await loadUserProfile();
-
                 content.innerHTML = `
-                    <div class="settings-section">
-                        <h2 class="section-title">Profile Information</h2>
+                    <section class="settings-section card">
+                        <h3 class="section-title">Profile Information</h3>
                         <form id="profileForm">
                             <div class="form-row">
                                 <div class="form-group">
@@ -298,72 +104,75 @@
                             </div>
                             <div class="form-group">
                                 <label for="bio">Bio</label>
-                                <textarea id="bio" rows="3" placeholder="Tell us about yourself...">${escapeHtml(userProfile.bio)}</textarea>
+                                <textarea id="bio" rows="3" placeholder="Tell your friends what you watch">${escapeHtml(userProfile.bio)}</textarea>
                             </div>
                             <div class="form-group">
-                                <label for="favoriteGenres">Favorite Movie Genres</label>
-                                <input type="text" id="favoriteGenres" placeholder="Action, Comedy, Drama..." value="${escapeHtml(userProfile.favorite_genres)}">
+                                <label for="favoriteGenres">Favorite Genres</label>
+                                <input type="text" id="favoriteGenres" value="${escapeHtml(userProfile.favorite_genres)}" placeholder="Action, Comedy, Drama">
                             </div>
-                            <button type="submit" class="save-button" id="profileSaveBtn">
+                            <button type="submit" class="btn btn-primary" id="profileSaveBtn">
                                 <span id="profileBtnText">Save Profile</span>
-                                <span class="loading" id="profileLoading"></span>
                             </button>
                         </form>
-                    </div>
+                    </section>
 
-                    <div class="settings-section">
-                        <h2 class="section-title">Notification Preferences</h2>
+                    <section class="settings-section card">
+                        <h3 class="section-title">Notification Preferences</h3>
                         <form id="preferencesForm">
                             <div class="preference-item">
                                 <span class="preference-label">Email notifications for movie nights</span>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="emailNotif" ${userProfile.email_notifications ? 'checked' : ''}>
-                                    <span class="toggle-slider"></span>
-                                </label>
+                                <label class="toggle-switch"><input type="checkbox" id="emailNotif" ${userProfile.email_notifications ? 'checked' : ''}><span class="toggle-slider"></span></label>
                             </div>
                             <div class="preference-item">
                                 <span class="preference-label">Group invitation notifications</span>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="groupNotif" ${userProfile.group_notifications ? 'checked' : ''}>
-                                    <span class="toggle-slider"></span>
-                                </label>
+                                <label class="toggle-switch"><input type="checkbox" id="groupNotif" ${userProfile.group_notifications ? 'checked' : ''}><span class="toggle-slider"></span></label>
                             </div>
                             <div class="preference-item">
                                 <span class="preference-label">Vote reminders</span>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="voteNotif" ${userProfile.vote_notifications ? 'checked' : ''}>
-                                    <span class="toggle-slider"></span>
-                                </label>
+                                <label class="toggle-switch"><input type="checkbox" id="voteNotif" ${userProfile.vote_notifications ? 'checked' : ''}><span class="toggle-slider"></span></label>
                             </div>
                             <div class="preference-item">
-                                <span class="preference-label">Show my profile to other users</span>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="publicProfile" ${userProfile.public_profile ? 'checked' : ''}>
-                                    <span class="toggle-slider"></span>
-                                </label>
+                                <span class="preference-label">Public profile</span>
+                                <label class="toggle-switch"><input type="checkbox" id="publicProfile" ${userProfile.public_profile ? 'checked' : ''}><span class="toggle-slider"></span></label>
                             </div>
-                            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #333;">
-                                <button type="submit" class="save-button" id="prefSaveBtn">
-                                    <span id="prefBtnText">Save Preferences</span>
-                                    <span class="loading" id="prefLoading"></span>
-                                </button>
-                            </div>
+                            <button type="submit" class="btn btn-primary" id="prefSaveBtn">
+                                <span id="prefBtnText">Save Preferences</span>
+                            </button>
                         </form>
-                    </div>
+                    </section>
+
+                    <section class="settings-section card">
+                        <h3 class="section-title">Theme</h3>
+                        <p class="theme-copy">Choose a default appearance for this browser.</p>
+                        <div class="theme-options">
+                            <button class="theme-card" data-theme-choice="dark" type="button">Dark</button>
+                            <button class="theme-card" data-theme-choice="light" type="button">Light</button>
+                        </div>
+                    </section>
+
+                    <section class="settings-section danger-zone card">
+                        <h3 class="section-title">Danger Zone</h3>
+                        <p>This action signs you out and hides your account profile.</p>
+                        <button id="deleteAccountBtn" class="btn btn-danger" type="button">Delete Account</button>
+                    </section>
                 `;
 
                 document.getElementById('profileForm').addEventListener('submit', saveProfile);
                 document.getElementById('preferencesForm').addEventListener('submit', savePreferences);
+                document.getElementById('deleteAccountBtn').addEventListener('click', deleteAccount);
 
+                document.querySelectorAll('.theme-card').forEach((btn) => {
+                    btn.addEventListener('click', () => {
+                        const selectedTheme = btn.dataset.themeChoice;
+                        if (selectedTheme && typeof applyTheme === 'function') {
+                            applyTheme(selectedTheme);
+                            showSuccess(`Theme set to ${selectedTheme}`);
+                        }
+                    });
+                });
             } catch (error) {
                 showError('Failed to load settings. Please try again.');
-                content.innerHTML = `
-                    <div class="login-prompt">
-                        <h3>Error loading settings</h3>
-                        <p>Please try refreshing the page</p>
-                        <button onclick="loadSettings()" class="save-button">Retry</button>
-                    </div>
-                `;
+                content.innerHTML = '<div class="login-prompt card"><h3>Error loading settings</h3><p>Please refresh and retry.</p><button class="btn btn-primary" onclick="loadSettings()">Retry</button></div>';
             }
         }
 
@@ -373,8 +182,6 @@
 
             const profileSaveBtn = document.getElementById('profileSaveBtn');
             const profileBtnText = document.getElementById('profileBtnText');
-            const profileLoading = document.getElementById('profileLoading');
-
             const name = document.getElementById('name').value.trim();
             const email = document.getElementById('email').value.trim();
             const bio = document.getElementById('bio').value.trim();
@@ -387,7 +194,6 @@
 
             profileSaveBtn.disabled = true;
             profileBtnText.textContent = 'Saving...';
-            profileLoading.style.display = 'inline-block';
 
             try {
                 const result = await apiCall('/users/profile', 'PUT', {
@@ -401,21 +207,14 @@
                 currentUser.email = result.email || email;
                 localStorage.setItem('currentUser', JSON.stringify(currentUser));
 
-                userProfile.name = name;
-                userProfile.email = email;
-                userProfile.bio = bio;
-                userProfile.favorite_genres = favoriteGenres;
-
-                showSuccess('Profile updated successfully!');
-
-                updateAuthUI();
-
+                userProfile = { ...userProfile, name, email, bio, favorite_genres: favoriteGenres };
+                showSuccess('Profile updated successfully');
+                setActiveNavLink();
             } catch (error) {
-                showError(error.message);
+                showError(error.message || 'Failed to update profile');
             } finally {
                 profileSaveBtn.disabled = false;
                 profileBtnText.textContent = 'Save Profile';
-                profileLoading.style.display = 'none';
             }
         }
 
@@ -425,7 +224,6 @@
 
             const prefSaveBtn = document.getElementById('prefSaveBtn');
             const prefBtnText = document.getElementById('prefBtnText');
-            const prefLoading = document.getElementById('prefLoading');
 
             const emailNotifications = document.getElementById('emailNotif').checked;
             const groupNotifications = document.getElementById('groupNotif').checked;
@@ -434,7 +232,6 @@
 
             prefSaveBtn.disabled = true;
             prefBtnText.textContent = 'Saving...';
-            prefLoading.style.display = 'inline-block';
 
             try {
                 await apiCall('/users/preferences', 'PUT', {
@@ -444,24 +241,46 @@
                     public_profile: publicProfile
                 });
 
-                userProfile.email_notifications = emailNotifications;
-                userProfile.group_notifications = groupNotifications;
-                userProfile.vote_notifications = voteNotifications;
-                userProfile.public_profile = publicProfile;
+                userProfile = {
+                    ...userProfile,
+                    email_notifications: emailNotifications,
+                    group_notifications: groupNotifications,
+                    vote_notifications: voteNotifications,
+                    public_profile: publicProfile
+                };
 
-                showSuccess('Preferences updated successfully!');
-
+                showSuccess('Preferences updated successfully');
             } catch (error) {
-                showError(error.message);
+                showError(error.message || 'Failed to update preferences');
             } finally {
                 prefSaveBtn.disabled = false;
                 prefBtnText.textContent = 'Save Preferences';
-                prefLoading.style.display = 'none';
+            }
+        }
+
+        async function deleteAccount() {
+            hideMessages();
+            if (!confirm('Delete your account? This cannot be undone.')) return;
+
+            const deleteBtn = document.getElementById('deleteAccountBtn');
+            deleteBtn.disabled = true;
+            deleteBtn.textContent = 'Deleting...';
+
+            try {
+                await apiCall('/users/profile', 'DELETE');
+                localStorage.removeItem('currentUser');
+                showSuccess('Account deleted. Redirecting...');
+                setTimeout(() => {
+                    window.location.href = 'website.html';
+                }, 1000);
+            } catch (error) {
+                showError(error.message || 'Failed to delete account');
+                deleteBtn.disabled = false;
+                deleteBtn.textContent = 'Delete Account';
             }
         }
 
         loadSettings();
     </script>
 </body>
-
 </html>
