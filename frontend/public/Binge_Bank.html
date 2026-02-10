@@ -14,7 +14,9 @@
 </head>
 <body>
     <header class="header">
-        <h1 class="logo">MovieNightPlanner</h1>
+        <a href="website.html" class="logo-link" aria-label="MovieNightPlanner home">
+            <h1 class="logo">MovieNightPlanner</h1>
+        </a>
         <nav class="main-nav" aria-label="Main navigation">
             <a href="website.html">Home</a>
             <a href="Binge_Bank.html">Binge Bank</a>
@@ -22,10 +24,12 @@
             <a href="Friends.html">Friends</a>
             <a href="heads_up.html">Heads Up</a>
             <a href="Setting.html">Settings</a>
-            <a href="Log_In.html" id="loginLink">Log In</a>
-            <a href="Sign_Up.html" id="signUpLink">Sign Up</a>
-            <a href="#" id="logoutLink" style="display:none;">Sign Out</a>
         </nav>
+        <div class="nav-auth">
+            <a href="Log_In.html" id="loginLink" class="nav-auth-btn nav-auth-ghost">Log In</a>
+            <a href="Sign_Up.html" id="signUpLink" class="nav-auth-btn nav-auth-primary">Sign Up</a>
+            <button type="button" id="logoutLink" class="nav-auth-btn nav-auth-primary" style="display:none;">Sign Out</button>
+        </div>
     </header>
 
     <main class="bb-main">

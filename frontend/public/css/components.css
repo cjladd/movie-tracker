@@ -1,8 +1,6 @@
 /* ── Buttons ──────────────────────────────────────────────────────────────── */
 .btn,
-button,
-.main-nav > a#signUpLink,
-.main-nav > a#logoutLink {
+button {
   border: 1px solid transparent;
   border-radius: var(--radius-md);
   font-weight: 600;
@@ -17,18 +15,14 @@ button:hover {
 }
 
 .btn-primary,
-button:not(.btn-secondary):not(.btn-danger):not(.btn-ghost):not(.btn-icon),
-.main-nav > a#signUpLink,
-.main-nav > a#logoutLink {
+button:not(.btn-secondary):not(.btn-danger):not(.btn-ghost):not(.btn-icon) {
   color: #fff;
   background: var(--gradient-primary);
   box-shadow: var(--glow-primary-subtle);
 }
 
 .btn-primary:hover,
-button:not(.btn-secondary):not(.btn-danger):not(.btn-ghost):not(.btn-icon):hover,
-.main-nav > a#signUpLink:hover,
-.main-nav > a#logoutLink:hover {
+button:not(.btn-secondary):not(.btn-danger):not(.btn-ghost):not(.btn-icon):hover {
   background: var(--gradient-primary-hover);
   box-shadow: var(--glow-primary);
 }

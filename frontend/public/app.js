@@ -119,7 +119,7 @@ async function logout() {
     }
     currentUser = null;
     localStorage.removeItem('currentUser');
-    updateAuthNav();
+    updateAuthUI();
     window.location.href = 'website.html';
 }
 
@@ -136,42 +136,6 @@ function getPreferredTheme() {
 function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem(THEME_KEY, theme);
-}
-
-function initThemeToggle() {
-    const header = document.querySelector('.header');
-    if (!header) return;
-
-    let actions = header.querySelector('.nav-actions');
-    if (!actions) {
-        actions = document.createElement('div');
-        actions.className = 'nav-actions';
-        header.appendChild(actions);
-    }
-
-    let toggle = document.getElementById('themeToggle');
-    if (!toggle) {
-        toggle = document.createElement('button');
-        toggle.id = 'themeToggle';
-        toggle.className = 'btn-icon theme-toggle';
-        toggle.type = 'button';
-        actions.appendChild(toggle);
-    }
-
-    const setIcon = () => {
-        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
-        toggle.textContent = isLight ? 'Dark' : 'Light';
-        toggle.setAttribute('aria-label', isLight ? 'Switch to dark mode' : 'Switch to light mode');
-        toggle.title = isLight ? 'Switch to dark mode' : 'Switch to light mode';
-    };
-
-    toggle.addEventListener('click', () => {
-        const nextTheme = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-        applyTheme(nextTheme);
-        setIcon();
-    });
-
-    setIcon();
 }
 
 function initMobileNavToggle() {
@@ -206,6 +170,13 @@ function initMobileNavToggle() {
     nav.querySelectorAll('a').forEach((link) => {
         link.addEventListener('click', closeNav);
     });
+
+    const navAuth = document.querySelector('.nav-auth');
+    if (navAuth) {
+        navAuth.querySelectorAll('a, button').forEach((el) => {
+            el.addEventListener('click', closeNav);
+        });
+    }
 
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') closeNav();
@@ -732,7 +703,7 @@ function showError(message) {
 
 // ── Navigation & Auth UI ─────────────────────────────────────────────────────
 
-function updateAuthNav() {
+function updateAuthUI() {
     const loginLink = document.getElementById('loginLink');
     const signUpLink = document.getElementById('signUpLink');
     const logoutLink = document.getElementById('logoutLink');
@@ -742,31 +713,24 @@ function updateAuthNav() {
     if (currentUser) {
         loginLink.style.display = 'none';
         signUpLink.style.display = 'none';
-        logoutLink.style.display = 'inline-block';
+        logoutLink.style.display = '';
+
+        let userBtn = document.getElementById('navUserBtn');
+        if (!userBtn) {
+            userBtn = document.createElement('a');
+            userBtn.id = 'navUserBtn';
+            userBtn.className = 'nav-auth-btn nav-auth-ghost';
+            userBtn.href = 'Setting.html';
+            logoutLink.parentNode.insertBefore(userBtn, logoutLink);
+        }
+        userBtn.textContent = currentUser.name;
     } else {
         loginLink.style.display = '';
         signUpLink.style.display = '';
         logoutLink.style.display = 'none';
-    }
-}
 
-function updateAuthUI() {
-    const loginLink = document.getElementById('loginLink');
-    const signupLink = document.getElementById('signUpLink');
-
-    if (currentUser && loginLink && signupLink) {
-        loginLink.textContent = 'Logout';
-        loginLink.href = '#';
-        loginLink.onclick = e => {
-            e.preventDefault();
-            if (confirm('Are you sure you want to logout?')) {
-                logout();
-            }
-        };
-
-        signupLink.textContent = currentUser.name;
-        signupLink.href = 'Setting.html';
-        signupLink.onclick = null;
+        const userBtn = document.getElementById('navUserBtn');
+        if (userBtn) userBtn.remove();
     }
 }
 
@@ -774,8 +738,7 @@ function updateAuthUI() {
 
 document.addEventListener('DOMContentLoaded', () => {
     applyTheme(getPreferredTheme());
-    updateAuthNav();
-    initThemeToggle();
+    updateAuthUI();
     initMobileNavToggle();
     setActiveNavLink();
     initScrollObserver();
@@ -786,7 +749,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (logoutLink) {
         logoutLink.addEventListener('click', (e) => {
             e.preventDefault();
-            logout();
+            if (confirm('Are you sure you want to sign out?')) {
+                logout();
+            }
         });
     }
 
