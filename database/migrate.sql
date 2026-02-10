@@ -3,34 +3,50 @@
 
 USE movie_night_planner;
 
--- Add missing columns to Users
-ALTER TABLE Users
-  ADD COLUMN IF NOT EXISTS failed_login_attempts INT DEFAULT 0,
-  ADD COLUMN IF NOT EXISTS locked_until DATETIME NULL,
-  ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP NULL DEFAULT NULL;
+-- Add missing columns safely (MySQL 8.0-compatible idempotent helpers)
+DELIMITER $$
 
--- Add timestamps to Movie_Groups
-ALTER TABLE Movie_Groups
-  ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP NULL DEFAULT NULL;
+DROP PROCEDURE IF EXISTS add_column_if_missing $$
+CREATE PROCEDURE add_column_if_missing(
+  IN p_table VARCHAR(64),
+  IN p_column VARCHAR(64),
+  IN p_definition VARCHAR(512)
+)
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = p_table
+      AND column_name = p_column
+  ) THEN
+    SET @sql = CONCAT(
+      'ALTER TABLE `', p_table, '` ADD COLUMN `', p_column, '` ', p_definition
+    );
+    PREPARE stmt FROM @sql;
+    EXECUTE stmt;
+    DEALLOCATE PREPARE stmt;
+  END IF;
+END $$
 
--- Add timestamps to Movies
-ALTER TABLE Movies
-  ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+DELIMITER ;
 
--- Add tmdb_id if missing
-ALTER TABLE Movies ADD COLUMN IF NOT EXISTS tmdb_id INT UNIQUE;
+CALL add_column_if_missing('Users', 'failed_login_attempts', 'INT DEFAULT 0');
+CALL add_column_if_missing('Users', 'locked_until', 'DATETIME NULL');
+CALL add_column_if_missing('Users', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+CALL add_column_if_missing('Users', 'deleted_at', 'TIMESTAMP NULL DEFAULT NULL');
 
--- Add timestamps to Movie_Nights
-ALTER TABLE Movie_Nights
-  ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+CALL add_column_if_missing('Movie_Groups', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+CALL add_column_if_missing('Movie_Groups', 'deleted_at', 'TIMESTAMP NULL DEFAULT NULL');
 
--- Add responded_at to Availability
-ALTER TABLE Availability
-  ADD COLUMN IF NOT EXISTS responded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+CALL add_column_if_missing('Movies', 'created_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
+CALL add_column_if_missing('Movies', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+CALL add_column_if_missing('Movies', 'tmdb_id', 'INT NULL');
+
+CALL add_column_if_missing('Movie_Nights', 'created_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
+CALL add_column_if_missing('Movie_Nights', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+
+CALL add_column_if_missing('Availability', 'responded_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
 
 -- Add indexes / foreign keys safely (MySQL 8.0 compatible idempotent helpers)
 DELIMITER $$
@@ -50,6 +66,27 @@ BEGIN
       AND index_name = p_index
   ) THEN
     SET @sql = CONCAT('ALTER TABLE `', p_table, '` ADD INDEX `', p_index, '` (', p_cols, ')');
+    PREPARE stmt FROM @sql;
+    EXECUTE stmt;
+    DEALLOCATE PREPARE stmt;
+  END IF;
+END $$
+
+DROP PROCEDURE IF EXISTS add_unique_index_if_missing $$
+CREATE PROCEDURE add_unique_index_if_missing(
+  IN p_table VARCHAR(64),
+  IN p_index VARCHAR(64),
+  IN p_cols VARCHAR(255)
+)
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM information_schema.statistics
+    WHERE table_schema = DATABASE()
+      AND table_name = p_table
+      AND index_name = p_index
+  ) THEN
+    SET @sql = CONCAT('ALTER TABLE `', p_table, '` ADD UNIQUE INDEX `', p_index, '` (', p_cols, ')');
     PREPARE stmt FROM @sql;
     EXECUTE stmt;
     DEALLOCATE PREPARE stmt;
@@ -116,6 +153,7 @@ CALL add_index_if_missing('Movie_Nights', 'idx_chosen_movie', 'chosen_movie_id')
 CALL add_index_if_missing('Friend_Requests', 'idx_receiver_status', 'receiver_id, status');
 CALL add_index_if_missing('Friend_Requests', 'idx_sender_id', 'sender_id');
 CALL add_index_if_missing('Friendships', 'idx_friend_id', 'friend_id');
+CALL add_unique_index_if_missing('Movies', 'uq_movies_tmdb_id', 'tmdb_id');
 
 -- Add cascade deletes to Friend_Requests and Friendships
 CALL drop_fk_if_exists('Friend_Requests', 'friend_requests_ibfk_1');
@@ -129,8 +167,10 @@ CALL add_fk_if_missing('Friendships', 'fk_fs_user', 'user_id', 'Users', 'user_id
 CALL add_fk_if_missing('Friendships', 'fk_fs_friend', 'friend_id', 'Users', 'user_id', 'CASCADE');
 
 DROP PROCEDURE IF EXISTS add_index_if_missing;
+DROP PROCEDURE IF EXISTS add_unique_index_if_missing;
 DROP PROCEDURE IF EXISTS drop_fk_if_exists;
 DROP PROCEDURE IF EXISTS add_fk_if_missing;
+DROP PROCEDURE IF EXISTS add_column_if_missing;
 
 -- Create Notifications table
 CREATE TABLE IF NOT EXISTS Notifications (
