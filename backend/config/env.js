@@ -1,6 +1,8 @@
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
+const nodeEnv = process.env.NODE_ENV || 'development';
+
 const required = [
   'DB_HOST',
   'DB_USER',
@@ -11,14 +13,14 @@ const required = [
 ];
 
 const missing = required.filter((key) => !process.env[key]);
-if (missing.length > 0) {
+if (nodeEnv !== 'test' && missing.length > 0) {
   console.error(`Missing required environment variables: ${missing.join(', ')}`);
   process.exit(1);
 }
 
 module.exports = {
   port: parseInt(process.env.PORT, 10) || 4000,
-  nodeEnv: process.env.NODE_ENV || 'development',
+  nodeEnv,
   isProduction: process.env.NODE_ENV === 'production',
 
   db: {
