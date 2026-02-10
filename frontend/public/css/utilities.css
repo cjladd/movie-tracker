@@ -1,0 +1,57 @@
+/* Shared utility helpers and responsive containers */
+.u-container {
+  width: min(1240px, calc(100% - 2rem));
+  margin-inline: auto;
+}
+
+.u-stack-sm > * + * {
+  margin-top: 0.5rem;
+}
+
+.u-stack-md > * + * {
+  margin-top: 0.9rem;
+}
+
+.u-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.u-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.u-text-muted {
+  color: var(--text-secondary);
+}
+
+@media (max-width: 1024px) {
+  .u-grid-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .u-container {
+    width: calc(100% - 1rem);
+  }
+
+  .u-grid-2,
+  .u-grid-3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  html {
+    font-size: 15px;
+  }
+
+  .btn,
+  button {
+    min-height: 2.4rem;
+  }
+}
