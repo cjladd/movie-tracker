@@ -411,13 +411,26 @@ async function loadHomepageContent() {
     try {
         await seedDatabaseWithTMDBMovies();
 
-        const featuredMovies = await getFeaturedMovies();
+        const [featuredMovies, trending] = await Promise.all([
+            getFeaturedMovies(),
+            getTrendingMovies()
+        ]);
 
         if (featuredMovies && featuredMovies.length > 0) {
             displayHeroMovie(featuredMovies[0]);
             displayFeaturedMovies(featuredMovies);
         } else {
             showError('No movies found in database');
+        }
+
+        if (trending && Array.isArray(trending.results) && trending.results.length > 0) {
+            displayTrendingMovies(trending.results.slice(0, 8));
+        } else {
+            const trendingSection = document.getElementById('trending-movies');
+            if (trendingSection) {
+                trendingSection.innerHTML = '<div class="error">No trending movies found right now.</div>';
+                trendingSection.classList.remove('loading');
+            }
         }
     } catch (error) {
         console.error('Error loading homepage content:', error);
@@ -439,16 +452,23 @@ function displayHeroMovie(movie) {
     const year = escapeHtml(String(movie.release_year || 'Unknown'));
 
     heroSection.innerHTML = `
-        <div class="hero-content">
-            <div class="hero-text">
-                <h1>Watch your<br>Favorite<br>Movie</h1>
-                <p>Anytime Anywhere with Anyone</p>
+        <div class="hero-content card">
+            <div class="hero-text" data-animate>
+                <span class="hero-eyebrow">Tonight's Hero Pick</span>
+                <h2 class="hero-title">Plan a <span class="gradient">Movie Night</span> that everyone actually wants.</h2>
+                <p class="hero-subtitle">
+                    Build group watchlists, vote fast, and lock in a plan with less back-and-forth.
+                </p>
+                <div class="hero-actions">
+                    <a class="btn btn-primary" href="Binge_Bank.html">Discover Movies</a>
+                    <a class="btn btn-secondary" href="Stream_team.html">Open Groups</a>
+                </div>
             </div>
-            <div class="hero-movie">
+            <div class="hero-poster" data-animate>
                 ${posterUrl
                     ? `<img src="${posterUrl}" alt="${title}" loading="lazy">`
-                    : '<div style="width:100%;height:600px;background:#333;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#666;">No Poster</div>'}
-                <div class="hero-movie-info">
+                    : '<div class="loading">No poster available</div>'}
+                <div class="hero-meta">
                     <h3>${title} (${year})</h3>
                     <div class="rating">${ratingDisplay}/10</div>
                 </div>
@@ -462,13 +482,14 @@ function displayFeaturedMovies(movies) {
     const featuredSection = document.getElementById('featured-movies');
     if (!featuredSection) return;
 
-    const movieCards = movies.map(movie => {
+    const movieCards = movies.map((movie, index) => {
         const posterUrl = movie.poster_url || '';
         const title = escapeHtml(movie.title);
         const year = escapeHtml(String(movie.release_year || 'Unknown'));
+        const rating = movie.rating ? `${Number(movie.rating).toFixed(1)}/10` : 'NR';
 
         return `
-            <div class="movie-card" data-movie-id="${movie.movie_id}">
+            <article class="movie-card animate-fade-in-up stagger-${Math.min(index + 1, 8)}" data-movie-id="${movie.movie_id}">
                 <div class="movie-poster">
                     ${posterUrl
                         ? `<img src="${posterUrl}" alt="${title}" loading="lazy">`
@@ -476,19 +497,45 @@ function displayFeaturedMovies(movies) {
                 </div>
                 <div class="movie-info">
                     <h4>${title}</h4>
-                    <p>${year}</p>
+                    <p>${year} · ${rating}</p>
                 </div>
-            </div>
+            </article>
         `;
     }).join('');
 
     featuredSection.innerHTML = `
-        <h2>Top 8 Movies</h2>
-        <div class="movies-grid">
+        <div class="featured-row">
             ${movieCards}
         </div>
     `;
     featuredSection.classList.remove('loading');
+}
+
+function displayTrendingMovies(movies) {
+    const trendingSection = document.getElementById('trending-movies');
+    if (!trendingSection) return;
+
+    const cards = movies.map((movie, index) => {
+        const title = escapeHtml(movie.title || movie.name || 'Unknown title');
+        const year = escapeHtml((movie.release_date || '').slice(0, 4) || 'Unknown');
+        const rating = movie.vote_average ? Number(movie.vote_average).toFixed(1) : 'NR';
+        const poster = movie.poster_path
+            ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+            : '';
+
+        return `
+            <article class="trending-card card animate-fade-in-up stagger-${Math.min(index + 1, 8)}">
+                ${poster ? `<img src="${poster}" alt="${title}" loading="lazy">` : '<div class="loading">No poster</div>'}
+                <div class="trending-overlay">
+                    <h4>${title}</h4>
+                    <p>${year} · ${rating}/10</p>
+                </div>
+            </article>
+        `;
+    }).join('');
+
+    trendingSection.innerHTML = `<div class="trending-grid">${cards}</div>`;
+    trendingSection.classList.remove('loading');
 }
 
 function showError(message) {
@@ -504,6 +551,12 @@ function showError(message) {
     if (featuredSection && featuredSection.classList.contains('loading')) {
         featuredSection.innerHTML = `<div class="error">${safeMessage}</div>`;
         featuredSection.classList.remove('loading');
+    }
+
+    const trendingSection = document.getElementById('trending-movies');
+    if (trendingSection && trendingSection.classList.contains('loading')) {
+        trendingSection.innerHTML = `<div class="error">${safeMessage}</div>`;
+        trendingSection.classList.remove('loading');
     }
 }
 
