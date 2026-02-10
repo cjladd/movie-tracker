@@ -258,8 +258,8 @@ frontend/public/
 4. [x] **`app.js` updates** — Toast system, scroll observer, theme persistence
 5. [x] **Landing page** (`website.html`) — Showcase the new design system
 6. [x] **Auth pages** (`Log_In.html`, `Sign_Up.html`) — Quick wins, glass cards
-7. [ ] **Binge Bank** (`Binge_Bank.html`) — Core feature, poster cards
-8. **Stream Team** (`Stream_team.html`) — Groups with tabs
+7. [x] **Binge Bank** (`Binge_Bank.html`) — Core feature, poster cards
+8. [ ] **Stream Team** (`Stream_team.html`) — Groups with tabs
 9. **Heads Up** (`heads_up.html`) — Movie nights
 10. **Friends** (`Friends.html`) — Friend cards
 11. **Settings** (`Setting.html`) — Sectioned layout

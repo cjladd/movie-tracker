@@ -1,542 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Binge Bank - Search and discover movies to add to your group watchlists on MovieNightPlanner.">
-    <meta property="og:title" content="Binge Bank - MovieNightPlanner" />
-    <meta property="og:description" content="Search and discover movies to add to your group watchlists on MovieNightPlanner." />
-    <meta property="og:type" content="website" />
-    <link rel="canonical" href="Binge_Bank.html" />
+    <meta property="og:title" content="Binge Bank - MovieNightPlanner">
+    <meta property="og:description" content="Search and discover movies to add to your group watchlists on MovieNightPlanner.">
+    <meta property="og:type" content="website">
+    <link rel="canonical" href="Binge_Bank.html">
     <title>Binge Bank - MovieNightPlanner</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .search-section {
-            background: #111;
-            padding: 30px;
-            border-radius: 12px;
-            margin-bottom: 40px;
-            text-align: center;
-        }
-
-        .search-section h1 {
-            margin-bottom: 20px;
-            font-size: 32px;
-        }
-
-        .search-box {
-            display: flex;
-            gap: 15px;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .search-input {
-            flex: 1;
-            padding: 15px 20px;
-            border: 1px solid #333;
-            border-radius: 8px;
-            background: #1a1a1a;
-            color: #fff;
-            font-size: 16px;
-            transition: border-color 0.3s;
-        }
-
-        .search-input:focus {
-            outline: none;
-            border-color: blueviolet;
-        }
-
-        .search-button {
-            padding: 15px 30px;
-            background: blueviolet;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: bold;
-            transition: all 0.3s;
-        }
-
-        .search-button:hover {
-            background: #7b3ff2;
-            transform: translateY(-2px);
-        }
-
-        .search-button:disabled {
-            background: #555;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .tabs {
-            display: flex;
-            gap: 20px;
-            border-bottom: 2px solid #333;
-            margin-bottom: 30px;
-        }
-
-        .tab {
-            padding: 15px 25px;
-            color: #999;
-            cursor: pointer;
-            transition: all 0.3s;
-            border-bottom: 2px solid transparent;
-            margin-bottom: -2px;
-            font-size: 16px;
-            font-weight: 500;
-        }
-
-        .tab:hover {
-            color: #fff;
-        }
-
-        .tab.active {
-            color: blueviolet;
-            border-bottom-color: blueviolet;
-        }
-
-        .movies-grid {
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            gap: 20px;
-            margin-top: 30px;
-            padding: 0 20px;
-            width: 100%;
-        }
-
-        .movie-card {
-            background: #111;
-            border-radius: 8px;
-            overflow: hidden;
-            transition: all 0.3s;
-            cursor: pointer;
-            position: relative;
-            width: 100%;
-            max-width: 180px;
-            margin: 0 auto;
-        }
-
-        .movie-card:hover {
-            transform: scale(1.05);
-            box-shadow: 0 10px 30px rgba(138, 43, 226, 0.3);
-        }
-
-        .movie-poster {
-            width: 100%;
-            height: 270px;
-            background: #222;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #666;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .movie-poster img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .movie-card:hover .movie-poster img {
-            transform: scale(1.1);
-        }
-
-        .movie-info {
-            padding: 12px;
-            background: #111;
-        }
-
-        .movie-title {
-            font-weight: bold;
-            margin-bottom: 6px;
-            color: #fff;
-            font-size: 14px;
-            line-height: 1.3;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            min-height: 34px;
-        }
-
-        .movie-year {
-            color: #999;
-            font-size: 12px;
-            margin-bottom: 6px;
-        }
-
-        .movie-rating {
-            color: #ffd700;
-            font-size: 12px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .movie-actions {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            opacity: 0;
-            transition: opacity 0.3s;
-            display: flex;
-            gap: 5px;
-        }
-
-        .movie-card:hover .movie-actions {
-            opacity: 1;
-        }
-
-        .action-btn {
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            border: none;
-            padding: 8px;
-            border-radius: 50%;
-            cursor: pointer;
-            transition: all 0.3s;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .action-btn:hover {
-            background: blueviolet;
-        }
-
-        .pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-            margin-top: 40px;
-        }
-
-        .page-btn {
-            padding: 8px 16px;
-            background: #222;
-            color: #fff;
-            border: 1px solid #444;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .page-btn:hover:not(:disabled) {
-            background: #333;
-            border-color: blueviolet;
-        }
-
-        .page-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .page-btn.active {
-            background: blueviolet;
-            border-color: blueviolet;
-        }
-
-        .loading {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 60px;
-        }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid rgba(138, 43, 226, 0.2);
-            border-left-color: blueviolet;
-            border-radius: 50%;
-            animation: spin 1s ease-in-out infinite;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 80px 20px;
-            color: #999;
-        }
-
-        .empty-state h3 {
-            font-size: 24px;
-            margin-bottom: 10px;
-            color: #fff;
-        }
-
-        .login-prompt {
-            text-align: center;
-            padding: 60px 20px;
-            background: #111;
-            border-radius: 8px;
-        }
-
-        .login-prompt h3 {
-            margin-bottom: 15px;
-            color: #fff;
-        }
-
-        .login-prompt a {
-            color: blueviolet;
-            text-decoration: none;
-        }
-
-        .login-prompt a:hover {
-            text-decoration: underline;
-        }
-
-        /* Movie Detail Modal */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            z-index: 1000;
-            overflow-y: auto;
-        }
-
-        .modal-content {
-            position: relative;
-            background: #111;
-            margin: 50px auto;
-            width: 90%;
-            max-width: 800px;
-            border-radius: 12px;
-            overflow: hidden;
-        }
-
-        .modal-header {
-            position: relative;
-            height: 300px;
-            background-size: cover;
-            background-position: center;
-            display: flex;
-            align-items: end;
-        }
-
-        .modal-header-content {
-            background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
-            width: 100%;
-            padding: 30px;
-            color: white;
-        }
-
-        .modal-title {
-            font-size: 28px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-
-        .modal-meta {
-            display: flex;
-            gap: 20px;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .modal-body {
-            padding: 30px;
-        }
-
-        .close {
-            position: absolute;
-            right: 20px;
-            top: 20px;
-            font-size: 28px;
-            color: white;
-            cursor: pointer;
-            z-index: 1001;
-            background: rgba(0, 0, 0, 0.5);
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .close:hover {
-            background: rgba(0, 0, 0, 0.8);
-        }
-
-        .group-selector {
-            background: #222;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-
-        .group-selector h4 {
-            margin-bottom: 15px;
-            color: #fff;
-        }
-
-        .group-list {
-            display: grid;
-            gap: 10px;
-        }
-
-        .group-option {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 15px;
-            background: #333;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .group-option:hover {
-            background: #444;
-        }
-
-        .group-name {
-            color: #fff;
-            font-weight: 500;
-        }
-
-        .add-to-group-btn {
-            background: blueviolet;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            font-size: 12px;
-            cursor: pointer;
-        }
-
-        .add-to-group-btn:hover {
-            background: #7b3ff2;
-        }
-
-        .success-message,
-        .error-message {
-            padding: 10px 15px;
-            border-radius: 4px;
-            margin-bottom: 20px;
-            display: none;
-        }
-
-        .success-message {
-            background: rgba(76, 175, 80, 0.1);
-            border: 1px solid #4caf50;
-            color: #66bb6a;
-        }
-
-        .error-message {
-            background: rgba(255, 68, 68, 0.1);
-            border: 1px solid #ff4444;
-            color: #ff6666;
-        }
-
-        @media (max-width: 1200px) {
-            .movies-grid {
-                grid-template-columns: repeat(5, 1fr);
-            }
-        }
-
-        @media (max-width: 1000px) {
-            .movies-grid {
-                grid-template-columns: repeat(4, 1fr);
-            }
-        }
-
-        @media (max-width: 768px) {
-            .search-box {
-                flex-direction: column;
-            }
-
-            .movies-grid {
-                grid-template-columns: repeat(3, 1fr);
-                gap: 15px;
-                padding: 0 15px;
-            }
-
-            .movie-poster {
-                height: 210px;
-            }
-
-            .movie-info {
-                padding: 10px;
-            }
-
-            .movie-title {
-                font-size: 13px;
-                min-height: 30px;
-            }
-
-            .tabs {
-                justify-content: center;
-                flex-wrap: wrap;
-            }
-
-            .tab {
-                padding: 12px 20px;
-                font-size: 14px;
-            }
-
-            .modal-content {
-                margin: 20px;
-                width: calc(100% - 40px);
-            }
-
-            .modal-header {
-                height: 200px;
-            }
-
-            .modal-body {
-                padding: 20px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .movies-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 12px;
-                padding: 0 10px;
-            }
-
-            .movie-poster {
-                height: 180px;
-            }
-
-            .search-section {
-                padding: 20px;
-            }
-
-            .search-section h1 {
-                font-size: 24px;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="css/pages/binge-bank.css">
 </head>
-
 <body>
     <header class="header">
         <h1 class="logo">MovieNightPlanner</h1>
@@ -549,43 +24,48 @@
             <a href="Setting.html">Settings</a>
             <a href="Log_In.html" id="loginLink">Log In</a>
             <a href="Sign_Up.html" id="signUpLink">Sign Up</a>
-            <a href="#" id="logoutLink" style="display: none;">Sign Out</a>
+            <a href="#" id="logoutLink" style="display:none;">Sign Out</a>
         </nav>
     </header>
 
-    <div class="container">
-        <div class="search-section">
-            <h1>Discover Movies</h1>
-            <div class="search-box">
+    <main class="bb-main">
+        <section class="bb-search card" data-animate>
+            <h2>Discover Movies</h2>
+            <p>Search TMDB and add picks directly to your group watchlists.</p>
+            <div class="bb-search-row">
                 <label for="searchInput" class="sr-only">Search for movies</label>
-                <input type="text" class="search-input" placeholder="Search for movies..." id="searchInput">
-                <button class="search-button" id="searchBtn">Search</button>
+                <input type="text" class="search-input" id="searchInput" placeholder="Try: Interstellar, Parasite, Blade Runner">
+                <button class="btn btn-primary" id="searchBtn" type="button">Search</button>
             </div>
-        </div>
-
-        <div class="tabs">
-            <div class="tab active" data-tab="search">Search Results</div>
-            <div class="tab" data-tab="popular">Popular</div>
-            <div class="tab" data-tab="trending">Trending</div>
-        </div>
-
-        <div class="success-message" id="successMessage"></div>
-        <div class="error-message" id="errorMessage"></div>
-
-        <div id="moviesContainer" class="movies-grid">
-            <div class="empty-state">
-                <h3>Search for movies to discover</h3>
-                <p>Use the search box above to find movies to add to your group watchlists!</p>
+            <div class="filter-chips" aria-hidden="true">
+                <button class="chip" type="button">Sci-Fi</button>
+                <button class="chip" type="button">Action</button>
+                <button class="chip" type="button">Comedy</button>
+                <button class="chip" type="button">Top Rated</button>
             </div>
-        </div>
+        </section>
 
-        <div id="pagination" class="pagination" style="display: none;"></div>
-    </div>
+        <section class="bb-tabs-wrap" data-animate>
+            <div class="tabs">
+                <button class="tab active" type="button" data-tab="search">Search Results</button>
+                <button class="tab" type="button" data-tab="popular">Popular</button>
+                <button class="tab" type="button" data-tab="trending">Trending</button>
+            </div>
+            <div class="success-message" id="successMessage"></div>
+            <div class="error-message" id="errorMessage"></div>
+            <div id="moviesContainer" class="movies-grid">
+                <div class="empty-state card">
+                    <h3>Search for your next group pick</h3>
+                    <p>Use the search box above or switch tabs to browse popular and trending movies.</p>
+                </div>
+            </div>
+            <div id="pagination" class="pagination" style="display:none;"></div>
+        </section>
+    </main>
 
-    <!-- Movie Detail Modal -->
-    <div id="movieModal" class="modal">
+    <div id="movieModal" class="modal" style="display:none;">
         <div class="modal-content">
-            <span class="close">&times;</span>
+            <button class="modal-close close" type="button" aria-label="Close movie details">x</button>
             <div class="modal-header" id="modalHeader">
                 <div class="modal-header-content">
                     <div class="modal-title" id="modalTitle"></div>
@@ -594,8 +74,7 @@
             </div>
             <div class="modal-body">
                 <div id="modalDescription"></div>
-
-                <div class="group-selector" id="groupSelector" style="display: none;">
+                <div class="group-selector" id="groupSelector" style="display:none;">
                     <h4>Add to Group Watchlist</h4>
                     <div class="group-list" id="groupList"></div>
                 </div>
@@ -605,14 +84,12 @@
 
     <script src="app.js"></script>
     <script>
-        // State management
         let currentTab = 'search';
         let currentPage = 1;
         let currentQuery = '';
         let currentMovieData = null;
         let userGroups = [];
 
-        // DOM elements
         const searchInput = document.getElementById('searchInput');
         const searchBtn = document.getElementById('searchBtn');
         const moviesContainer = document.getElementById('moviesContainer');
@@ -621,76 +98,69 @@
         const successMessage = document.getElementById('successMessage');
         const errorMessage = document.getElementById('errorMessage');
 
-        // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             setupEventListeners();
-            loadPopularMovies(); // Load popular movies by default
+            loadPopularMovies();
             loadUserGroups();
         });
 
         function setupEventListeners() {
-            // Search functionality
             searchBtn.addEventListener('click', handleSearch);
             searchInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') handleSearch();
             });
 
-            // Tab switching
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.addEventListener('click', () => {
-                    const tabName = tab.dataset.tab;
-                    switchTab(tabName);
-                });
+            document.querySelectorAll('.tab').forEach((tab) => {
+                tab.addEventListener('click', () => switchTab(tab.dataset.tab));
             });
 
-            // Modal controls
-            document.querySelector('.close').onclick = () => {
+            document.querySelector('.close').addEventListener('click', () => {
                 modal.style.display = 'none';
-            };
+            });
 
-            window.onclick = (event) => {
+            window.addEventListener('click', (event) => {
                 if (event.target === modal) {
                     modal.style.display = 'none';
                 }
-            };
+            });
         }
 
         async function loadUserGroups() {
-            if (currentUser) {
-                try {
-                    const result = await getGroups();
-                    userGroups = Array.isArray(result) ? result : [];
-                } catch (error) {
-                    console.error('Error loading user groups:', error);
-                }
+            if (!currentUser) return;
+            try {
+                const result = await getGroups();
+                userGroups = Array.isArray(result)
+                    ? result
+                    : (Array.isArray(result.data) ? result.data : []);
+            } catch (error) {
+                console.error('Error loading user groups:', error);
+                userGroups = [];
             }
         }
 
         function switchTab(tabName) {
-            // Update tab active states
-            document.querySelectorAll('.tab').forEach(tab => {
+            document.querySelectorAll('.tab').forEach((tab) => {
                 tab.classList.toggle('active', tab.dataset.tab === tabName);
             });
 
             currentTab = tabName;
             currentPage = 1;
 
-            // Load content based on tab
-            switch (tabName) {
-                case 'search':
-                    if (currentQuery) {
-                        performSearch(currentQuery, 1);
-                    } else {
-                        showEmptySearchState();
-                    }
-                    break;
-                case 'popular':
-                    loadPopularMovies();
-                    break;
-                case 'trending':
-                    loadTrendingMovies();
-                    break;
+            if (tabName === 'search') {
+                if (currentQuery) {
+                    performSearch(currentQuery, 1);
+                } else {
+                    showEmptySearchState();
+                }
+                return;
             }
+
+            if (tabName === 'popular') {
+                loadPopularMovies();
+                return;
+            }
+
+            loadTrendingMovies();
         }
 
         async function handleSearch() {
@@ -708,21 +178,13 @@
 
         async function performSearch(query, page) {
             showLoading();
-            console.log('Searching for:', query, 'page:', page);
-
             try {
                 const results = await searchMovies(query, page);
-                console.log('Search results:', results);
-
-                if (results && results.results) {
-                    displayMovies(results.results);
-                    updatePagination(results.page, results.total_pages);
-                } else {
-                    throw new Error('Invalid search results format');
-                }
+                const movies = Array.isArray(results.results) ? results.results : [];
+                displayMovies(movies);
+                updatePagination(results.page || 1, results.total_pages || 1);
             } catch (error) {
-                console.error('Search error:', error);
-                showError(`Failed to search movies: ${error.message}`);
+                showError('Failed to search movies');
                 showEmptySearchState();
             }
         }
@@ -731,8 +193,9 @@
             showLoading();
             try {
                 const results = await getPopularMovies(page);
-                displayMovies(results.results);
-                updatePagination(results.page, results.total_pages);
+                const movies = Array.isArray(results.results) ? results.results : [];
+                displayMovies(movies);
+                updatePagination(results.page || 1, results.total_pages || 1);
             } catch (error) {
                 showError('Failed to load popular movies');
                 showEmptySearchState();
@@ -743,8 +206,9 @@
             showLoading();
             try {
                 const results = await getTrendingMovies();
-                displayMovies(results.results);
-                pagination.style.display = 'none'; // Trending doesn't need pagination
+                const movies = Array.isArray(results.results) ? results.results : [];
+                displayMovies(movies);
+                pagination.style.display = 'none';
             } catch (error) {
                 showError('Failed to load trending movies');
                 showEmptySearchState();
@@ -757,70 +221,46 @@
                 return;
             }
 
-            const moviesHTML = movies.map(movie => `
-                <div class="movie-card" onclick="showMovieDetails(${movie.id})">
+            const moviesHTML = movies.map((movie, index) => `
+                <article class="movie-card card animate-fade-in-up stagger-${Math.min(index + 1, 8)}" onclick="showMovieDetails(${movie.id})">
                     <div class="movie-poster">
-                        ${movie.poster_url ?
-                    `<img src="${movie.poster_url}" alt="${escapeHtml(movie.title)}" loading="lazy">` :
-                    '<span>No Poster</span>'
-                }
-                        <div class="movie-actions">
-                            <button class="action-btn" onclick="event.stopPropagation(); quickAddToGroup(${movie.id})" title="Add to Group">
-                                +
-                            </button>
+                        ${movie.poster_url
+                            ? `<img src="${movie.poster_url}" alt="${escapeHtml(movie.title)}" loading="lazy">`
+                            : '<span>No Poster</span>'}
+                        <div class="movie-overlay">
+                            <button class="btn btn-secondary mini-btn" onclick="event.stopPropagation(); quickAddToGroup(${movie.id})" title="Add to Group">Add to Watchlist</button>
                         </div>
                     </div>
                     <div class="movie-info">
                         <div class="movie-title">${escapeHtml(movie.title)}</div>
-                        <div class="movie-year">${movie.release_date ? new Date(movie.release_date).getFullYear() : 'Unknown'}</div>
-                        ${movie.vote_average ? `
-                            <div class="movie-rating">
-                                ⭐ ${movie.vote_average.toFixed(1)}/10
-                            </div>
-                        ` : ''}
+                        <div class="movie-year">${movie.release_date ? new Date(movie.release_date).getFullYear() : 'Unknown year'}</div>
+                        <div class="movie-rating">${movie.vote_average ? `Rating ${movie.vote_average.toFixed(1)}/10` : 'Rating N/A'}</div>
                     </div>
-                </div>
+                </article>
             `).join('');
 
             moviesContainer.innerHTML = moviesHTML;
-            console.log('Displayed', movies.length, 'movies in grid layout');
         }
 
         function updatePagination(current, totalPages) {
-            if (totalPages <= 1) {
+            if (!totalPages || totalPages <= 1) {
                 pagination.style.display = 'none';
                 return;
             }
 
-            let paginationHTML = '';
-
-            // Previous button
-            paginationHTML += `
-                <button class="page-btn" ${current <= 1 ? 'disabled' : ''} 
-                        onclick="goToPage(${current - 1})">
-                    ← Previous
-                </button>
+            let paginationHTML = `
+                <button class="page-btn" ${current <= 1 ? 'disabled' : ''} onclick="goToPage(${current - 1})">Previous</button>
             `;
 
-            // Page numbers (show max 5 pages around current)
             const startPage = Math.max(1, current - 2);
             const endPage = Math.min(totalPages, current + 2);
 
-            for (let i = startPage; i <= endPage; i++) {
-                paginationHTML += `
-                    <button class="page-btn ${i === current ? 'active' : ''}" 
-                            onclick="goToPage(${i})">
-                        ${i}
-                    </button>
-                `;
+            for (let i = startPage; i <= endPage; i += 1) {
+                paginationHTML += `<button class="page-btn ${i === current ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
             }
 
-            // Next button
             paginationHTML += `
-                <button class="page-btn" ${current >= totalPages ? 'disabled' : ''} 
-                        onclick="goToPage(${current + 1})">
-                    Next →
-                </button>
+                <button class="page-btn" ${current >= totalPages ? 'disabled' : ''} onclick="goToPage(${current + 1})">Next</button>
             `;
 
             pagination.innerHTML = paginationHTML;
@@ -829,61 +269,36 @@
 
         async function goToPage(page) {
             currentPage = page;
-
-            switch (currentTab) {
-                case 'search':
-                    if (currentQuery) {
-                        await performSearch(currentQuery, page);
-                    }
-                    break;
-                case 'popular':
-                    await loadPopularMovies(page);
-                    break;
+            if (currentTab === 'search' && currentQuery) {
+                await performSearch(currentQuery, page);
+                return;
+            }
+            if (currentTab === 'popular') {
+                await loadPopularMovies(page);
             }
         }
 
         async function showMovieDetails(tmdbId) {
             try {
-               // showLoading();
                 const movie = await getMovieDetails(tmdbId);
                 currentMovieData = movie;
 
-                // Update modal content
                 document.getElementById('modalTitle').textContent = movie.title;
-
-                const modalMeta = document.getElementById('modalMeta');
-                modalMeta.innerHTML = `
+                document.getElementById('modalMeta').innerHTML = `
                     <span>${movie.release_date ? new Date(movie.release_date).getFullYear() : 'Unknown'}</span>
                     <span>${movie.runtime ? `${movie.runtime} min` : ''}</span>
-                    <span>⭐ ${movie.vote_average ? movie.vote_average.toFixed(1) : 'N/A'}/10</span>
+                    <span>${movie.vote_average ? `Rating ${movie.vote_average.toFixed(1)}/10` : 'Rating N/A'}</span>
                 `;
 
                 const modalHeader = document.getElementById('modalHeader');
-                modalHeader.style.backgroundImage = movie.backdrop_url ?
-                    `url(${movie.backdrop_url})` : 'none';
+                modalHeader.style.backgroundImage = movie.backdrop_url ? `url(${movie.backdrop_url})` : 'none';
 
-                const modalDescription = document.getElementById('modalDescription');
-                modalDescription.innerHTML = `
-                    <p style="margin-bottom: 20px; line-height: 1.6; color: #ccc;">
-                        ${movie.overview || 'No description available.'}
-                    </p>
-                    
-                    ${movie.genres && movie.genres.length > 0 ? `
-                        <div style="margin-bottom: 15px;">
-                            <strong style="color: #fff;">Genres:</strong> 
-                            <span style="color: #ccc;">${movie.genres.map(g => g.name).join(', ')}</span>
-                        </div>
-                    ` : ''}
-                    
-                    ${movie.cast && movie.cast.length > 0 ? `
-                        <div style="margin-bottom: 15px;">
-                            <strong style="color: #fff;">Cast:</strong> 
-                            <span style="color: #ccc;">${movie.cast.slice(0, 5).map(c => c.name).join(', ')}</span>
-                        </div>
-                    ` : ''}
+                document.getElementById('modalDescription').innerHTML = `
+                    <p class="modal-overview">${movie.overview || 'No description available.'}</p>
+                    ${movie.genres && movie.genres.length > 0 ? `<p><strong>Genres:</strong> ${movie.genres.map((g) => g.name).join(', ')}</p>` : ''}
+                    ${movie.cast && movie.cast.length > 0 ? `<p><strong>Cast:</strong> ${movie.cast.slice(0, 5).map((c) => c.name).join(', ')}</p>` : ''}
                 `;
 
-                // Show group selector if user is logged in and has groups
                 const groupSelector = document.getElementById('groupSelector');
                 if (currentUser && userGroups.length > 0) {
                     displayGroupSelector();
@@ -892,7 +307,7 @@
                     groupSelector.style.display = 'none';
                 }
 
-                modal.style.display = 'block';
+                modal.style.display = 'flex';
             } catch (error) {
                 showError('Failed to load movie details');
             }
@@ -900,34 +315,25 @@
 
         function displayGroupSelector() {
             const groupList = document.getElementById('groupList');
-
             if (userGroups.length === 0) {
-                groupList.innerHTML = `
-                    <div style="text-align: center; color: #999; padding: 20px;">
-                        <p>You don't have any groups yet.</p>
-                        <a href="Stream_team.html" style="color: blueviolet;">Create a group</a>
-                    </div>
-                `;
+                groupList.innerHTML = '<div class="empty-inline">No groups yet. Create one in Stream Team.</div>';
                 return;
             }
 
-            groupList.innerHTML = userGroups.map(group => `
+            groupList.innerHTML = userGroups.map((group) => `
                 <div class="group-option">
                     <span class="group-name">${escapeHtml(group.group_name)}</span>
-                    <button class="add-to-group-btn" onclick="addToGroupWatchlist(${group.group_id})">
-                        Add to Watchlist
-                    </button>
+                    <button class="btn btn-primary add-to-group-btn" onclick="addToGroupWatchlist(${group.group_id})">Add</button>
                 </div>
             `).join('');
         }
 
         async function addToGroupWatchlist(groupId) {
             if (!currentMovieData) return;
-
             try {
                 await addMovieToGroup(currentMovieData, groupId);
-                const groupName = userGroups.find(g => g.group_id === groupId)?.group_name;
-                showSuccess(`Movie added to "${groupName}" watchlist!`);
+                const groupName = userGroups.find((g) => g.group_id === groupId)?.group_name || 'group';
+                showSuccess(`Movie added to \"${groupName}\" watchlist`);
                 modal.style.display = 'none';
             } catch (error) {
                 showError(error.message || 'Failed to add movie to group');
@@ -941,38 +347,33 @@
             }
 
             if (userGroups.length === 0) {
-                showError('You need to create a group first');
+                showError('Create a group first in Stream Team');
                 return;
             }
 
-            // If user has only one group, add directly
             if (userGroups.length === 1) {
                 try {
                     const movie = await getMovieDetails(tmdbId);
                     await addMovieToGroup(movie, userGroups[0].group_id);
-                    showSuccess(`Movie added to "${userGroups[0].group_name}" watchlist!`);
+                    showSuccess(`Movie added to \"${userGroups[0].group_name}\" watchlist`);
                 } catch (error) {
                     showError(error.message || 'Failed to add movie to group');
                 }
-            } else {
-                // Show movie details modal for group selection
-                showMovieDetails(tmdbId);
+                return;
             }
+
+            showMovieDetails(tmdbId);
         }
 
         function showLoading() {
-            moviesContainer.innerHTML = `
-                <div class="loading">
-                    <div class="spinner"></div>
-                </div>
-            `;
+            moviesContainer.innerHTML = '<div class="skeleton-grid">' + '<div class="skeleton-card"></div>'.repeat(8) + '</div>';
         }
 
         function showEmptySearchState() {
             moviesContainer.innerHTML = `
-                <div class="empty-state">
+                <div class="empty-state card">
                     <h3>No movies found</h3>
-                    <p>Try searching for something else or browse popular movies!</p>
+                    <p>Try another title or switch to Popular/Trending.</p>
                 </div>
             `;
             pagination.style.display = 'none';
@@ -981,6 +382,8 @@
         function showSuccess(message) {
             successMessage.textContent = message;
             successMessage.style.display = 'block';
+            errorMessage.style.display = 'none';
+            if (typeof showToast === 'function') showToast(message, 'success');
             setTimeout(() => {
                 successMessage.style.display = 'none';
             }, 3000);
@@ -989,11 +392,12 @@
         function showError(message) {
             errorMessage.textContent = message;
             errorMessage.style.display = 'block';
+            successMessage.style.display = 'none';
+            if (typeof showToast === 'function') showToast(message, 'error');
             setTimeout(() => {
                 errorMessage.style.display = 'none';
-            }, 5000);
+            }, 4000);
         }
     </script>
 </body>
-
 </html>
