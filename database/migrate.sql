@@ -32,29 +32,105 @@ ALTER TABLE Movie_Nights
 ALTER TABLE Availability
   ADD COLUMN IF NOT EXISTS responded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
 
--- Add indexes
-CREATE INDEX IF NOT EXISTS idx_created_by ON Movie_Groups(created_by);
-CREATE INDEX IF NOT EXISTS idx_user_id ON Group_Members(user_id);
-CREATE INDEX IF NOT EXISTS idx_added_by ON Group_Watchlist(added_by);
-CREATE INDEX IF NOT EXISTS idx_group_movie ON Movie_Votes(group_id, movie_id);
-CREATE INDEX IF NOT EXISTS idx_group_id ON Movie_Nights(group_id);
-CREATE INDEX IF NOT EXISTS idx_chosen_movie ON Movie_Nights(chosen_movie_id);
-CREATE INDEX IF NOT EXISTS idx_receiver_status ON Friend_Requests(receiver_id, status);
-CREATE INDEX IF NOT EXISTS idx_sender_id ON Friend_Requests(sender_id);
-CREATE INDEX IF NOT EXISTS idx_friend_id ON Friendships(friend_id);
+-- Add indexes / foreign keys safely (MySQL 8.0 compatible idempotent helpers)
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS add_index_if_missing $$
+CREATE PROCEDURE add_index_if_missing(
+  IN p_table VARCHAR(64),
+  IN p_index VARCHAR(64),
+  IN p_cols VARCHAR(255)
+)
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM information_schema.statistics
+    WHERE table_schema = DATABASE()
+      AND table_name = p_table
+      AND index_name = p_index
+  ) THEN
+    SET @sql = CONCAT('ALTER TABLE `', p_table, '` ADD INDEX `', p_index, '` (', p_cols, ')');
+    PREPARE stmt FROM @sql;
+    EXECUTE stmt;
+    DEALLOCATE PREPARE stmt;
+  END IF;
+END $$
+
+DROP PROCEDURE IF EXISTS drop_fk_if_exists $$
+CREATE PROCEDURE drop_fk_if_exists(
+  IN p_table VARCHAR(64),
+  IN p_fk VARCHAR(64)
+)
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.table_constraints
+    WHERE table_schema = DATABASE()
+      AND table_name = p_table
+      AND constraint_name = p_fk
+      AND constraint_type = 'FOREIGN KEY'
+  ) THEN
+    SET @sql = CONCAT('ALTER TABLE `', p_table, '` DROP FOREIGN KEY `', p_fk, '`');
+    PREPARE stmt FROM @sql;
+    EXECUTE stmt;
+    DEALLOCATE PREPARE stmt;
+  END IF;
+END $$
+
+DROP PROCEDURE IF EXISTS add_fk_if_missing $$
+CREATE PROCEDURE add_fk_if_missing(
+  IN p_table VARCHAR(64),
+  IN p_fk VARCHAR(64),
+  IN p_col VARCHAR(64),
+  IN p_ref_table VARCHAR(64),
+  IN p_ref_col VARCHAR(64),
+  IN p_on_delete VARCHAR(32)
+)
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM information_schema.table_constraints
+    WHERE table_schema = DATABASE()
+      AND table_name = p_table
+      AND constraint_name = p_fk
+      AND constraint_type = 'FOREIGN KEY'
+  ) THEN
+    SET @sql = CONCAT(
+      'ALTER TABLE `', p_table, '` ADD CONSTRAINT `', p_fk, '` FOREIGN KEY (`', p_col, '`) ',
+      'REFERENCES `', p_ref_table, '`(`', p_ref_col, '`) ON DELETE ', p_on_delete
+    );
+    PREPARE stmt FROM @sql;
+    EXECUTE stmt;
+    DEALLOCATE PREPARE stmt;
+  END IF;
+END $$
+
+DELIMITER ;
+
+CALL add_index_if_missing('Movie_Groups', 'idx_created_by', 'created_by');
+CALL add_index_if_missing('Group_Members', 'idx_user_id', 'user_id');
+CALL add_index_if_missing('Group_Watchlist', 'idx_added_by', 'added_by');
+CALL add_index_if_missing('Movie_Votes', 'idx_group_movie', 'group_id, movie_id');
+CALL add_index_if_missing('Movie_Nights', 'idx_group_id', 'group_id');
+CALL add_index_if_missing('Movie_Nights', 'idx_chosen_movie', 'chosen_movie_id');
+CALL add_index_if_missing('Friend_Requests', 'idx_receiver_status', 'receiver_id, status');
+CALL add_index_if_missing('Friend_Requests', 'idx_sender_id', 'sender_id');
+CALL add_index_if_missing('Friendships', 'idx_friend_id', 'friend_id');
 
 -- Add cascade deletes to Friend_Requests and Friendships
-ALTER TABLE Friend_Requests DROP FOREIGN KEY IF EXISTS friend_requests_ibfk_1;
-ALTER TABLE Friend_Requests DROP FOREIGN KEY IF EXISTS friend_requests_ibfk_2;
-ALTER TABLE Friend_Requests
-  ADD CONSTRAINT fk_fr_sender FOREIGN KEY (sender_id) REFERENCES Users(user_id) ON DELETE CASCADE,
-  ADD CONSTRAINT fk_fr_receiver FOREIGN KEY (receiver_id) REFERENCES Users(user_id) ON DELETE CASCADE;
+CALL drop_fk_if_exists('Friend_Requests', 'friend_requests_ibfk_1');
+CALL drop_fk_if_exists('Friend_Requests', 'friend_requests_ibfk_2');
+CALL add_fk_if_missing('Friend_Requests', 'fk_fr_sender', 'sender_id', 'Users', 'user_id', 'CASCADE');
+CALL add_fk_if_missing('Friend_Requests', 'fk_fr_receiver', 'receiver_id', 'Users', 'user_id', 'CASCADE');
 
-ALTER TABLE Friendships DROP FOREIGN KEY IF EXISTS friendships_ibfk_1;
-ALTER TABLE Friendships DROP FOREIGN KEY IF EXISTS friendships_ibfk_2;
-ALTER TABLE Friendships
-  ADD CONSTRAINT fk_fs_user FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
-  ADD CONSTRAINT fk_fs_friend FOREIGN KEY (friend_id) REFERENCES Users(user_id) ON DELETE CASCADE;
+CALL drop_fk_if_exists('Friendships', 'friendships_ibfk_1');
+CALL drop_fk_if_exists('Friendships', 'friendships_ibfk_2');
+CALL add_fk_if_missing('Friendships', 'fk_fs_user', 'user_id', 'Users', 'user_id', 'CASCADE');
+CALL add_fk_if_missing('Friendships', 'fk_fs_friend', 'friend_id', 'Users', 'user_id', 'CASCADE');
+
+DROP PROCEDURE IF EXISTS add_index_if_missing;
+DROP PROCEDURE IF EXISTS drop_fk_if_exists;
+DROP PROCEDURE IF EXISTS add_fk_if_missing;
 
 -- Create Notifications table
 CREATE TABLE IF NOT EXISTS Notifications (
