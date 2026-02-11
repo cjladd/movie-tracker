@@ -28,7 +28,9 @@ async function apiCall(endpoint, method = 'GET', data = null) {
     }
 
     if (!response.ok) {
-        throw new Error(result.error || result.message || 'API call failed');
+        const err = new Error(result.error || result.message || 'API call failed');
+        err.status = response.status;
+        throw err;
     }
 
     // Unwrap standardized { success, data, message } response format

@@ -181,8 +181,21 @@
                     });
                 });
             } catch (error) {
-                showError('Failed to load settings. Please try again.');
-                content.innerHTML = '<div class="login-prompt card"><h3>Error loading settings</h3><p>Please refresh and retry.</p><button class="btn btn-primary" onclick="loadSettings()">Retry</button></div>';
+                if (error.status === 401 || (error.message && (error.message.includes('Not authenticated') || error.message.includes('401')))) {
+                    currentUser = null;
+                    localStorage.removeItem('currentUser');
+                    updateAuthUI();
+                    content.innerHTML = `
+                        <div class="login-prompt card">
+                            <h3>Session expired — please log in again</h3>
+                            <p>Manage your profile and account preferences.</p>
+                            <p><a href="Log_In.html">Log In</a> or <a href="Sign_Up.html">Sign Up</a></p>
+                        </div>
+                    `;
+                } else {
+                    showError('Failed to load settings. Please try again.');
+                    content.innerHTML = '<div class="login-prompt card"><h3>Error loading settings</h3><p>Please refresh and retry.</p><button class="btn btn-primary" onclick="loadSettings()">Retry</button></div>';
+                }
             }
         }
 
