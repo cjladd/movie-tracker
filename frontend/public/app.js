@@ -510,9 +510,10 @@ function displayFeaturedMovies(movies) {
         const year = escapeHtml(String(movie.release_year || 'Unknown'));
         const rating = movie.rating ? `${Number(movie.rating).toFixed(1)}/10` : 'NR';
 
-        const tmdbId = movie.tmdb_id || movie.movie_id;
+        const tmdbId = movie.tmdb_id ? Number(movie.tmdb_id) : 'null';
+        const movieId = movie.movie_id ? Number(movie.movie_id) : 'null';
         return `
-            <article class="movie-card animate-fade-in-up stagger-${Math.min(index + 1, 8)}" data-movie-id="${movie.movie_id}" onclick="showHomeMovieDetails(${tmdbId})" style="cursor:pointer;">
+            <article class="movie-card animate-fade-in-up stagger-${Math.min(index + 1, 8)}" data-movie-id="${movie.movie_id}" onclick="showHomeMovieDetails(${tmdbId}, ${movieId})" style="cursor:pointer;">
                 <div class="movie-poster">
                     ${posterUrl
                         ? `<img src="${posterUrl}" alt="${title}" loading="lazy">`
@@ -547,7 +548,7 @@ function displayTrendingMovies(movies) {
             : '';
 
         return `
-            <article class="trending-card card animate-fade-in-up stagger-${Math.min(index + 1, 8)}" onclick="showHomeMovieDetails(${movie.id})" style="cursor:pointer;">
+            <article class="trending-card card animate-fade-in-up stagger-${Math.min(index + 1, 8)}" onclick="showHomeMovieDetails(${movie.id}, null)" style="cursor:pointer;">
                 ${poster ? `<img src="${poster}" alt="${title}" loading="lazy">` : '<div class="loading">No poster</div>'}
                 <div class="trending-overlay">
                     <h4>${title}</h4>
@@ -572,7 +573,7 @@ function displayFeaturedFromTrending(movies) {
         const rating = movie.vote_average ? `${Number(movie.vote_average).toFixed(1)}/10` : 'NR';
 
         return `
-            <article class="movie-card animate-fade-in-up stagger-${Math.min(index + 1, 8)}" onclick="showHomeMovieDetails(${movie.id})" style="cursor:pointer;">
+            <article class="movie-card animate-fade-in-up stagger-${Math.min(index + 1, 8)}" onclick="showHomeMovieDetails(${movie.id}, null)" style="cursor:pointer;">
                 <div class="movie-poster">
                     ${posterUrl
                         ? `<img src="${posterUrl}" alt="${title}" loading="lazy">`
@@ -595,6 +596,59 @@ function displayFeaturedFromTrending(movies) {
 let homeModalMovieData = null;
 let homeUserGroups = [];
 
+function normalizeLocalMovieForModal(movie) {
+    const genres = movie.genre
+        ? String(movie.genre).split(',').map((name) => ({ name: name.trim() })).filter((g) => g.name)
+        : [];
+
+    return {
+        id: movie.tmdb_id || null,
+        title: movie.title || 'Unknown title',
+        release_date: movie.release_year ? `${movie.release_year}-01-01` : null,
+        runtime: movie.runtime_minutes || null,
+        vote_average: movie.rating !== null && movie.rating !== undefined ? Number(movie.rating) : null,
+        overview: movie.description || '',
+        genres,
+        cast: [],
+        backdrop_url: movie.poster_url || null,
+        poster_url: movie.poster_url || null,
+        __source: 'local',
+        __localMovieId: movie.movie_id || null,
+    };
+}
+
+function renderHomeMovieModal(movie) {
+    const titleEl = document.getElementById('modalTitle');
+    const metaEl = document.getElementById('modalMeta');
+    const descriptionEl = document.getElementById('modalDescription');
+    const modalHeader = document.getElementById('modalHeader');
+
+    if (!titleEl || !metaEl || !descriptionEl || !modalHeader) return;
+
+    const year = movie.release_date
+        ? new Date(movie.release_date).getFullYear()
+        : (movie.release_year || 'Unknown');
+    const runtime = movie.runtime ? `${movie.runtime} min` : '';
+    const rating = movie.vote_average !== null && movie.vote_average !== undefined && !isNaN(movie.vote_average)
+        ? `Rating ${Number(movie.vote_average).toFixed(1)}/10`
+        : 'Rating N/A';
+
+    titleEl.textContent = movie.title || 'Unknown title';
+    metaEl.innerHTML = `
+        <span>${year}</span>
+        <span>${runtime}</span>
+        <span>${rating}</span>
+    `;
+
+    modalHeader.style.backgroundImage = movie.backdrop_url ? `url(${movie.backdrop_url})` : 'none';
+
+    descriptionEl.innerHTML = `
+        <p class="modal-overview">${movie.overview || 'No description available.'}</p>
+        ${movie.genres && movie.genres.length > 0 ? `<p><strong>Genres:</strong> ${movie.genres.map((g) => g.name).join(', ')}</p>` : ''}
+        ${movie.cast && movie.cast.length > 0 ? `<p><strong>Cast:</strong> ${movie.cast.slice(0, 5).map((c) => c.name).join(', ')}</p>` : ''}
+    `;
+}
+
 async function loadHomeUserGroups() {
     if (!currentUser || homeUserGroups.length > 0) return;
     try {
@@ -605,29 +659,37 @@ async function loadHomeUserGroups() {
     }
 }
 
-async function showHomeMovieDetails(tmdbId) {
+async function showHomeMovieDetails(tmdbId, movieId = null) {
     const modal = document.getElementById('movieModal');
     if (!modal) return;
 
     try {
-        const movie = await getMovieDetails(tmdbId);
+        let movie = null;
+        let tmdbError = null;
+
+        if (tmdbId) {
+            try {
+                movie = await getMovieDetails(tmdbId);
+                movie.__source = 'tmdb';
+                movie.__localMovieId = movieId || null;
+            } catch (error) {
+                tmdbError = error;
+            }
+        }
+
+        if (!movie && movieId) {
+            const localMovie = await getMovie(movieId);
+            if (localMovie) {
+                movie = normalizeLocalMovieForModal(localMovie);
+            }
+        }
+
+        if (!movie) {
+            throw tmdbError || new Error('Movie details unavailable');
+        }
+
         homeModalMovieData = movie;
-
-        document.getElementById('modalTitle').textContent = movie.title;
-        document.getElementById('modalMeta').innerHTML = `
-            <span>${movie.release_date ? new Date(movie.release_date).getFullYear() : 'Unknown'}</span>
-            <span>${movie.runtime ? `${movie.runtime} min` : ''}</span>
-            <span>${movie.vote_average ? `Rating ${movie.vote_average.toFixed(1)}/10` : 'Rating N/A'}</span>
-        `;
-
-        const modalHeader = document.getElementById('modalHeader');
-        modalHeader.style.backgroundImage = movie.backdrop_url ? `url(${movie.backdrop_url})` : 'none';
-
-        document.getElementById('modalDescription').innerHTML = `
-            <p class="modal-overview">${movie.overview || 'No description available.'}</p>
-            ${movie.genres && movie.genres.length > 0 ? `<p><strong>Genres:</strong> ${movie.genres.map((g) => g.name).join(', ')}</p>` : ''}
-            ${movie.cast && movie.cast.length > 0 ? `<p><strong>Cast:</strong> ${movie.cast.slice(0, 5).map((c) => c.name).join(', ')}</p>` : ''}
-        `;
+        renderHomeMovieModal(movie);
 
         const groupSelector = document.getElementById('groupSelector');
         if (currentUser) {
@@ -658,7 +720,13 @@ async function showHomeMovieDetails(tmdbId) {
 async function addHomeMovieToGroup(groupId) {
     if (!homeModalMovieData) return;
     try {
-        await addMovieToGroup(homeModalMovieData, groupId);
+        if (homeModalMovieData.__source === 'tmdb') {
+            await addMovieToGroup(homeModalMovieData, groupId);
+        } else if (homeModalMovieData.__localMovieId) {
+            await addToWatchlist(groupId, homeModalMovieData.__localMovieId);
+        } else {
+            throw new Error('This movie cannot be added to a group right now');
+        }
         const groupName = homeUserGroups.find((g) => g.group_id === groupId)?.group_name || 'group';
         showToast(`Added to "${groupName}" watchlist`, 'success');
         closeHomeModal();

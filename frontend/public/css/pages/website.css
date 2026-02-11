@@ -14,6 +14,7 @@
   align-items: center;
   border-radius: var(--radius-xl);
   overflow: hidden;
+  padding: 1rem;
 }
 
 .hero-shell {
@@ -23,8 +24,8 @@
 
 .hero-content {
   display: grid;
-  grid-template-columns: 1.15fr 0.85fr;
-  gap: 1.5rem;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 2rem;
   align-items: center;
 }
 
@@ -75,6 +76,8 @@
   box-shadow: var(--shadow-xl), var(--glow-primary-subtle);
   transform-style: preserve-3d;
   transition: transform var(--transition-bounce), box-shadow var(--transition-base);
+  max-width: 380px;
+  justify-self: center;
 }
 
 .hero-poster:hover {
