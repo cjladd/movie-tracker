@@ -303,7 +303,10 @@
             }
         }
 
-        loadSettings();
+        (async () => {
+            await ensureAuthState();
+            loadSettings();
+        })();
     </script>
 </body>
 </html>

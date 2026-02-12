@@ -131,7 +131,8 @@
         const watchlistVotingGrid = document.getElementById('watchlistVotingGrid');
         const movieNightsList = document.getElementById('movieNightsList');
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            await ensureAuthState();
             loadGroups();
             setupEventListeners();
         });
@@ -188,7 +189,7 @@
         }
 
         async function loadGroups() {
-            if (!currentUser) {
+            if (!checkAuth()) {
                 content.innerHTML = `
                     <div class="login-prompt card">
                         <h3>Please log in to view your groups</h3>
@@ -204,6 +205,17 @@
 
             try {
                 const groups = normalizeCollection(await getGroups());
+                if (!checkAuth()) {
+                    content.innerHTML = `
+                        <div class="login-prompt card">
+                            <h3>Please log in to view your groups</h3>
+                            <p>Join or create movie groups with your friends.</p>
+                            <p><a href="Log_In.html">Log In</a> or <a href="Sign_Up.html">Sign Up</a></p>
+                        </div>
+                    `;
+                    createGroupBtn.style.display = 'none';
+                    return;
+                }
                 if (groups.length === 0) {
                     content.innerHTML = `
                         <div class="empty-state card">
@@ -347,10 +359,11 @@
         }
 
         async function displayWatchlistWithVoting(watchlist) {
+            const currentUserId = currentUser ? currentUser.id : null;
             let html = '';
             for (const movie of watchlist) {
                 const votes = normalizeCollection(await getMovieVotes(currentGroupId, movie.movie_id));
-                const userVote = votes.find((v) => v.user_id === currentUser.id);
+                const userVote = currentUserId ? votes.find((v) => v.user_id === currentUserId) : null;
                 const avg = votes.length > 0 ? (votes.reduce((sum, v) => sum + v.vote_value, 0) / votes.length).toFixed(1) : '0.0';
 
                 html += `

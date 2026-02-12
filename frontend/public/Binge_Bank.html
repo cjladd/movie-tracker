@@ -102,8 +102,9 @@
         const successMessage = document.getElementById('successMessage');
         const errorMessage = document.getElementById('errorMessage');
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             setupEventListeners();
+            await ensureAuthState();
             loadPopularMovies();
             loadUserGroups();
         });
@@ -225,23 +226,24 @@
                 return;
             }
 
-            const moviesHTML = movies.map((movie, index) => `
-                <article class="movie-card card animate-fade-in-up stagger-${Math.min(index + 1, 8)}" onclick="showMovieDetails(${movie.id})">
-                    <div class="movie-poster">
-                        ${movie.poster_url
-                            ? `<img src="${movie.poster_url}" alt="${escapeHtml(movie.title)}" loading="lazy">`
-                            : '<span>No Poster</span>'}
-                        <div class="movie-overlay">
-                            <button class="btn btn-secondary mini-btn" onclick="event.stopPropagation(); quickAddToGroup(${movie.id})" title="Add to Group">Add to Watchlist</button>
-                        </div>
+            const moviesHTML = movies.map((movie, index) => {
+                const year = movie.release_date ? new Date(movie.release_date).getFullYear() : 'Unknown';
+                const rating = movie.vote_average ? `${movie.vote_average.toFixed(1)}/10` : 'NR';
+                return `
+                <article class="movie-card-overlay bb-card animate-fade-in-up stagger-${Math.min(index + 1, 8)}" onclick="showMovieDetails(${movie.id})">
+                    ${movie.poster_url
+                        ? `<img src="${movie.poster_url}" alt="${escapeHtml(movie.title)}" loading="lazy">`
+                        : '<div class="loading" style="aspect-ratio:2/3;">No Poster</div>'}
+                    <div class="card-overlay">
+                        <h4>${escapeHtml(movie.title)}</h4>
+                        <p>${year} · ${rating}</p>
                     </div>
-                    <div class="movie-info">
-                        <div class="movie-title">${escapeHtml(movie.title)}</div>
-                        <div class="movie-year">${movie.release_date ? new Date(movie.release_date).getFullYear() : 'Unknown year'}</div>
-                        <div class="movie-rating">${movie.vote_average ? `Rating ${movie.vote_average.toFixed(1)}/10` : 'Rating N/A'}</div>
+                    <div class="bb-hover-btn">
+                        <button class="btn btn-secondary mini-btn" onclick="event.stopPropagation(); quickAddToGroup(${movie.id})" title="Add to Group">Add to Watchlist</button>
                     </div>
                 </article>
-            `).join('');
+            `;
+            }).join('');
 
             moviesContainer.innerHTML = moviesHTML;
         }

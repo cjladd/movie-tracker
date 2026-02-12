@@ -1,8 +1,9 @@
 // API Base URL - use relative path so it works on any domain
 const API_URL = '/api';
 
-// Store user data in localStorage after login
-let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
+// Keep auth state in memory and validate it against the server on load.
+let currentUser = null;
+let authStatePromise = null;
 const THEME_KEY = 'mnp_theme';
 const LAST_SEED_KEY = 'mnp_last_seed_at';
 
@@ -30,6 +31,10 @@ async function apiCall(endpoint, method = 'GET', data = null) {
     if (!response.ok) {
         const err = new Error(result.error || result.message || 'API call failed');
         err.status = response.status;
+        if (response.status === 401 && endpoint !== '/users/login' && endpoint !== '/users/register') {
+            clearAuthState();
+            updateAuthUI();
+        }
         throw err;
     }
 
@@ -98,14 +103,54 @@ async function getHeroMovie() {
 
 // ── Authentication Functions ─────────────────────────────────────────────────
 
+function setCurrentUser(user) {
+    currentUser = user || null;
+    if (currentUser) {
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    } else {
+        localStorage.removeItem('currentUser');
+    }
+}
+
+function clearAuthState() {
+    setCurrentUser(null);
+    homeUserGroups = [];
+}
+
+async function ensureAuthState(forceRefresh = false) {
+    if (!forceRefresh && authStatePromise) return authStatePromise;
+
+    authStatePromise = (async () => {
+        try {
+            const user = await apiCall('/users/me');
+            setCurrentUser(user);
+            return currentUser;
+        } catch (error) {
+            if (error.status === 401 || error.status === 404) {
+                clearAuthState();
+                return null;
+            }
+            console.error('Failed to validate auth state:', error);
+            clearAuthState();
+            return null;
+        } finally {
+            updateAuthUI();
+        }
+    })();
+
+    return authStatePromise;
+}
+
 async function register(name, email, password) {
     return await apiCall('/users/register', 'POST', { name, email, password });
 }
 
 async function login(email, password) {
     const user = await apiCall('/users/login', 'POST', { email, password });
-    currentUser = user;
-    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    setCurrentUser(user);
+    homeUserGroups = [];
+    authStatePromise = Promise.resolve(currentUser);
+    updateAuthUI();
     showToast('Logged in successfully', 'success');
     setTimeout(() => { window.location.href = 'website.html'; }, 1000);
     return user;
@@ -119,8 +164,8 @@ async function logout() {
         console.error('Logout failed:', err);
         showToast('Logout request failed, local session cleared', 'warning');
     }
-    currentUser = null;
-    localStorage.removeItem('currentUser');
+    clearAuthState();
+    authStatePromise = Promise.resolve(null);
     updateAuthUI();
     window.location.href = 'website.html';
 }
@@ -513,13 +558,11 @@ function displayFeaturedMovies(movies) {
         const tmdbId = movie.tmdb_id ? Number(movie.tmdb_id) : 'null';
         const movieId = movie.movie_id ? Number(movie.movie_id) : 'null';
         return `
-            <article class="movie-card animate-fade-in-up stagger-${Math.min(index + 1, 8)}" data-movie-id="${movie.movie_id}" onclick="showHomeMovieDetails(${tmdbId}, ${movieId})" style="cursor:pointer;">
-                <div class="movie-poster">
-                    ${posterUrl
-                        ? `<img src="${posterUrl}" alt="${title}" loading="lazy">`
-                        : '<span>No Poster</span>'}
-                </div>
-                <div class="movie-info">
+            <article class="movie-card-overlay animate-fade-in-up stagger-${Math.min(index + 1, 8)}" data-movie-id="${movie.movie_id}" onclick="showHomeMovieDetails(${tmdbId}, ${movieId})">
+                ${posterUrl
+                    ? `<img src="${posterUrl}" alt="${title}" loading="lazy">`
+                    : '<div class="loading" style="aspect-ratio:2/3;">No Poster</div>'}
+                <div class="card-overlay">
                     <h4>${title}</h4>
                     <p>${year} · ${rating}</p>
                 </div>
@@ -573,13 +616,11 @@ function displayFeaturedFromTrending(movies) {
         const rating = movie.vote_average ? `${Number(movie.vote_average).toFixed(1)}/10` : 'NR';
 
         return `
-            <article class="movie-card animate-fade-in-up stagger-${Math.min(index + 1, 8)}" onclick="showHomeMovieDetails(${movie.id}, null)" style="cursor:pointer;">
-                <div class="movie-poster">
-                    ${posterUrl
-                        ? `<img src="${posterUrl}" alt="${title}" loading="lazy">`
-                        : '<span>No Poster</span>'}
-                </div>
-                <div class="movie-info">
+            <article class="movie-card-overlay animate-fade-in-up stagger-${Math.min(index + 1, 8)}" onclick="showHomeMovieDetails(${movie.id}, null)">
+                ${posterUrl
+                    ? `<img src="${posterUrl}" alt="${title}" loading="lazy">`
+                    : '<div class="loading" style="aspect-ratio:2/3;">No Poster</div>'}
+                <div class="card-overlay">
                     <h4>${title}</h4>
                     <p>${year} · ${rating}</p>
                 </div>
@@ -809,6 +850,9 @@ function updateAuthUI() {
 document.addEventListener('DOMContentLoaded', () => {
     applyTheme(getPreferredTheme());
     updateAuthUI();
+    ensureAuthState().catch((error) => {
+        console.error('Auth initialization failed:', error);
+    });
     initMobileNavToggle();
     setActiveNavLink();
     initScrollObserver();

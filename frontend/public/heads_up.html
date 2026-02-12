@@ -75,7 +75,8 @@
         const errorMessage = document.getElementById('errorMessage');
         const upcomingContainer = document.getElementById('upcomingContainer');
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            await ensureAuthState();
             loadAllData();
             setupEventListeners();
             setInterval(loadAllData, 30000);
