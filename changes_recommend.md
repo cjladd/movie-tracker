@@ -45,3 +45,29 @@
   - improved image loading attributes (`decoding`, selective eager priority),
   - tightened static and HTML cache headers in Express,
   - added frontend build/minification pipeline script (`backend/scripts/build-frontend-assets.js`) and CI execution.
+
+## Next Product Features (Expanded from Item 10)
+1. Role-based group permissions:
+   - Add `owner`, `moderator`, `member` roles in `Group_Members`.
+   - Restrict destructive actions (delete group, remove members, schedule lock) to owner/mod.
+   - Add role-management UI in Stream Team members tab with audit log events.
+2. Recurring movie nights:
+   - Support weekly/biweekly recurrence rules and end conditions.
+   - Auto-generate future `Movie_Nights` entries and sync ICS exports.
+   - Add exception handling (skip date, reschedule single instance).
+3. Smart watchlist recommendations:
+   - Rank candidates using group vote history + recent genres + runtime fit.
+   - Add “Recommended for tonight” section in Stream Team watchlist.
+   - Track recommendation acceptance to improve ranking quality.
+4. Event RSVP deadlines and reminders:
+   - Let hosts set RSVP cutoff timestamps for each movie night.
+   - Trigger reminder notifications at configurable intervals.
+   - Show countdown status and “awaiting response” member chips.
+5. Group activity timeline:
+   - Build a timeline feed for joins, votes, additions, schedule changes, and outcomes.
+   - Add filtering by event type and actor.
+   - Use this feed as an explainable source for notification context.
+6. Post-night feedback and analytics:
+   - Collect optional post-night ratings/reactions.
+   - Display trend cards (attendance rate, genre preference drift, pick win rates).
+   - Use aggregate metrics to improve recommendation quality and planning confidence.
