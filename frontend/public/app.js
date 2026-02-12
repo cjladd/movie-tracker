@@ -386,6 +386,45 @@ async function getMovieNights(groupId) {
     }
 }
 
+function getFilenameFromDisposition(disposition, fallback = 'movie-night.ics') {
+    if (!disposition) return fallback;
+    const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+    if (utf8Match && utf8Match[1]) {
+        return decodeURIComponent(utf8Match[1]);
+    }
+
+    const plainMatch = disposition.match(/filename="?([^"]+)"?/i);
+    return plainMatch && plainMatch[1] ? plainMatch[1] : fallback;
+}
+
+async function exportMovieNightIcs(groupId, nightId) {
+    const response = await fetch(`${API_URL}/groups/${groupId}/movie-nights/${nightId}/ics`, {
+        method: 'GET',
+        credentials: 'include'
+    });
+
+    if (!response.ok) {
+        let errMessage = 'Failed to export calendar invite';
+        try {
+            const errorBody = await response.json();
+            errMessage = errorBody.error || errorBody.message || errMessage;
+        } catch (_error) {
+            // Keep generic fallback message when API does not return JSON.
+        }
+        const err = new Error(errMessage);
+        err.status = response.status;
+        throw err;
+    }
+
+    const blob = await response.blob();
+    const filename = getFilenameFromDisposition(
+        response.headers.get('content-disposition'),
+        `movie-night-${nightId}.ics`
+    );
+
+    return { blob, filename };
+}
+
 // ── Watchlist Functions ──────────────────────────────────────────────────────
 
 async function addToWatchlist(groupId, movieId) {

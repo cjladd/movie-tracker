@@ -3,10 +3,12 @@ const { pool, withTransaction } = require('../config/database');
 const { requireAuth } = require('../middleware/auth');
 const { validateParamId, requireFields, sanitizeBody } = require('../middleware/validate');
 const { verifyMembership, parsePagination, paginatedResponse, apiResponse, apiError, isPositiveInt } = require('../utils/helpers');
-const { NOTIFICATION_TYPES } = require('../utils/constants');
+const { MOVIE_NIGHT_STATUS } = require('../utils/constants');
+const { buildMovieNightIcs, toIcsFilename } = require('../utils/ics');
 const logger = require('../utils/logger');
 
 const router = Router();
+const MOVIE_NIGHT_STATUS_VALUES = new Set(Object.values(MOVIE_NIGHT_STATUS));
 
 function requireMembership(paramName = 'groupId') {
   return async (req, _res, next) => {
@@ -16,6 +18,61 @@ function requireMembership(paramName = 'groupId') {
     }
     next();
   };
+}
+
+function pad2(value) {
+  return String(value).padStart(2, '0');
+}
+
+function parseScheduledDateInput(value) {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  const match = trimmed.match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})(?::(\d{2}))?$/);
+  if (match) {
+    const [, datePart, timePart, secondPart] = match;
+    const sqlDateTime = `${datePart} ${timePart}:${secondPart || '00'}`;
+    const date = new Date(`${datePart}T${timePart}:${secondPart || '00'}`);
+    return Number.isNaN(date.getTime()) ? null : { sqlDateTime, date };
+  }
+
+  const parsedDate = new Date(trimmed);
+  if (Number.isNaN(parsedDate.getTime())) return null;
+
+  const sqlDateTime = [
+    `${parsedDate.getFullYear()}-${pad2(parsedDate.getMonth() + 1)}-${pad2(parsedDate.getDate())}`,
+    `${pad2(parsedDate.getHours())}:${pad2(parsedDate.getMinutes())}:${pad2(parsedDate.getSeconds())}`,
+  ].join(' ');
+
+  return { sqlDateTime, date: parsedDate };
+}
+
+function parseChosenMovieId(value) {
+  if (value === undefined || value === null || value === '') return { movieId: null };
+  if (!isPositiveInt(value)) return { error: 'Invalid chosenMovieId' };
+  return { movieId: Number(value) };
+}
+
+async function ensureMovieInWatchlist(groupId, movieId) {
+  const [rows] = await pool.query(
+    'SELECT 1 FROM Group_Watchlist WHERE group_id = ? AND movie_id = ?',
+    [groupId, movieId]
+  );
+  return rows.length > 0;
+}
+
+async function getMovieNightForGroup(groupId, nightId) {
+  const [rows] = await pool.query(
+    `SELECT mn.night_id, mn.group_id, mn.scheduled_date, mn.status, mn.created_at,
+            mg.group_name, m.title AS movie_title
+     FROM Movie_Nights mn
+     JOIN Movie_Groups mg ON mn.group_id = mg.group_id
+     LEFT JOIN Movies m ON mn.chosen_movie_id = m.movie_id
+     WHERE mn.group_id = ? AND mn.night_id = ?`,
+    [groupId, nightId]
+  );
+  return rows[0] || null;
 }
 
 // Create group (with transaction)
@@ -179,17 +236,32 @@ router.post(
     const { scheduledDate, chosenMovieId } = req.body;
 
     try {
+      const parsedScheduledDate = parseScheduledDateInput(scheduledDate);
+      if (!parsedScheduledDate) return next(apiError('Invalid scheduledDate', 400));
+      if (parsedScheduledDate.date.getTime() < Date.now() - 60000) {
+        return next(apiError('scheduledDate must be in the future', 400));
+      }
+
+      const parsedMovieId = parseChosenMovieId(chosenMovieId);
+      if (parsedMovieId.error) return next(apiError(parsedMovieId.error, 400));
+      if (
+        parsedMovieId.movieId !== null
+        && !(await ensureMovieInWatchlist(groupId, parsedMovieId.movieId))
+      ) {
+        return next(apiError('Selected movie must already exist in the group watchlist', 400));
+      }
+
       const [result] = await pool.query(
         'INSERT INTO Movie_Nights (group_id, scheduled_date, chosen_movie_id, status) VALUES (?, ?, ?, ?)',
-        [groupId, scheduledDate, chosenMovieId || null, 'planned']
+        [groupId, parsedScheduledDate.sqlDateTime, parsedMovieId.movieId ?? null, MOVIE_NIGHT_STATUS.PLANNED]
       );
 
       res.status(201).json(apiResponse({
         night_id: result.insertId,
-        group_id: parseInt(groupId),
-        scheduled_date: scheduledDate,
-        chosen_movie_id: chosenMovieId || null,
-        status: 'planned',
+        group_id: parseInt(groupId, 10),
+        scheduled_date: parsedScheduledDate.sqlDateTime,
+        chosen_movie_id: parsedMovieId.movieId ?? null,
+        status: MOVIE_NIGHT_STATUS.PLANNED,
       }, 'Movie night created successfully'));
     } catch (err) {
       next(err);
@@ -204,21 +276,53 @@ router.put(
   validateParamId('groupId', 'nightId'),
   requireMembership(),
   async (req, res, next) => {
-    const { nightId } = req.params;
+    const { groupId, nightId } = req.params;
     const { scheduledDate, chosenMovieId, status } = req.body;
 
     try {
+      const movieNight = await getMovieNightForGroup(groupId, nightId);
+      if (!movieNight) return next(apiError('Movie night not found', 404));
+
       const updates = [];
       const values = [];
 
-      if (scheduledDate) { updates.push('scheduled_date = ?'); values.push(scheduledDate); }
-      if (chosenMovieId !== undefined) { updates.push('chosen_movie_id = ?'); values.push(chosenMovieId || null); }
-      if (status) { updates.push('status = ?'); values.push(status); }
+      if (scheduledDate !== undefined) {
+        const parsedScheduledDate = parseScheduledDateInput(scheduledDate);
+        if (!parsedScheduledDate) return next(apiError('Invalid scheduledDate', 400));
+        if (parsedScheduledDate.date.getTime() < Date.now() - 60000) {
+          return next(apiError('scheduledDate must be in the future', 400));
+        }
+        updates.push('scheduled_date = ?');
+        values.push(parsedScheduledDate.sqlDateTime);
+      }
+
+      if (chosenMovieId !== undefined) {
+        const parsedMovieId = parseChosenMovieId(chosenMovieId);
+        if (parsedMovieId.error) return next(apiError(parsedMovieId.error, 400));
+
+        if (
+          parsedMovieId.movieId !== null
+          && !(await ensureMovieInWatchlist(groupId, parsedMovieId.movieId))
+        ) {
+          return next(apiError('Selected movie must already exist in the group watchlist', 400));
+        }
+
+        updates.push('chosen_movie_id = ?');
+        values.push(parsedMovieId.movieId ?? null);
+      }
+
+      if (status !== undefined) {
+        if (!MOVIE_NIGHT_STATUS_VALUES.has(status)) {
+          return next(apiError('Invalid status value', 400));
+        }
+        updates.push('status = ?');
+        values.push(status);
+      }
 
       if (updates.length === 0) return next(apiError('No fields to update', 400));
 
-      values.push(nightId);
-      await pool.query(`UPDATE Movie_Nights SET ${updates.join(', ')} WHERE night_id = ?`, values);
+      values.push(nightId, groupId);
+      await pool.query(`UPDATE Movie_Nights SET ${updates.join(', ')} WHERE night_id = ? AND group_id = ?`, values);
       res.json(apiResponse(null, 'Movie night updated'));
     } catch (err) {
       next(err);
@@ -246,12 +350,57 @@ router.get(
          FROM Movie_Nights mn
          LEFT JOIN Movies m ON mn.chosen_movie_id = m.movie_id
          WHERE mn.group_id = ?
-         ORDER BY mn.scheduled_date DESC
+         ORDER BY mn.scheduled_date ASC
          LIMIT ? OFFSET ?`,
         [req.params.groupId, limit, offset]
       );
 
       res.json(paginatedResponse(rows, total, page, limit));
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// Export a movie night event as an ICS file
+router.get(
+  '/:groupId/movie-nights/:nightId/ics',
+  requireAuth,
+  validateParamId('groupId', 'nightId'),
+  requireMembership(),
+  async (req, res, next) => {
+    const { groupId, nightId } = req.params;
+
+    try {
+      const movieNight = await getMovieNightForGroup(groupId, nightId);
+      if (!movieNight) return next(apiError('Movie night not found', 404));
+
+      const scheduledDate = new Date(movieNight.scheduled_date);
+      if (Number.isNaN(scheduledDate.getTime())) {
+        return next(apiError('Movie night has an invalid schedule date', 500));
+      }
+
+      const eventTitle = movieNight.movie_title
+        ? `${movieNight.group_name}: ${movieNight.movie_title}`
+        : `${movieNight.group_name}: Movie Night`;
+      const description = movieNight.movie_title
+        ? `Stream Team: ${movieNight.group_name}\nMovie: ${movieNight.movie_title}`
+        : `Stream Team: ${movieNight.group_name}\nMovie: To be decided`;
+
+      const icsContent = buildMovieNightIcs({
+        uid: `movie-night-${movieNight.night_id}@movienightplanner.local`,
+        createdAt: movieNight.created_at || new Date(),
+        startAt: scheduledDate,
+        summary: eventTitle,
+        description,
+        calendarName: `${movieNight.group_name} Movie Nights`,
+      });
+
+      const filename = toIcsFilename(movieNight.group_name, scheduledDate, movieNight.night_id);
+      res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Cache-Control', 'no-store');
+      res.status(200).send(icsContent);
     } catch (err) {
       next(err);
     }

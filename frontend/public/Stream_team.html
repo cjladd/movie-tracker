@@ -52,7 +52,7 @@
             <div class="detail-tabs">
                 <button class="detail-tab active" type="button" data-tab="members">Members</button>
                 <button class="detail-tab" type="button" data-tab="watchlist">Watchlist</button>
-                <button class="detail-tab" type="button" data-tab="movie-nights">Movie Nights</button>
+                <button class="detail-tab" type="button" data-tab="movieNights">Movie Nights</button>
             </div>
 
             <div id="membersTab" class="tab-content active">
@@ -84,11 +84,21 @@
                 <div class="error-message" id="movieNightError"></div>
 
                 <div class="create-movie-night-form card">
-                    <h4>Schedule Movie Night</h4>
-                    <div class="form-group">
-                        <label for="movieNightDate">Date & Time</label>
-                        <input type="datetime-local" id="movieNightDate">
+                    <div class="movie-night-form-header">
+                        <h4>Schedule Movie Night</h4>
+                        <p>Pick a calendar date, set a start time, and export invites in one click.</p>
                     </div>
+                    <div class="movie-night-date-row">
+                        <div class="form-group">
+                            <label for="movieNightDate">Calendar Date</label>
+                            <input type="date" id="movieNightDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="movieNightTime">Start Time</label>
+                            <input type="time" id="movieNightTime" value="20:00">
+                        </div>
+                    </div>
+                    <p class="movie-night-selected-preview" id="movieNightSelectedPreview">No date selected yet.</p>
                     <div class="form-group">
                         <label for="chosenMovie">Movie (optional)</label>
                         <select id="chosenMovie">
@@ -96,6 +106,25 @@
                         </select>
                     </div>
                     <button id="createMovieNightBtn" class="btn btn-primary" type="button">Schedule Movie Night</button>
+                </div>
+
+                <div class="movie-night-calendar card">
+                    <div class="movie-night-calendar-header">
+                        <button class="btn btn-ghost" id="calendarPrevMonth" type="button" aria-label="Previous month">Previous</button>
+                        <h5 id="calendarMonthLabel">Calendar</h5>
+                        <button class="btn btn-ghost" id="calendarNextMonth" type="button" aria-label="Next month">Next</button>
+                    </div>
+                    <div class="calendar-weekdays" aria-hidden="true">
+                        <span>Sun</span>
+                        <span>Mon</span>
+                        <span>Tue</span>
+                        <span>Wed</span>
+                        <span>Thu</span>
+                        <span>Fri</span>
+                        <span>Sat</span>
+                    </div>
+                    <div class="calendar-grid" id="movieNightCalendarGrid"></div>
+                    <p class="calendar-day-summary" id="calendarDaySummary">Select a day to schedule a movie night.</p>
                 </div>
 
                 <ul class="movie-nights-list" id="movieNightsList"></ul>
@@ -117,6 +146,8 @@
     <script src="app.js"></script>
     <script>
         let currentGroupId = null;
+        let movieNightsCache = [];
+        let calendarViewDate = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
         const content = document.getElementById('content');
         const createGroupBtn = document.getElementById('createGroupBtn');
@@ -130,9 +161,18 @@
         const membersList = document.getElementById('membersList');
         const watchlistVotingGrid = document.getElementById('watchlistVotingGrid');
         const movieNightsList = document.getElementById('movieNightsList');
+        const movieNightDateInput = document.getElementById('movieNightDate');
+        const movieNightTimeInput = document.getElementById('movieNightTime');
+        const movieNightSelectedPreview = document.getElementById('movieNightSelectedPreview');
+        const calendarMonthLabel = document.getElementById('calendarMonthLabel');
+        const movieNightCalendarGrid = document.getElementById('movieNightCalendarGrid');
+        const calendarDaySummary = document.getElementById('calendarDaySummary');
+        const calendarPrevMonth = document.getElementById('calendarPrevMonth');
+        const calendarNextMonth = document.getElementById('calendarNextMonth');
 
         document.addEventListener('DOMContentLoaded', async () => {
             await ensureAuthState();
+            initializeMovieNightScheduler();
             loadGroups();
             setupEventListeners();
         });
@@ -141,6 +181,180 @@
             if (Array.isArray(result)) return result;
             if (result && Array.isArray(result.data)) return result.data;
             return [];
+        }
+
+        function initializeMovieNightScheduler() {
+            const today = new Date();
+            const todayString = toDateInputValue(today);
+            movieNightDateInput.min = todayString;
+            if (!movieNightTimeInput.value) movieNightTimeInput.value = '20:00';
+            updateSelectedDatePreview();
+            renderMovieNightCalendar([]);
+        }
+
+        function toDateInputValue(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function parseDateValue(value) {
+            if (!value) return null;
+            if (value instanceof Date) return value;
+            const raw = String(value);
+            const normalized = raw.includes(' ') ? raw.replace(' ', 'T') : raw;
+            const parsed = new Date(normalized);
+            return Number.isNaN(parsed.getTime()) ? null : parsed;
+        }
+
+        function toDateKey(date) {
+            return toDateInputValue(date);
+        }
+
+        function buildSelectedDateTime() {
+            const dateValue = movieNightDateInput.value;
+            if (!dateValue) return null;
+            const timeValue = movieNightTimeInput.value || '20:00';
+            return `${dateValue}T${timeValue}`;
+        }
+
+        function handleMovieNightDateChange() {
+            if (movieNightDateInput.value) {
+                const selectedDate = parseDateValue(`${movieNightDateInput.value}T12:00`);
+                if (selectedDate) {
+                    calendarViewDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+                }
+            }
+            updateSelectedDatePreview();
+            renderMovieNightCalendar(movieNightsCache);
+        }
+
+        function updateSelectedDatePreview() {
+            const dateTimeValue = buildSelectedDateTime();
+            if (!dateTimeValue) {
+                movieNightSelectedPreview.textContent = 'No date selected yet.';
+                updateCalendarDaySummary();
+                return;
+            }
+
+            const selectedDate = parseDateValue(dateTimeValue);
+            if (!selectedDate) {
+                movieNightSelectedPreview.textContent = 'Selected date is invalid.';
+                updateCalendarDaySummary();
+                return;
+            }
+
+            const formatted = selectedDate.toLocaleString([], {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+            });
+            movieNightSelectedPreview.textContent = `Selected: ${formatted}`;
+            updateCalendarDaySummary(movieNightDateInput.value);
+        }
+
+        function shiftCalendarMonth(offset) {
+            calendarViewDate = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() + offset, 1);
+            renderMovieNightCalendar(movieNightsCache);
+        }
+
+        function countNightsByDate(movieNights) {
+            return movieNights.reduce((acc, night) => {
+                const date = parseDateValue(night.scheduled_date);
+                if (!date) return acc;
+                const key = toDateKey(date);
+                acc[key] = (acc[key] || 0) + 1;
+                return acc;
+            }, {});
+        }
+
+        function renderMovieNightCalendar(movieNights) {
+            const nightsByDate = countNightsByDate(movieNights);
+            const year = calendarViewDate.getFullYear();
+            const month = calendarViewDate.getMonth();
+            const firstDayOffset = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const selectedDate = movieNightDateInput.value;
+            const todayKey = toDateKey(new Date());
+
+            calendarMonthLabel.textContent = calendarViewDate.toLocaleDateString([], {
+                month: 'long',
+                year: 'numeric',
+            });
+
+            let html = '';
+            for (let i = 0; i < firstDayOffset; i += 1) {
+                html += '<span class="calendar-day calendar-day-empty" aria-hidden="true"></span>';
+            }
+
+            for (let day = 1; day <= daysInMonth; day += 1) {
+                const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const hasNight = Boolean(nightsByDate[dateKey]);
+                const classes = [
+                    'calendar-day',
+                    hasNight ? 'has-night' : '',
+                    selectedDate === dateKey ? 'selected' : '',
+                    todayKey === dateKey ? 'today' : '',
+                ].filter(Boolean).join(' ');
+
+                html += `
+                    <button class="${classes}" data-date="${dateKey}" type="button">
+                        <span class="calendar-day-number">${day}</span>
+                        ${hasNight ? `<span class="calendar-day-count">${nightsByDate[dateKey]}</span>` : ''}
+                    </button>
+                `;
+            }
+
+            movieNightCalendarGrid.innerHTML = html;
+            movieNightCalendarGrid.querySelectorAll('.calendar-day[data-date]').forEach((dayButton) => {
+                dayButton.addEventListener('click', () => {
+                    movieNightDateInput.value = dayButton.dataset.date;
+                    updateSelectedDatePreview();
+                    renderMovieNightCalendar(movieNightsCache);
+                });
+            });
+
+            updateCalendarDaySummary(selectedDate);
+        }
+
+        function updateCalendarDaySummary(dateKey = '') {
+            if (!dateKey) {
+                calendarDaySummary.textContent = 'Select a day to schedule a movie night.';
+                return;
+            }
+
+            const selectedNights = movieNightsCache.filter((night) => {
+                const parsed = parseDateValue(night.scheduled_date);
+                return parsed && toDateKey(parsed) === dateKey;
+            });
+
+            if (selectedNights.length === 0) {
+                const selectedDate = parseDateValue(`${dateKey}T12:00`);
+                const label = selectedDate
+                    ? selectedDate.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })
+                    : dateKey;
+                calendarDaySummary.textContent = `No scheduled movie nights on ${label}.`;
+                return;
+            }
+
+            const summary = selectedNights
+                .slice(0, 2)
+                .map((night) => {
+                    const startAt = parseDateValue(night.scheduled_date);
+                    const timeLabel = startAt
+                        ? startAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+                        : 'Time TBD';
+                    return night.movie_title
+                        ? `${timeLabel} - ${night.movie_title}`
+                        : `${timeLabel} - Movie TBD`;
+                })
+                .join(' | ');
+
+            const moreCount = selectedNights.length > 2 ? ` (+${selectedNights.length - 2} more)` : '';
+            calendarDaySummary.textContent = `${selectedNights.length} scheduled: ${summary}${moreCount}`;
         }
 
         function setupEventListeners() {
@@ -186,6 +400,11 @@
             });
 
             document.getElementById('createMovieNightBtn').addEventListener('click', handleCreateMovieNight);
+            movieNightDateInput.addEventListener('change', handleMovieNightDateChange);
+            movieNightTimeInput.addEventListener('change', updateSelectedDatePreview);
+            calendarPrevMonth.addEventListener('click', () => shiftCalendarMonth(-1));
+            calendarNextMonth.addEventListener('click', () => shiftCalendarMonth(1));
+            movieNightsList.addEventListener('click', handleMovieNightsListActions);
         }
 
         async function loadGroups() {
@@ -286,6 +505,12 @@
         }
 
         function switchTab(tabName) {
+            const tabIdMap = {
+                members: 'membersTab',
+                watchlist: 'watchlistTab',
+                movieNights: 'movieNightsTab'
+            };
+
             document.querySelectorAll('.detail-tab').forEach((tab) => {
                 tab.classList.toggle('active', tab.dataset.tab === tabName);
             });
@@ -294,12 +519,12 @@
                 tab.classList.remove('active');
             });
 
-            const targetTab = document.getElementById(`${tabName}Tab`);
+            const targetTab = document.getElementById(tabIdMap[tabName] || `${tabName}Tab`);
             if (targetTab) targetTab.classList.add('active');
 
             if (tabName === 'members') loadMembers();
             if (tabName === 'watchlist') loadWatchlist();
-            if (tabName === 'movie-nights') loadMovieNights();
+            if (tabName === 'movieNights') loadMovieNights();
         }
 
         async function loadMembers() {
@@ -466,8 +691,12 @@
             if (!currentGroupId) return;
             try {
                 const movieNights = normalizeCollection(await getMovieNights(currentGroupId));
+                movieNightsCache = movieNights;
+                renderMovieNightCalendar(movieNights);
+
                 if (movieNights.length === 0) {
                     movieNightsList.innerHTML = '<li class="empty-state card">No movie nights scheduled yet</li>';
+                    updateCalendarDaySummary(movieNightDateInput.value);
                     return;
                 }
 
@@ -478,33 +707,77 @@
                             <div class="movie-night-status status-${night.status}">${night.status}</div>
                         </div>
                         <div class="movie-night-movie">${night.movie_title ? `Movie: ${escapeHtml(night.movie_title)}` : 'No movie selected yet'}</div>
+                        <div class="movie-night-actions">
+                            <button class="btn btn-secondary js-export-ics" data-night-id="${night.night_id}" type="button">Export .ics</button>
+                        </div>
                     </li>
                 `).join('');
             } catch (error) {
+                movieNightsCache = [];
+                renderMovieNightCalendar([]);
                 movieNightsList.innerHTML = '<li class="empty-state card">Error loading movie nights</li>';
             }
         }
 
         async function handleCreateMovieNight() {
-            const dateInput = document.getElementById('movieNightDate').value;
+            const scheduledDate = buildSelectedDateTime();
             const movieSelect = document.getElementById('chosenMovie').value;
             const successDiv = document.getElementById('movieNightSuccess');
             const errorDiv = document.getElementById('movieNightError');
 
-            if (!dateInput) {
-                showError(errorDiv, 'Please select a date and time');
+            if (!scheduledDate) {
+                showError(errorDiv, 'Please select a calendar date');
+                return;
+            }
+
+            const selectedDate = parseDateValue(scheduledDate);
+            if (!selectedDate || selectedDate.getTime() < Date.now() - 60000) {
+                showError(errorDiv, 'Please select a future date and time');
                 return;
             }
 
             try {
-                await createMovieNight(currentGroupId, dateInput, movieSelect || null);
-                document.getElementById('movieNightDate').value = '';
+                await createMovieNight(currentGroupId, scheduledDate, movieSelect || null);
                 document.getElementById('chosenMovie').value = '';
                 showSuccess(successDiv, 'Movie night scheduled');
-                loadMovieNights();
+                await loadMovieNights();
             } catch (error) {
                 showError(errorDiv, error.message || 'Failed to create movie night');
             }
+        }
+
+        async function handleMovieNightsListActions(event) {
+            const exportButton = event.target.closest('.js-export-ics');
+            if (!exportButton || !currentGroupId) return;
+
+            const nightId = Number(exportButton.dataset.nightId);
+            if (!nightId) return;
+
+            const originalLabel = exportButton.textContent;
+            exportButton.disabled = true;
+            exportButton.textContent = 'Preparing...';
+
+            try {
+                const { blob, filename } = await exportMovieNightIcs(currentGroupId, nightId);
+                triggerFileDownload(blob, filename);
+                showSuccess(null, 'Calendar invite exported');
+            } catch (error) {
+                showError(document.getElementById('movieNightError'), error.message || 'Failed to export .ics');
+            } finally {
+                exportButton.disabled = false;
+                exportButton.textContent = originalLabel;
+            }
+        }
+
+        function triggerFileDownload(blob, filename) {
+            const objectUrl = URL.createObjectURL(blob);
+            const downloadLink = document.createElement('a');
+            downloadLink.href = objectUrl;
+            downloadLink.download = filename || 'movie-night.ics';
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            downloadLink.remove();
+            setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
         }
 
         function showError(element, message) {

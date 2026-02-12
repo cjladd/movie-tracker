@@ -126,6 +126,11 @@
   margin-bottom: 0.7rem;
 }
 
+.movie-night-calendar {
+  padding: 0.75rem;
+  margin-bottom: 0.7rem;
+}
+
 .add-member-form h4,
 .create-movie-night-form h4,
 .watchlist-header h4 {
@@ -148,6 +153,24 @@
 .member-item,
 .movie-night-item {
   padding: 0.7rem;
+}
+
+.movie-night-form-header p {
+  margin: -0.15rem 0 0.6rem;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
+.movie-night-date-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.movie-night-selected-preview {
+  margin: 0.05rem 0 0.6rem;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
 }
 
 .member-name {
@@ -288,6 +311,109 @@
   margin-bottom: 0.2rem;
 }
 
+.movie-night-calendar-header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.movie-night-calendar-header h5 {
+  margin: 0;
+  text-align: center;
+  font-size: var(--text-sm);
+  font-family: var(--font-display);
+}
+
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  margin-bottom: 0.35rem;
+  color: var(--text-tertiary);
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.calendar-weekdays span {
+  text-align: center;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.25rem;
+}
+
+.calendar-day {
+  min-height: 48px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-overlay);
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  padding: 0.3rem 0.2rem;
+  transition: border-color 140ms ease, transform 140ms ease;
+}
+
+.calendar-day:not(.calendar-day-empty):hover {
+  border-color: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.calendar-day-empty {
+  border: 0;
+  background: transparent;
+}
+
+.calendar-day-number {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.calendar-day-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1rem;
+  min-height: 1rem;
+  border-radius: var(--radius-full);
+  padding: 0 0.25rem;
+  background: rgba(96, 165, 250, 0.2);
+  color: #dbeafe;
+  font-size: 0.65rem;
+}
+
+.calendar-day.today {
+  border-color: rgba(96, 165, 250, 0.55);
+}
+
+.calendar-day.has-night {
+  border-color: rgba(96, 165, 250, 0.42);
+}
+
+.calendar-day.selected {
+  border-color: transparent;
+  background: var(--gradient-primary);
+  color: #fff;
+}
+
+.calendar-day.selected .calendar-day-count {
+  background: rgba(255, 255, 255, 0.24);
+  color: #fff;
+}
+
+.calendar-day-summary {
+  margin: 0.55rem 0 0;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
 .empty-state,
 .login-prompt {
   text-align: center;
@@ -352,6 +478,12 @@
   font-size: var(--text-xs);
 }
 
+.movie-night-actions {
+  margin-top: 0.55rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
 @media (max-width: 768px) {
   .st-main {
     width: calc(100% - 1rem);
@@ -371,6 +503,18 @@
 
   .add-member-row {
     grid-template-columns: 1fr;
+  }
+
+  .movie-night-date-row {
+    grid-template-columns: 1fr;
+  }
+
+  .movie-night-calendar-header {
+    grid-template-columns: 1fr;
+  }
+
+  .movie-night-calendar-header h5 {
+    order: -1;
   }
 }
 
