@@ -7,6 +7,66 @@ let authStatePromise = null;
 const THEME_KEY = 'mnp_theme';
 const LAST_SEED_KEY = 'mnp_last_seed_at';
 
+function normalizeCollection(result) {
+    if (Array.isArray(result)) return result;
+    if (result && Array.isArray(result.data)) return result.data;
+    return [];
+}
+
+function getErrorMessage(error, fallback = 'Request failed') {
+    if (error && typeof error.message === 'string' && error.message.trim()) {
+        return error.message;
+    }
+    return fallback;
+}
+
+function setStatusMessage(successEl, errorEl, message, type = 'error', autoHideMs = 0) {
+    if (type === 'success' && successEl) {
+        successEl.textContent = message;
+        successEl.style.display = 'block';
+    }
+    if (type === 'error' && errorEl) {
+        errorEl.textContent = message;
+        errorEl.style.display = 'block';
+    }
+    if (type === 'success' && errorEl) errorEl.style.display = 'none';
+    if (type === 'error' && successEl) successEl.style.display = 'none';
+
+    if (typeof showToast === 'function') {
+        showToast(message, type === 'success' ? 'success' : 'error');
+    }
+
+    if (autoHideMs > 0) {
+        window.setTimeout(() => {
+            if (successEl) successEl.style.display = 'none';
+            if (errorEl) errorEl.style.display = 'none';
+        }, autoHideMs);
+    }
+}
+
+function renderStandardState(container, type, title, message) {
+    if (!container) return;
+    const safeTitle = escapeHtml(title || '');
+    const safeMessage = escapeHtml(message || '');
+
+    if (type === 'loading') {
+        container.innerHTML = `
+            <div class="loading-spinner" role="status" aria-live="polite">
+                <div class="spinner"></div>
+                <span class="sr-only">Loading</span>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = `
+        <div class="empty-state card" role="${type === 'error' ? 'alert' : 'status'}" aria-live="${type === 'error' ? 'assertive' : 'polite'}">
+            <h3>${safeTitle}</h3>
+            ${safeMessage ? `<p>${safeMessage}</p>` : ''}
+        </div>
+    `;
+}
+
 // ── Core API Helper ──────────────────────────────────────────────────────────
 
 async function apiCall(endpoint, method = 'GET', data = null) {
@@ -114,7 +174,9 @@ function setCurrentUser(user) {
 
 function clearAuthState() {
     setCurrentUser(null);
-    homeUserGroups = [];
+    if (typeof homeUserGroups !== 'undefined') {
+        homeUserGroups = [];
+    }
 }
 
 async function ensureAuthState(forceRefresh = false) {
@@ -148,7 +210,9 @@ async function register(name, email, password) {
 async function login(email, password) {
     const user = await apiCall('/users/login', 'POST', { email, password });
     setCurrentUser(user);
-    homeUserGroups = [];
+    if (typeof homeUserGroups !== 'undefined') {
+        homeUserGroups = [];
+    }
     authStatePromise = Promise.resolve(currentUser);
     updateAuthUI();
     showToast('Logged in successfully', 'success');
@@ -244,6 +308,25 @@ function setActiveNavLink() {
             link.removeAttribute('aria-current');
         }
     });
+}
+
+function initSkipLink() {
+    const main = document.querySelector('main');
+    if (!main) return;
+
+    if (!main.id) {
+        main.id = 'mainContent';
+    }
+    if (!main.hasAttribute('tabindex')) {
+        main.setAttribute('tabindex', '-1');
+    }
+    if (document.querySelector('.skip-link')) return;
+
+    const skipLink = document.createElement('a');
+    skipLink.className = 'skip-link';
+    skipLink.href = `#${main.id}`;
+    skipLink.textContent = 'Skip to main content';
+    document.body.insertBefore(skipLink, document.body.firstChild);
 }
 
 function ensureToastContainer() {
@@ -495,361 +578,7 @@ async function getMovie(movieId) {
     }
 }
 
-// ── Homepage Functions ───────────────────────────────────────────────────────
-
-async function loadHomepageContent() {
-    try {
-        if (shouldSeedMovies()) {
-            await seedDatabaseWithTMDBMovies();
-            localStorage.setItem(LAST_SEED_KEY, String(Date.now()));
-        }
-
-        const [featuredMovies, trending] = await Promise.all([
-            getFeaturedMovies(),
-            getTrendingMovies()
-        ]);
-
-        const trendingResults = (trending && Array.isArray(trending.results)) ? trending.results : [];
-
-        if (featuredMovies && featuredMovies.length > 0) {
-            displayHeroMovie(featuredMovies[0]);
-            displayFeaturedMovies(featuredMovies);
-        } else if (trendingResults.length > 0) {
-            // Fall back to trending data for hero when DB is empty
-            const heroTrending = trendingResults[0];
-            displayHeroMovie({
-                title: heroTrending.title || heroTrending.name || 'Unknown',
-                poster_url: heroTrending.poster_path ? `https://image.tmdb.org/t/p/w500${heroTrending.poster_path}` : '',
-                release_year: (heroTrending.release_date || '').slice(0, 4) || 'Unknown',
-                rating: heroTrending.vote_average || null,
-            });
-            displayFeaturedFromTrending(trendingResults.slice(0, 8));
-        } else {
-            showError('No movies found. Please try again later.');
-        }
-
-        if (trendingResults.length > 0) {
-            displayTrendingMovies(trendingResults.slice(0, 8));
-        } else {
-            const trendingSection = document.getElementById('trending-movies');
-            if (trendingSection) {
-                trendingSection.innerHTML = '<div class="error">No trending movies found right now.</div>';
-                trendingSection.classList.remove('loading');
-            }
-        }
-    } catch (error) {
-        console.error('Error loading homepage content:', error);
-        showError('Failed to load content. Please try again later.');
-    }
-}
-
-function displayHeroMovie(movie) {
-    const heroSection = document.getElementById('hero-section');
-    if (!heroSection) return;
-
-    let ratingDisplay = 'N/A';
-    if (movie.rating !== null && movie.rating !== undefined && !isNaN(movie.rating)) {
-        ratingDisplay = Number(movie.rating).toFixed(1);
-    }
-
-    const posterUrl = movie.poster_url || '';
-    const title = escapeHtml(movie.title);
-    const year = escapeHtml(String(movie.release_year || 'Unknown'));
-
-    heroSection.innerHTML = `
-        <div class="hero-content card">
-            <div class="hero-text" data-animate>
-                <span class="hero-eyebrow">Tonight's Hero Pick</span>
-                <h2 class="hero-title">Plan a <span class="gradient">Movie Night</span> that everyone actually wants.</h2>
-                <p class="hero-subtitle">
-                    Build group watchlists, vote fast, and lock in a plan with less back-and-forth.
-                </p>
-                <div class="hero-actions">
-                    <a class="btn btn-primary" href="Binge_Bank.html">Discover Movies</a>
-                    <a class="btn btn-secondary" href="Stream_team.html">Open Groups</a>
-                </div>
-            </div>
-            <div class="hero-poster" data-animate>
-                ${posterUrl
-                    ? `<img src="${posterUrl}" alt="${title}" loading="lazy">`
-                    : '<div class="loading">No poster available</div>'}
-                <div class="hero-meta">
-                    <h3>${title} (${year})</h3>
-                    <div class="rating">${ratingDisplay}/10</div>
-                </div>
-            </div>
-        </div>
-    `;
-    heroSection.classList.remove('loading');
-    heroSection.querySelectorAll('[data-animate]').forEach(el => el.classList.add('is-visible'));
-}
-
-function displayFeaturedMovies(movies) {
-    const featuredSection = document.getElementById('featured-movies');
-    if (!featuredSection) return;
-
-    const movieCards = movies.map((movie, index) => {
-        const posterUrl = movie.poster_url || '';
-        const title = escapeHtml(movie.title);
-        const year = escapeHtml(String(movie.release_year || 'Unknown'));
-        const rating = movie.rating ? `${Number(movie.rating).toFixed(1)}/10` : 'NR';
-
-        const tmdbId = movie.tmdb_id ? Number(movie.tmdb_id) : 'null';
-        const movieId = movie.movie_id ? Number(movie.movie_id) : 'null';
-        return `
-            <article class="movie-card-overlay animate-fade-in-up stagger-${Math.min(index + 1, 8)}" data-movie-id="${movie.movie_id}" onclick="showHomeMovieDetails(${tmdbId}, ${movieId})">
-                ${posterUrl
-                    ? `<img src="${posterUrl}" alt="${title}" loading="lazy">`
-                    : '<div class="loading" style="aspect-ratio:2/3;">No Poster</div>'}
-                <div class="card-overlay">
-                    <h4>${title}</h4>
-                    <p>${year} · ${rating}</p>
-                </div>
-            </article>
-        `;
-    }).join('');
-
-    featuredSection.innerHTML = `
-        <div class="featured-row">
-            ${movieCards}
-        </div>
-    `;
-    featuredSection.classList.remove('loading');
-}
-
-function displayTrendingMovies(movies) {
-    const trendingSection = document.getElementById('trending-movies');
-    if (!trendingSection) return;
-
-    const cards = movies.map((movie, index) => {
-        const title = escapeHtml(movie.title || movie.name || 'Unknown title');
-        const year = escapeHtml((movie.release_date || '').slice(0, 4) || 'Unknown');
-        const rating = movie.vote_average ? Number(movie.vote_average).toFixed(1) : 'NR';
-        const poster = movie.poster_path
-            ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-            : '';
-
-        return `
-            <article class="trending-card card animate-fade-in-up stagger-${Math.min(index + 1, 8)}" onclick="showHomeMovieDetails(${movie.id}, null)" style="cursor:pointer;">
-                ${poster ? `<img src="${poster}" alt="${title}" loading="lazy">` : '<div class="loading">No poster</div>'}
-                <div class="trending-overlay">
-                    <h4>${title}</h4>
-                    <p>${year} · ${rating}/10</p>
-                </div>
-            </article>
-        `;
-    }).join('');
-
-    trendingSection.innerHTML = `<div class="trending-grid">${cards}</div>`;
-    trendingSection.classList.remove('loading');
-}
-
-function displayFeaturedFromTrending(movies) {
-    const featuredSection = document.getElementById('featured-movies');
-    if (!featuredSection) return;
-
-    const movieCards = movies.map((movie, index) => {
-        const posterUrl = movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : '';
-        const title = escapeHtml(movie.title || movie.name || 'Unknown');
-        const year = escapeHtml((movie.release_date || '').slice(0, 4) || 'Unknown');
-        const rating = movie.vote_average ? `${Number(movie.vote_average).toFixed(1)}/10` : 'NR';
-
-        return `
-            <article class="movie-card-overlay animate-fade-in-up stagger-${Math.min(index + 1, 8)}" onclick="showHomeMovieDetails(${movie.id}, null)">
-                ${posterUrl
-                    ? `<img src="${posterUrl}" alt="${title}" loading="lazy">`
-                    : '<div class="loading" style="aspect-ratio:2/3;">No Poster</div>'}
-                <div class="card-overlay">
-                    <h4>${title}</h4>
-                    <p>${year} · ${rating}</p>
-                </div>
-            </article>
-        `;
-    }).join('');
-
-    featuredSection.innerHTML = `<div class="featured-row">${movieCards}</div>`;
-    featuredSection.classList.remove('loading');
-}
-
-// ── Homepage Movie Modal ────────────────────────────────────────────────────
-
-let homeModalMovieData = null;
-let homeUserGroups = [];
-
-function normalizeLocalMovieForModal(movie) {
-    const genres = movie.genre
-        ? String(movie.genre).split(',').map((name) => ({ name: name.trim() })).filter((g) => g.name)
-        : [];
-
-    return {
-        id: movie.tmdb_id || null,
-        title: movie.title || 'Unknown title',
-        release_date: movie.release_year ? `${movie.release_year}-01-01` : null,
-        runtime: movie.runtime_minutes || null,
-        vote_average: movie.rating !== null && movie.rating !== undefined ? Number(movie.rating) : null,
-        overview: movie.description || '',
-        genres,
-        cast: [],
-        backdrop_url: movie.poster_url || null,
-        poster_url: movie.poster_url || null,
-        __source: 'local',
-        __localMovieId: movie.movie_id || null,
-    };
-}
-
-function renderHomeMovieModal(movie) {
-    const titleEl = document.getElementById('modalTitle');
-    const metaEl = document.getElementById('modalMeta');
-    const descriptionEl = document.getElementById('modalDescription');
-    const modalHeader = document.getElementById('modalHeader');
-
-    if (!titleEl || !metaEl || !descriptionEl || !modalHeader) return;
-
-    const year = movie.release_date
-        ? new Date(movie.release_date).getFullYear()
-        : (movie.release_year || 'Unknown');
-    const runtime = movie.runtime ? `${movie.runtime} min` : '';
-    const rating = movie.vote_average !== null && movie.vote_average !== undefined && !isNaN(movie.vote_average)
-        ? `Rating ${Number(movie.vote_average).toFixed(1)}/10`
-        : 'Rating N/A';
-
-    titleEl.textContent = movie.title || 'Unknown title';
-    metaEl.innerHTML = `
-        <span>${year}</span>
-        <span>${runtime}</span>
-        <span>${rating}</span>
-    `;
-
-    modalHeader.style.backgroundImage = movie.backdrop_url ? `url(${movie.backdrop_url})` : 'none';
-
-    descriptionEl.innerHTML = `
-        <p class="modal-overview">${movie.overview || 'No description available.'}</p>
-        ${movie.genres && movie.genres.length > 0 ? `<p><strong>Genres:</strong> ${movie.genres.map((g) => g.name).join(', ')}</p>` : ''}
-        ${movie.cast && movie.cast.length > 0 ? `<p><strong>Cast:</strong> ${movie.cast.slice(0, 5).map((c) => c.name).join(', ')}</p>` : ''}
-    `;
-}
-
-async function loadHomeUserGroups() {
-    if (!currentUser || homeUserGroups.length > 0) return;
-    try {
-        const result = await getGroups();
-        homeUserGroups = Array.isArray(result) ? result : (Array.isArray(result.data) ? result.data : []);
-    } catch (error) {
-        homeUserGroups = [];
-    }
-}
-
-async function showHomeMovieDetails(tmdbId, movieId = null) {
-    const modal = document.getElementById('movieModal');
-    if (!modal) return;
-
-    try {
-        let movie = null;
-        let tmdbError = null;
-
-        if (tmdbId) {
-            try {
-                movie = await getMovieDetails(tmdbId);
-                movie.__source = 'tmdb';
-                movie.__localMovieId = movieId || null;
-            } catch (error) {
-                tmdbError = error;
-            }
-        }
-
-        if (!movie && movieId) {
-            const localMovie = await getMovie(movieId);
-            if (localMovie) {
-                movie = normalizeLocalMovieForModal(localMovie);
-            }
-        }
-
-        if (!movie) {
-            throw tmdbError || new Error('Movie details unavailable');
-        }
-
-        homeModalMovieData = movie;
-        renderHomeMovieModal(movie);
-
-        const groupSelector = document.getElementById('groupSelector');
-        if (currentUser) {
-            await loadHomeUserGroups();
-            if (homeUserGroups.length > 0) {
-                const groupList = document.getElementById('groupList');
-                groupList.innerHTML = homeUserGroups.map((group) => `
-                    <div class="group-option">
-                        <span class="group-name">${escapeHtml(group.group_name)}</span>
-                        <button class="btn btn-primary add-to-group-btn" onclick="addHomeMovieToGroup(${group.group_id})">Add</button>
-                    </div>
-                `).join('');
-                groupSelector.style.display = 'block';
-            } else {
-                groupSelector.style.display = 'none';
-            }
-        } else {
-            groupSelector.style.display = 'none';
-        }
-
-        modal.style.display = 'flex';
-    } catch (error) {
-        console.error('Failed to load movie details:', error);
-        showToast('Failed to load movie details', 'error');
-    }
-}
-
-async function addHomeMovieToGroup(groupId) {
-    if (!homeModalMovieData) return;
-    try {
-        if (homeModalMovieData.__source === 'tmdb') {
-            await addMovieToGroup(homeModalMovieData, groupId);
-        } else if (homeModalMovieData.__localMovieId) {
-            await addToWatchlist(groupId, homeModalMovieData.__localMovieId);
-        } else {
-            throw new Error('This movie cannot be added to a group right now');
-        }
-        const groupName = homeUserGroups.find((g) => g.group_id === groupId)?.group_name || 'group';
-        showToast(`Added to "${groupName}" watchlist`, 'success');
-        closeHomeModal();
-    } catch (error) {
-        showToast(error.message || 'Failed to add movie to group', 'error');
-    }
-}
-
-function closeHomeModal() {
-    const modal = document.getElementById('movieModal');
-    if (modal) modal.style.display = 'none';
-}
-
-// Close modal on backdrop click or Escape
-document.addEventListener('click', (e) => {
-    const modal = document.getElementById('movieModal');
-    if (e.target === modal) closeHomeModal();
-});
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeHomeModal();
-});
-
-function showError(message) {
-    const heroSection = document.getElementById('hero-section');
-    const featuredSection = document.getElementById('featured-movies');
-    const safeMessage = escapeHtml(message);
-
-    if (heroSection && heroSection.classList.contains('loading')) {
-        heroSection.innerHTML = `<div class="error">${safeMessage}</div>`;
-        heroSection.classList.remove('loading');
-    }
-
-    if (featuredSection && featuredSection.classList.contains('loading')) {
-        featuredSection.innerHTML = `<div class="error">${safeMessage}</div>`;
-        featuredSection.classList.remove('loading');
-    }
-
-    const trendingSection = document.getElementById('trending-movies');
-    if (trendingSection && trendingSection.classList.contains('loading')) {
-        trendingSection.innerHTML = `<div class="error">${safeMessage}</div>`;
-        trendingSection.classList.remove('loading');
-    }
-}
+// Homepage runtime is loaded from `js/homepage.js` on `website.html`.
 
 // ── Navigation & Auth UI ─────────────────────────────────────────────────────
 
@@ -888,6 +617,7 @@ function updateAuthUI() {
 
 document.addEventListener('DOMContentLoaded', () => {
     applyTheme(getPreferredTheme());
+    initSkipLink();
     updateAuthUI();
     ensureAuthState().catch((error) => {
         console.error('Auth initialization failed:', error);
@@ -913,7 +643,9 @@ document.addEventListener('DOMContentLoaded', () => {
         case '':
         case '/':
         case 'index.html':
-            loadHomepageContent();
+            if (typeof loadHomepageContent === 'function') {
+                loadHomepageContent();
+            }
             break;
     }
 });

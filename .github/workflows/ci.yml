@@ -57,6 +57,9 @@ jobs:
         working-directory: backend
         run: node --check server.js && node --check config/*.js && node --check routes/*.js && node --check middleware/*.js && node --check utils/*.js
 
+      - name: Build frontend assets
+        run: node backend/scripts/build-frontend-assets.js
+
   db-migrations:
     runs-on: ubuntu-latest
 

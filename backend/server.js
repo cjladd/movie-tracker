@@ -118,6 +118,20 @@ app.use(
 
 app.use(express.static(path.join(__dirname, '../frontend/public'), {
   maxAge: env.isProduction ? '1d' : 0,
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      return;
+    }
+
+    if (env.isProduction) {
+      res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=3600');
+    } else {
+      res.setHeader('Cache-Control', 'no-cache');
+    }
+  },
 }));
 
 // --------------- Health check ---------------
@@ -155,6 +169,7 @@ app.use('/api/notifications', notificationRoutes);
 // --------------- SPA catch-all ---------------
 
 app.get('*', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.sendFile(path.join(__dirname, '../frontend/public/website.html'));
 });
 

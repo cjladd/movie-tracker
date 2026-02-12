@@ -55,8 +55,8 @@
                 <button class="tab" type="button" data-tab="popular">Popular</button>
                 <button class="tab" type="button" data-tab="trending">Trending</button>
             </div>
-            <div class="success-message" id="successMessage"></div>
-            <div class="error-message" id="errorMessage"></div>
+            <div class="success-message" id="successMessage" aria-live="polite"></div>
+            <div class="error-message" id="errorMessage" aria-live="assertive"></div>
             <div id="moviesContainer" class="movies-grid">
                 <div class="empty-state card">
                     <h3>Search for your next group pick</h3>
@@ -67,7 +67,7 @@
         </section>
     </main>
 
-    <div id="movieModal" class="modal" style="display:none;">
+    <div id="movieModal" class="modal" style="display:none;" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="modalTitle">
         <div class="modal-content">
             <button class="modal-close close" type="button" aria-label="Close movie details">x</button>
             <div class="modal-header" id="modalHeader">
@@ -120,11 +120,13 @@
             });
 
             document.querySelector('.close').addEventListener('click', () => {
+                modal.setAttribute('aria-hidden', 'true');
                 modal.style.display = 'none';
             });
 
             window.addEventListener('click', (event) => {
                 if (event.target === modal) {
+                    modal.setAttribute('aria-hidden', 'true');
                     modal.style.display = 'none';
                 }
             });
@@ -178,7 +180,6 @@
             currentQuery = query;
             currentPage = 1;
             switchTab('search');
-            await performSearch(query, 1);
         }
 
         async function performSearch(query, page) {
@@ -230,9 +231,16 @@
                 const year = movie.release_date ? new Date(movie.release_date).getFullYear() : 'Unknown';
                 const rating = movie.vote_average ? `${movie.vote_average.toFixed(1)}/10` : 'NR';
                 return `
-                <article class="movie-card-overlay bb-card animate-fade-in-up stagger-${Math.min(index + 1, 8)}" onclick="showMovieDetails(${movie.id})">
+                <article
+                    class="movie-card-overlay bb-card animate-fade-in-up stagger-${Math.min(index + 1, 8)}"
+                    role="button"
+                    tabindex="0"
+                    aria-label="View details for ${escapeHtml(movie.title)}"
+                    onclick="showMovieDetails(${movie.id})"
+                    onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showMovieDetails(${movie.id});}"
+                >
                     ${movie.poster_url
-                        ? `<img src="${movie.poster_url}" alt="${escapeHtml(movie.title)}" loading="lazy">`
+                        ? `<img src="${movie.poster_url}" alt="${escapeHtml(movie.title)}" loading="lazy" decoding="async">`
                         : '<div class="loading" style="aspect-ratio:2/3;">No Poster</div>'}
                     <div class="card-overlay">
                         <h4>${escapeHtml(movie.title)}</h4>
@@ -313,6 +321,7 @@
                     groupSelector.style.display = 'none';
                 }
 
+                modal.setAttribute('aria-hidden', 'false');
                 modal.style.display = 'flex';
             } catch (error) {
                 showError('Failed to load movie details');
@@ -340,6 +349,7 @@
                 await addMovieToGroup(currentMovieData, groupId);
                 const groupName = userGroups.find((g) => g.group_id === groupId)?.group_name || 'group';
                 showSuccess(`Movie added to \"${groupName}\" watchlist`);
+                modal.setAttribute('aria-hidden', 'true');
                 modal.style.display = 'none';
             } catch (error) {
                 showError(error.message || 'Failed to add movie to group');
@@ -386,23 +396,11 @@
         }
 
         function showSuccess(message) {
-            successMessage.textContent = message;
-            successMessage.style.display = 'block';
-            errorMessage.style.display = 'none';
-            if (typeof showToast === 'function') showToast(message, 'success');
-            setTimeout(() => {
-                successMessage.style.display = 'none';
-            }, 3000);
+            setStatusMessage(successMessage, errorMessage, message, 'success', 3000);
         }
 
         function showError(message) {
-            errorMessage.textContent = message;
-            errorMessage.style.display = 'block';
-            successMessage.style.display = 'none';
-            if (typeof showToast === 'function') showToast(message, 'error');
-            setTimeout(() => {
-                errorMessage.style.display = 'none';
-            }, 4000);
+            setStatusMessage(successMessage, errorMessage, message, 'error', 4000);
         }
     </script>
 </body>

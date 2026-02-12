@@ -45,8 +45,8 @@
         <input type="email" id="friendEmail" placeholder="friend@example.com">
         <button id="sendRequestBtn" class="btn btn-primary" type="button">Send Request</button>
       </div>
-      <div class="success-message" id="friendSuccess" style="display:none;"></div>
-      <div class="error-message" id="friendError" style="display:none;"></div>
+      <div class="success-message" id="friendSuccess" style="display:none;" aria-live="polite"></div>
+      <div class="error-message" id="friendError" style="display:none;" aria-live="assertive"></div>
     </section>
 
     <section class="fr-grid" data-animate>
@@ -69,12 +69,6 @@
       loadRequests();
       document.getElementById('sendRequestBtn').addEventListener('click', handleSendRequest);
     });
-
-    function normalizeCollection(result) {
-      if (Array.isArray(result)) return result;
-      if (result && Array.isArray(result.data)) return result.data;
-      return [];
-    }
 
     async function loadFriends() {
       const list = document.getElementById('friendList');
@@ -137,25 +131,17 @@
       const errorDiv = document.getElementById('friendError');
 
       if (!email) {
-        errorDiv.textContent = 'Please enter an email';
-        errorDiv.style.display = 'block';
-        successDiv.style.display = 'none';
+        setStatusMessage(successDiv, errorDiv, 'Please enter an email', 'error', 5000);
         return;
       }
 
       try {
         await sendFriendRequest(email);
         document.getElementById('friendEmail').value = '';
-        successDiv.textContent = 'Request sent';
-        successDiv.style.display = 'block';
-        errorDiv.style.display = 'none';
-        if (typeof showToast === 'function') showToast('Friend request sent', 'success');
+        setStatusMessage(successDiv, errorDiv, 'Request sent', 'success', 3000);
         loadRequests();
       } catch (err) {
-        errorDiv.textContent = err.message;
-        errorDiv.style.display = 'block';
-        successDiv.style.display = 'none';
-        if (typeof showToast === 'function') showToast(err.message, 'error');
+        setStatusMessage(successDiv, errorDiv, getErrorMessage(err, 'Unable to send request'), 'error', 5000);
       }
     }
 
@@ -166,7 +152,7 @@
         loadRequests();
         loadFriends();
       } catch (err) {
-        if (typeof showToast === 'function') showToast(err.message, 'error');
+        if (typeof showToast === 'function') showToast(getErrorMessage(err, 'Unable to accept request'), 'error');
       }
     }
 
@@ -176,7 +162,7 @@
         if (typeof showToast === 'function') showToast('Request declined', 'info');
         loadRequests();
       } catch (err) {
-        if (typeof showToast === 'function') showToast(err.message, 'error');
+        if (typeof showToast === 'function') showToast(getErrorMessage(err, 'Unable to decline request'), 'error');
       }
     }
 
@@ -187,7 +173,7 @@
         if (typeof showToast === 'function') showToast('Friend removed', 'warning');
         loadFriends();
       } catch (err) {
-        if (typeof showToast === 'function') showToast(err.message, 'error');
+        if (typeof showToast === 'function') showToast(getErrorMessage(err, 'Unable to remove friend'), 'error');
       }
     }
   </script>

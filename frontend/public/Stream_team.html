@@ -56,8 +56,8 @@
             </div>
 
             <div id="membersTab" class="tab-content">
-                <div class="success-message" id="memberSuccess"></div>
-                <div class="error-message" id="memberError"></div>
+                <div class="success-message" id="memberSuccess" aria-live="polite"></div>
+                <div class="error-message" id="memberError" aria-live="assertive"></div>
 
                 <div class="add-member-form card">
                     <h4>Invite Member</h4>
@@ -80,8 +80,8 @@
             </div>
 
             <div id="movieNightsTab" class="tab-content">
-                <div class="success-message" id="movieNightSuccess"></div>
-                <div class="error-message" id="movieNightError"></div>
+                <div class="success-message" id="movieNightSuccess" aria-live="polite"></div>
+                <div class="error-message" id="movieNightError" aria-live="assertive"></div>
 
                 <div class="create-movie-night-form card">
                     <div class="movie-night-form-header">
@@ -142,7 +142,7 @@
         <div class="modal-content">
             <button class="modal-close close" aria-label="Close" type="button">x</button>
             <h3>Create a New Group</h3>
-            <div class="error-message" id="createGroupError"></div>
+            <div class="error-message" id="createGroupError" aria-live="assertive"></div>
             <label for="groupNameInput" class="sr-only">Group name</label>
             <input type="text" id="groupNameInput" placeholder="Enter group name" maxlength="100">
             <button id="confirmCreateBtn" class="btn btn-primary" type="button">Create Group</button>
@@ -561,6 +561,11 @@
             const successDiv = document.getElementById('memberSuccess');
             const errorDiv = document.getElementById('memberError');
 
+            if (!currentGroupId) {
+                showError(errorDiv, 'Select a group before inviting members');
+                return;
+            }
+
             if (!email) {
                 showError(errorDiv, 'Please enter an email address');
                 return;
@@ -601,7 +606,7 @@
                 html += `
                     <article class="watchlist-item card">
                         <div class="watchlist-poster">
-                            ${movie.poster_url ? `<img src="${movie.poster_url}" alt="${escapeHtml(movie.title)}" loading="lazy">` : '<span>No Poster</span>'}
+                            ${movie.poster_url ? `<img src="${movie.poster_url}" alt="${escapeHtml(movie.title)}" loading="lazy" decoding="async">` : '<span>No Poster</span>'}
                         </div>
                         <div class="watchlist-info">
                             <div class="watchlist-title">${escapeHtml(movie.title)}</div>

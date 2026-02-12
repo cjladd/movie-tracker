@@ -9,6 +9,30 @@ button {
   transition: transform var(--transition-bounce), box-shadow var(--transition-base), border-color var(--transition-base), background var(--transition-base), color var(--transition-base);
 }
 
+.skip-link {
+  position: fixed;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 1300;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+  color: #111827;
+  border: 2px solid #111827;
+  text-decoration: none;
+  transform: translateY(-140%);
+  transition: transform var(--transition-fast);
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
+:where(a, button, input, select, textarea, [role="button"], [tabindex]):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--primary) 65%, #ffffff);
+  outline-offset: 2px;
+}
+
 .btn:hover,
 button:hover {
   transform: translateY(-1px) scale(1.03);

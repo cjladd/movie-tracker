@@ -12,17 +12,17 @@
 - [x] `5` CI migration verification:
   - [x] validate schema + migration scripts in CI against ephemeral MySQL
   - [x] enforce idempotent migration run
-- [ ] `7` Frontend robustness standards:
-  - [ ] unify API error messaging + toast behavior
-  - [ ] standardize loading/empty/error rendering helpers
-- [ ] `8` Accessibility pass:
-  - [ ] keyboard/focus parity for interactive cards and controls
-  - [ ] stronger semantic/ARIA coverage for dynamic UI
-  - [ ] contrast/focus visibility improvements
-- [ ] `9` Performance pass:
-  - [ ] improve image loading attributes/strategy
-  - [ ] introduce route-level script splitting for homepage-only logic
-  - [ ] tighten static caching policy
+- [x] `7` Frontend robustness standards:
+  - [x] unify API error messaging + toast behavior
+  - [x] standardize loading/empty/error rendering helpers
+- [x] `8` Accessibility pass:
+  - [x] keyboard/focus parity for interactive cards and controls
+  - [x] stronger semantic/ARIA coverage for dynamic UI
+  - [x] contrast/focus visibility improvements
+- [x] `9` Performance pass:
+  - [x] improve image loading attributes/strategy
+  - [x] introduce route-level script splitting for homepage-only logic
+  - [x] tighten static caching policy
 
 ## Implementation Log
 - 2026-02-12: Initialized execution plan and checklist.
@@ -34,3 +34,14 @@
   - added `backend/scripts/verify-migrations.js` to execute SQL files with delimiter-aware parsing,
   - wired CI `db-migrations` job with ephemeral MySQL service,
   - run `migrate.sql` twice in CI to enforce idempotency.
+- 2026-02-12: Completed item `7`:
+  - added shared frontend helpers in `app.js` (`normalizeCollection`, `getErrorMessage`, `setStatusMessage`, `renderStandardState`),
+  - migrated key pages (`Friends`, `Heads Up`, `Settings`, `Binge Bank`) to consistent status/error behavior.
+- 2026-02-12: Completed item `8`:
+  - added skip-link injection and focus-visible styling,
+  - added keyboard semantics to homepage movie cards and stronger `aria-live`/dialog attributes on dynamic UI regions.
+- 2026-02-12: Completed item `9`:
+  - split homepage runtime from `app.js` into `js/homepage.js` and loaded it only on `website.html`,
+  - improved image loading attributes (`decoding`, selective eager priority),
+  - tightened static and HTML cache headers in Express,
+  - added frontend build/minification pipeline script (`backend/scripts/build-frontend-assets.js`) and CI execution.

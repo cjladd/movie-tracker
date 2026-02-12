@@ -39,8 +39,8 @@
         </section>
 
         <section class="status-messages" data-animate>
-            <div class="success-message" id="successMessage"></div>
-            <div class="error-message" id="errorMessage"></div>
+            <div class="success-message" id="successMessage" aria-live="polite"></div>
+            <div class="error-message" id="errorMessage" aria-live="assertive"></div>
         </section>
 
         <section id="content" class="settings-content" data-animate></section>
@@ -54,18 +54,11 @@
         let userProfile = null;
 
         function showSuccess(message) {
-            successMessage.textContent = message;
-            successMessage.style.display = 'block';
-            errorMessage.style.display = 'none';
-            if (typeof showToast === 'function') showToast(message, 'success');
-            setTimeout(() => { successMessage.style.display = 'none'; }, 3000);
+            setStatusMessage(successMessage, errorMessage, message, 'success', 3000);
         }
 
         function showError(message) {
-            errorMessage.textContent = message;
-            errorMessage.style.display = 'block';
-            successMessage.style.display = 'none';
-            if (typeof showToast === 'function') showToast(message, 'error');
+            setStatusMessage(successMessage, errorMessage, message, 'error');
         }
 
         function hideMessages() {
@@ -234,7 +227,7 @@
                 showSuccess('Profile updated successfully');
                 setActiveNavLink();
             } catch (error) {
-                showError(error.message || 'Failed to update profile');
+                showError(getErrorMessage(error, 'Failed to update profile'));
             } finally {
                 profileSaveBtn.disabled = false;
                 profileBtnText.textContent = 'Save Profile';
@@ -274,7 +267,7 @@
 
                 showSuccess('Preferences updated successfully');
             } catch (error) {
-                showError(error.message || 'Failed to update preferences');
+                showError(getErrorMessage(error, 'Failed to update preferences'));
             } finally {
                 prefSaveBtn.disabled = false;
                 prefBtnText.textContent = 'Save Preferences';
@@ -297,7 +290,7 @@
                     window.location.href = 'website.html';
                 }, 1000);
             } catch (error) {
-                showError(error.message || 'Failed to delete account');
+                showError(getErrorMessage(error, 'Failed to delete account'));
                 deleteBtn.disabled = false;
                 deleteBtn.textContent = 'Delete Account';
             }

@@ -45,8 +45,8 @@
         </section>
 
         <section class="status-messages" data-animate>
-            <div class="success-message" id="successMessage"></div>
-            <div class="error-message" id="errorMessage"></div>
+            <div class="success-message" id="successMessage" aria-live="polite"></div>
+            <div class="error-message" id="errorMessage" aria-live="assertive"></div>
         </section>
 
         <section class="upcoming-wrap" data-animate>
@@ -82,12 +82,6 @@
             setInterval(loadAllData, 30000);
         });
 
-        function normalizeCollection(result) {
-            if (Array.isArray(result)) return result;
-            if (result && Array.isArray(result.data)) return result.data;
-            return [];
-        }
-
         function normalizeNotification(raw) {
             return {
                 id: raw.id || raw.notification_id,
@@ -110,18 +104,17 @@
 
         async function loadNotifications(showLoading = false) {
             if (!currentUser) {
-                content.innerHTML = `
-                    <div class="login-prompt card">
-                        <h3>Please log in to view notifications</h3>
-                        <p>Get updates about movie nights, group invites, and votes.</p>
-                        <p><a href="Log_In.html">Log In</a> or <a href="Sign_Up.html">Sign Up</a></p>
-                    </div>
-                `;
+                renderStandardState(
+                    content,
+                    'empty',
+                    'Please log in to view notifications',
+                    'Get updates about movie nights, group invites, and votes.'
+                );
                 return;
             }
 
             if (showLoading) {
-                content.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
+                renderStandardState(content, 'loading');
             }
 
             try {
@@ -130,14 +123,14 @@
                 displayNotifications();
                 updateNotificationCount();
             } catch (error) {
-                showError('Failed to load notifications. Please try again.');
-                content.innerHTML = '<div class="empty-state card"><h3>Error loading notifications</h3><p>Please check your connection and refresh.</p></div>';
+                showError(getErrorMessage(error, 'Failed to load notifications. Please try again.'));
+                renderStandardState(content, 'error', 'Error loading notifications', 'Please check your connection and refresh.');
             }
         }
 
         async function loadUpcomingMovieNights() {
             if (!currentUser) {
-                upcomingContainer.innerHTML = '<div class="empty-state card">Log in to see your upcoming nights.</div>';
+                renderStandardState(upcomingContainer, 'empty', 'Log in to see your upcoming nights');
                 return;
             }
 
@@ -158,7 +151,7 @@
                 const upcoming = allNights.slice(0, 6);
 
                 if (upcoming.length === 0) {
-                    upcomingContainer.innerHTML = '<div class="empty-state card">No upcoming movie nights scheduled yet.</div>';
+                    renderStandardState(upcomingContainer, 'empty', 'No upcoming movie nights scheduled yet');
                     return;
                 }
 
@@ -182,7 +175,7 @@
                     `;
                 }).join('');
             } catch (error) {
-                upcomingContainer.innerHTML = '<div class="empty-state card">Could not load upcoming nights.</div>';
+                renderStandardState(upcomingContainer, 'error', 'Could not load upcoming nights');
             }
         }
 
@@ -312,7 +305,7 @@
                 updateNotificationCount();
                 showSuccess('Notification marked as read');
             } catch (error) {
-                showError('Failed to mark notification as read');
+                showError(getErrorMessage(error, 'Failed to mark notification as read'));
             }
         }
 
@@ -324,7 +317,7 @@
                 updateNotificationCount();
                 showSuccess('All notifications marked as read');
             } catch (error) {
-                showError('Failed to mark all notifications as read');
+                showError(getErrorMessage(error, 'Failed to mark all notifications as read'));
             }
         }
 
@@ -349,19 +342,11 @@
         }
 
         function showSuccess(message) {
-            successMessage.textContent = message;
-            successMessage.style.display = 'block';
-            errorMessage.style.display = 'none';
-            if (typeof showToast === 'function') showToast(message, 'success');
-            setTimeout(() => { successMessage.style.display = 'none'; }, 3000);
+            setStatusMessage(successMessage, errorMessage, message, 'success', 3000);
         }
 
         function showError(message) {
-            errorMessage.textContent = message;
-            errorMessage.style.display = 'block';
-            successMessage.style.display = 'none';
-            if (typeof showToast === 'function') showToast(message, 'error');
-            setTimeout(() => { errorMessage.style.display = 'none'; }, 5000);
+            setStatusMessage(successMessage, errorMessage, message, 'error', 5000);
         }
     </script>
 </body>
