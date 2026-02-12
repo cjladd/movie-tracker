@@ -232,13 +232,13 @@
 
 .star {
   cursor: pointer;
-  color: #64748b;
+  color: var(--text-tertiary);
   font-size: 1rem;
 }
 
 .star.active,
 .star.hover {
-  color: #facc15;
+  color: var(--star-rating);
 }
 
 .your-vote {
@@ -267,7 +267,7 @@
 .vote-bar-fill {
   flex: 1;
   height: 5px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--bg-overlay);
   overflow: hidden;
 }
@@ -327,7 +327,7 @@
 
 .movie-night-status {
   font-size: var(--text-xs);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   padding: 0.2rem 0.5rem;
   text-transform: capitalize;
 }

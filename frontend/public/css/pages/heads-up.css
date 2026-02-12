@@ -29,7 +29,7 @@
 .notification-count {
   min-width: 1.5rem;
   height: 1.5rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--gradient-primary);
   color: #fff;
   display: inline-flex;
@@ -107,7 +107,7 @@
 }
 
 .night-status {
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   padding: 0.15rem 0.45rem;
   font-size: var(--text-xs);
   color: #c4b5fd;
@@ -222,7 +222,7 @@
 
 .notification-type-badge {
   display: inline-flex;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   padding: 0.15rem 0.42rem;
   font-size: 0.65rem;
   text-transform: uppercase;

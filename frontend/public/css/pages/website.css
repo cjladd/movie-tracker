@@ -108,7 +108,7 @@
 }
 
 .hero-meta .rating {
-  color: #facc15;
+  color: var(--star-rating);
   font-size: var(--text-sm);
   margin-top: 0.2rem;
 }
@@ -235,89 +235,12 @@
   text-align: center;
 }
 
-/* ── Movie Detail Modal ───────────────────────────────────────────────────── */
-
+/* ── Movie Detail Modal (width override) ─────────────────────────────────── */
 .modal .modal-content {
   width: min(860px, calc(100% - 2rem));
   max-height: calc(100vh - 2rem);
   overflow: auto;
   padding: 0;
-}
-
-.modal-header {
-  min-height: 220px;
-  background-size: cover;
-  background-position: center;
-  position: relative;
-  display: flex;
-  align-items: flex-end;
-}
-
-.modal-header-content {
-  width: 100%;
-  padding: 1rem;
-  background: linear-gradient(180deg, transparent 0%, rgba(11, 13, 19, 0.92) 100%);
-}
-
-.modal-title {
-  font-family: var(--font-display);
-  font-size: clamp(1.4rem, 2.6vw, 2rem);
-}
-
-.modal-meta {
-  display: flex;
-  gap: 0.8rem;
-  color: var(--text-secondary);
-  font-size: var(--text-xs);
-}
-
-.modal-body {
-  padding: 1rem;
-}
-
-.modal-overview {
-  color: var(--text-secondary);
-  margin-bottom: 0.7rem;
-}
-
-.modal .modal-close {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  z-index: 2;
-}
-
-.group-selector {
-  margin-top: 0.8rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--bg-overlay);
-  padding: 0.8rem;
-}
-
-.group-list {
-  display: grid;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-}
-
-.group-option {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.6rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--bg-raised);
-  padding: 0.45rem 0.55rem;
-}
-
-.group-name {
-  font-size: var(--text-sm);
-}
-
-.add-to-group-btn {
-  min-width: 76px;
 }
 
 @media (max-width: 1024px) {
