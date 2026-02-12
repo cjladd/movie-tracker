@@ -50,12 +50,12 @@
             </div>
 
             <div class="detail-tabs">
-                <button class="detail-tab active" type="button" data-tab="members">Members</button>
-                <button class="detail-tab" type="button" data-tab="watchlist">Watchlist</button>
+                <button class="detail-tab" type="button" data-tab="members">Members</button>
+                <button class="detail-tab active" type="button" data-tab="watchlist">Watchlist</button>
                 <button class="detail-tab" type="button" data-tab="movieNights">Movie Nights</button>
             </div>
 
-            <div id="membersTab" class="tab-content active">
+            <div id="membersTab" class="tab-content">
                 <div class="success-message" id="memberSuccess"></div>
                 <div class="error-message" id="memberError"></div>
 
@@ -71,7 +71,7 @@
                 <ul class="members-list" id="membersList"></ul>
             </div>
 
-            <div id="watchlistTab" class="tab-content">
+            <div id="watchlistTab" class="tab-content active">
                 <div class="watchlist-header">
                     <h4>Group Watchlist</h4>
                     <a href="Binge_Bank.html" class="btn btn-primary">Add Movies</a>
@@ -108,6 +108,14 @@
                     <button id="createMovieNightBtn" class="btn btn-primary" type="button">Schedule Movie Night</button>
                 </div>
 
+                <div class="movie-night-plans card">
+                    <div class="movie-night-plans-header">
+                        <h4>Planned Movie Nights</h4>
+                        <span class="movie-night-plan-count" id="movieNightPlanCount">0 planned</span>
+                    </div>
+                    <ul class="movie-nights-list" id="movieNightsList"></ul>
+                </div>
+
                 <div class="movie-night-calendar card">
                     <div class="movie-night-calendar-header">
                         <button class="btn btn-ghost" id="calendarPrevMonth" type="button" aria-label="Previous month">Previous</button>
@@ -126,8 +134,6 @@
                     <div class="calendar-grid" id="movieNightCalendarGrid"></div>
                     <p class="calendar-day-summary" id="calendarDaySummary">Select a day to schedule a movie night.</p>
                 </div>
-
-                <ul class="movie-nights-list" id="movieNightsList"></ul>
             </div>
         </section>
     </main>
@@ -161,6 +167,7 @@
         const membersList = document.getElementById('membersList');
         const watchlistVotingGrid = document.getElementById('watchlistVotingGrid');
         const movieNightsList = document.getElementById('movieNightsList');
+        const movieNightPlanCount = document.getElementById('movieNightPlanCount');
         const movieNightDateInput = document.getElementById('movieNightDate');
         const movieNightTimeInput = document.getElementById('movieNightTime');
         const movieNightSelectedPreview = document.getElementById('movieNightSelectedPreview');
@@ -500,8 +507,8 @@
             currentGroupId = groupId;
             groupDetailTitle.textContent = groupName;
             groupDetail.classList.add('active');
-            await loadMembers();
             await loadWatchlistMovies();
+            switchTab('watchlist');
         }
 
         function switchTab(tabName) {
@@ -691,6 +698,8 @@
             if (!currentGroupId) return;
             try {
                 const movieNights = normalizeCollection(await getMovieNights(currentGroupId));
+                const plannedCount = movieNights.filter((night) => night.status === 'planned').length;
+                movieNightPlanCount.textContent = `${plannedCount} planned`;
                 movieNightsCache = movieNights;
                 renderMovieNightCalendar(movieNights);
 
@@ -713,6 +722,7 @@
                     </li>
                 `).join('');
             } catch (error) {
+                movieNightPlanCount.textContent = '0 planned';
                 movieNightsCache = [];
                 renderMovieNightCalendar([]);
                 movieNightsList.innerHTML = '<li class="empty-state card">Error loading movie nights</li>';

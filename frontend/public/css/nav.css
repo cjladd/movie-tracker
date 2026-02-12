@@ -91,13 +91,16 @@
   transform: scaleX(1);
 }
 
-/* ── Auth Actions (left, after logo) ──────────────────────────────────────── */
+/* ── Auth Actions (top-right) ─────────────────────────────────────────────── */
 .nav-auth {
+  position: absolute;
+  top: 0.55rem;
+  right: 1rem;
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: var(--space-2);
   flex-shrink: 0;
-  order: -1;
 }
 
 .nav-auth-btn {
@@ -212,6 +215,10 @@
   }
 
   .nav-auth {
+    position: static;
+    top: auto;
+    right: auto;
+    z-index: auto;
     order: -1;
     display: none;
     width: 100%;

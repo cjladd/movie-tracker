@@ -131,6 +131,11 @@
   margin-bottom: 0.7rem;
 }
 
+.movie-night-plans {
+  padding: 0.75rem;
+  margin-bottom: 0.7rem;
+}
+
 .add-member-form h4,
 .create-movie-night-form h4,
 .watchlist-header h4 {
@@ -317,6 +322,30 @@
   align-items: center;
   gap: 0.5rem;
   margin-bottom: 0.5rem;
+}
+
+.movie-night-plans-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
+  margin-bottom: 0.65rem;
+}
+
+.movie-night-plans-header h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.movie-night-plan-count {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  background: var(--bg-overlay);
 }
 
 .movie-night-calendar-header h5 {
