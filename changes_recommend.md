@@ -9,9 +9,9 @@
   - [x] hash reset tokens at rest
   - [x] send reset email through a production-ready provider integration
   - [x] add reset-password UX page
-- [ ] `5` CI migration verification:
-  - [ ] validate schema + migration scripts in CI against ephemeral MySQL
-  - [ ] enforce idempotent migration run
+- [x] `5` CI migration verification:
+  - [x] validate schema + migration scripts in CI against ephemeral MySQL
+  - [x] enforce idempotent migration run
 - [ ] `7` Frontend robustness standards:
   - [ ] unify API error messaging + toast behavior
   - [ ] standardize loading/empty/error rendering helpers
@@ -30,3 +30,7 @@
   - added hashed reset-token storage (`token_hash`) with legacy fallback handling,
   - added Resend-backed password reset email utility with safe dev fallback,
   - added `Reset_Password.html` flow and connected login-page reset request UX.
+- 2026-02-12: Completed item `5`:
+  - added `backend/scripts/verify-migrations.js` to execute SQL files with delimiter-aware parsing,
+  - wired CI `db-migrations` job with ephemeral MySQL service,
+  - run `migrate.sql` twice in CI to enforce idempotency.

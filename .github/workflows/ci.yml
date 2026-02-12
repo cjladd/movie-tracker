@@ -34,7 +34,7 @@ jobs:
 
       - name: Check for security vulnerabilities
         working-directory: backend
-        run: npm audit --production --audit-level=high
+        run: npm audit --audit-level=high
 
   lint:
     runs-on: ubuntu-latest
@@ -56,3 +56,41 @@ jobs:
       - name: Check for syntax errors
         working-directory: backend
         run: node --check server.js && node --check config/*.js && node --check routes/*.js && node --check middleware/*.js && node --check utils/*.js
+
+  db-migrations:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: rootpass
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -prootpass --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Verify database schema and migrations
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_USER: root
+          DB_PASSWORD: rootpass
+        run: node backend/scripts/verify-migrations.js
