@@ -47,6 +47,7 @@ CALL add_column_if_missing('Movie_Nights', 'created_at', 'TIMESTAMP DEFAULT CURR
 CALL add_column_if_missing('Movie_Nights', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
 
 CALL add_column_if_missing('Availability', 'responded_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
+CALL add_column_if_missing('Password_Resets', 'token_hash', 'CHAR(64) NULL');
 
 -- Add indexes / foreign keys safely (MySQL 8.0 compatible idempotent helpers)
 DELIMITER $$
@@ -154,6 +155,13 @@ CALL add_index_if_missing('Friend_Requests', 'idx_receiver_status', 'receiver_id
 CALL add_index_if_missing('Friend_Requests', 'idx_sender_id', 'sender_id');
 CALL add_index_if_missing('Friendships', 'idx_friend_id', 'friend_id');
 CALL add_unique_index_if_missing('Movies', 'uq_movies_tmdb_id', 'tmdb_id');
+CALL add_unique_index_if_missing('Password_Resets', 'uq_password_resets_token_hash', 'token_hash');
+CALL add_index_if_missing('Password_Resets', 'idx_token_hash', 'token_hash');
+
+-- Backfill token hashes for previously plaintext reset tokens.
+UPDATE Password_Resets
+SET token_hash = SHA2(token, 256)
+WHERE token_hash IS NULL AND token IS NOT NULL;
 
 -- Add cascade deletes to Friend_Requests and Friendships
 CALL drop_fk_if_exists('Friend_Requests', 'friend_requests_ibfk_1');
@@ -191,12 +199,12 @@ CREATE TABLE IF NOT EXISTS Notifications (
 CREATE TABLE IF NOT EXISTS Password_Resets (
     reset_id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
-    token VARCHAR(255) NOT NULL UNIQUE,
+    token_hash CHAR(64) NOT NULL UNIQUE,
     expires_at DATETIME NOT NULL,
     used BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
-    INDEX idx_token (token),
+    INDEX idx_token_hash (token_hash),
     INDEX idx_user_id (user_id)
 );
 

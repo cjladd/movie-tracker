@@ -22,6 +22,9 @@ module.exports = {
   port: parseInt(process.env.PORT, 10) || 4000,
   nodeEnv,
   isProduction: process.env.NODE_ENV === 'production',
+  app: {
+    baseUrl: process.env.APP_BASE_URL || `http://localhost:${parseInt(process.env.PORT, 10) || 4000}`,
+  },
 
   db: {
     host: process.env.DB_HOST,
@@ -51,5 +54,11 @@ module.exports = {
   rateLimit: {
     general: parseInt(process.env.RATE_LIMIT_GENERAL, 10) || 200,
     auth: parseInt(process.env.RATE_LIMIT_AUTH, 10) || 10,
+  },
+
+  email: {
+    resendApiKey: process.env.RESEND_API_KEY || '',
+    resendFrom: process.env.RESEND_FROM_EMAIL || '',
+    resendFromName: process.env.RESEND_FROM_NAME || 'MovieNightPlanner',
   },
 };

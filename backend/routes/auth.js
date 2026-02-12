@@ -2,16 +2,22 @@ const { Router } = require('express');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { pool } = require('../config/database');
+const env = require('../config/env');
 const { requireAuth } = require('../middleware/auth');
 const { requireFields, validateEmail, sanitizeBody } = require('../middleware/validate');
 const { getUserByEmail, apiResponse, apiError } = require('../utils/helpers');
 const { SALT_ROUNDS, PASSWORD_MIN_LENGTH, ACCOUNT_LOCKOUT, PASSWORD_RESET_EXPIRY_HOURS } = require('../utils/constants');
+const { sendPasswordResetEmail } = require('../utils/email');
 const logger = require('../utils/logger');
 
 const router = Router();
 
 function isMissingColumnError(err) {
   return err && err.code === 'ER_BAD_FIELD_ERROR';
+}
+
+function hashResetToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
 }
 
 async function safeUpdateLoginSecurity(userId, attempts, lockUntil) {
@@ -23,6 +29,42 @@ async function safeUpdateLoginSecurity(userId, attempts, lockUntil) {
   } catch (err) {
     if (!isMissingColumnError(err)) throw err;
     logger.warn('Login security columns missing; skipping failed-attempt tracking');
+  }
+}
+
+async function createPasswordResetRecord(userId, token, expiresAt) {
+  const tokenHash = hashResetToken(token);
+
+  try {
+    await pool.query(
+      'INSERT INTO Password_Resets (user_id, token_hash, expires_at) VALUES (?, ?, ?)',
+      [userId, tokenHash, expiresAt]
+    );
+  } catch (err) {
+    if (!isMissingColumnError(err)) throw err;
+    await pool.query(
+      'INSERT INTO Password_Resets (user_id, token, expires_at) VALUES (?, ?, ?)',
+      [userId, token, expiresAt]
+    );
+  }
+}
+
+async function findActivePasswordReset(token) {
+  const tokenHash = hashResetToken(token);
+
+  try {
+    const [rows] = await pool.query(
+      'SELECT * FROM Password_Resets WHERE token_hash = ? AND used = FALSE AND expires_at > NOW()',
+      [tokenHash]
+    );
+    return rows[0] || null;
+  } catch (err) {
+    if (!isMissingColumnError(err)) throw err;
+    const [rows] = await pool.query(
+      'SELECT * FROM Password_Resets WHERE token = ? AND used = FALSE AND expires_at > NOW()',
+      [token]
+    );
+    return rows[0] || null;
   }
 }
 
@@ -228,10 +270,11 @@ router.put('/preferences', requireAuth, async (req, res, next) => {
 
 // Delete account (soft delete)
 router.delete('/profile', requireAuth, async (req, res, next) => {
+  const userId = req.session.userId;
   try {
-    await pool.query('UPDATE Users SET deleted_at = NOW() WHERE user_id = ?', [req.session.userId]);
+    await pool.query('UPDATE Users SET deleted_at = NOW() WHERE user_id = ?', [userId]);
     req.session.destroy(() => {
-      logger.info(`User deleted account: ${req.session?.userId}`);
+      logger.info(`User deleted account: ${userId}`);
       res.json(apiResponse(null, 'Account deleted'));
     });
   } catch (err) {
@@ -255,17 +298,27 @@ router.post(
 
       const token = crypto.randomBytes(32).toString('hex');
       const expiresAt = new Date(Date.now() + PASSWORD_RESET_EXPIRY_HOURS * 3600000);
+      const baseUrl = (env.app.baseUrl || 'http://localhost:4000').replace(/\/+$/, '');
+      const resetUrl = `${baseUrl}/Reset_Password.html?token=${encodeURIComponent(token)}`;
 
-      await pool.query(
-        'INSERT INTO Password_Resets (user_id, token, expires_at) VALUES (?, ?, ?)',
-        [user.user_id, token, expiresAt]
-      );
+      await createPasswordResetRecord(user.user_id, token, expiresAt);
 
-      // TODO: Send email with reset link containing token
-      // For now, log the token (remove in production)
-      logger.info(`Password reset token for user ${user.user_id}: ${token}`);
+      logger.info(`Password reset requested for user ${user.user_id}`);
+      try {
+        await sendPasswordResetEmail({
+          toEmail: user.email,
+          toName: user.name,
+          resetUrl,
+        });
+      } catch (emailErr) {
+        logger.error('Failed to send password reset email', {
+          userId: user.user_id,
+          error: emailErr.message,
+        });
+      }
 
-      res.json(apiResponse({ token }, 'If that email exists, a reset link has been generated'));
+      const responseData = env.isProduction ? null : { resetUrl };
+      res.json(apiResponse(responseData, 'If that email exists, a reset link has been generated'));
     } catch (err) {
       next(err);
     }
@@ -284,13 +337,8 @@ router.post(
     }
 
     try {
-      const [rows] = await pool.query(
-        'SELECT * FROM Password_Resets WHERE token = ? AND used = FALSE AND expires_at > NOW()',
-        [token]
-      );
-      if (rows.length === 0) return next(apiError('Invalid or expired reset token', 400));
-
-      const resetRecord = rows[0];
+      const resetRecord = await findActivePasswordReset(token);
+      if (!resetRecord) return next(apiError('Invalid or expired reset token', 400));
       const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
       await pool.query('UPDATE Users SET password = ? WHERE user_id = ?', [hashedPassword, resetRecord.user_id]);
