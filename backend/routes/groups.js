@@ -3,7 +3,7 @@ const { pool, withTransaction } = require('../config/database');
 const { requireAuth } = require('../middleware/auth');
 const { validateParamId, requireFields, sanitizeBody } = require('../middleware/validate');
 const { parsePagination, paginatedResponse, apiResponse, apiError, isPositiveInt } = require('../utils/helpers');
-const { MOVIE_NIGHT_STATUS, GROUP_MEMBER_ROLE } = require('../utils/constants');
+const { MOVIE_NIGHT_STATUS, GROUP_MEMBER_ROLE, NOTIFICATION_TYPES } = require('../utils/constants');
 const { buildMovieNightIcs, toIcsFilename } = require('../utils/ics');
 const logger = require('../utils/logger');
 
@@ -151,6 +151,28 @@ function parseScheduledDateInput(value) {
   return { sqlDateTime, date: parsedDate };
 }
 
+function parseOptionalDateTimeInput(value, fieldName) {
+  if (value === undefined) return { provided: false };
+  if (value === null || value === '') return { provided: true, value: null, date: null };
+
+  const parsed = parseScheduledDateInput(String(value));
+  if (!parsed) return { error: `Invalid ${fieldName}` };
+  return { provided: true, value: parsed.sqlDateTime, date: parsed.date };
+}
+
+function parseReminderMinutesInput(value) {
+  if (value === undefined) return { provided: false };
+  if (value === null || value === '') return { provided: true, value: null };
+  if (!isPositiveInt(value)) return { error: 'Invalid reminderMinutesBefore' };
+
+  const minutes = Number(value);
+  if (minutes < 15 || minutes > 10080) {
+    return { error: 'reminderMinutesBefore must be between 15 and 10080 minutes' };
+  }
+
+  return { provided: true, value: minutes };
+}
+
 function parseChosenMovieId(value) {
   if (value === undefined || value === null || value === '') return { movieId: null };
   if (!isPositiveInt(value)) return { error: 'Invalid chosenMovieId' };
@@ -168,7 +190,8 @@ async function ensureMovieInWatchlist(groupId, movieId) {
 async function getMovieNightForGroup(groupId, nightId) {
   try {
     const [rows] = await pool.query(
-      `SELECT mn.night_id, mn.group_id, mn.scheduled_date, mn.status, mn.is_locked, mn.created_at,
+      `SELECT mn.night_id, mn.group_id, mn.scheduled_date, mn.status, mn.is_locked,
+              mn.rsvp_deadline, mn.reminder_minutes_before, mn.reminder_last_sent_at, mn.created_at,
               mg.group_name, m.title AS movie_title
        FROM Movie_Nights mn
        JOIN Movie_Groups mg ON mn.group_id = mg.group_id
@@ -189,8 +212,114 @@ async function getMovieNightForGroup(groupId, nightId) {
       [groupId, nightId]
     );
     if (rows.length === 0) return null;
-    return { ...rows[0], is_locked: 0 };
+    return {
+      ...rows[0],
+      is_locked: 0,
+      rsvp_deadline: null,
+      reminder_minutes_before: null,
+      reminder_last_sent_at: null,
+    };
   }
+}
+
+function formatReminderLead(minutes) {
+  if (!minutes) return 'soon';
+  if (minutes % 1440 === 0) {
+    const days = minutes / 1440;
+    return `${days} day${days === 1 ? '' : 's'}`;
+  }
+  if (minutes % 60 === 0) {
+    const hours = minutes / 60;
+    return `${hours} hour${hours === 1 ? '' : 's'}`;
+  }
+  return `${minutes} minute${minutes === 1 ? '' : 's'}`;
+}
+
+function formatDateTimeLabel(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'soon';
+  return date.toLocaleString([], {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+async function sendRsvpReminderForNight(groupId, nightId, { force = false } = {}) {
+  return withTransaction(async (conn) => {
+    const [nightRows] = await conn.query(
+      `SELECT mn.night_id, mn.group_id, mn.status, mn.rsvp_deadline,
+              mn.reminder_minutes_before, mn.reminder_last_sent_at,
+              mg.group_name, m.title AS movie_title
+       FROM Movie_Nights mn
+       JOIN Movie_Groups mg ON mn.group_id = mg.group_id
+       LEFT JOIN Movies m ON mn.chosen_movie_id = m.movie_id
+       WHERE mn.group_id = ? AND mn.night_id = ?
+       FOR UPDATE`,
+      [groupId, nightId]
+    );
+
+    if (nightRows.length === 0) return { sent: false, reason: 'not_found', recipients: 0 };
+    const night = nightRows[0];
+
+    if (night.status !== MOVIE_NIGHT_STATUS.PLANNED) {
+      return { sent: false, reason: 'not_planned', recipients: 0 };
+    }
+    if (!night.rsvp_deadline || !night.reminder_minutes_before) {
+      return { sent: false, reason: 'missing_config', recipients: 0 };
+    }
+
+    const deadlineAt = new Date(night.rsvp_deadline);
+    if (Number.isNaN(deadlineAt.getTime())) {
+      return { sent: false, reason: 'invalid_deadline', recipients: 0 };
+    }
+
+    const now = Date.now();
+    const triggerAt = deadlineAt.getTime() - (Number(night.reminder_minutes_before) * 60000);
+    if (!force) {
+      if (night.reminder_last_sent_at) return { sent: false, reason: 'already_sent', recipients: 0 };
+      if (now < triggerAt) return { sent: false, reason: 'not_due', recipients: 0 };
+    }
+
+    const [pendingMembers] = await conn.query(
+      `SELECT gm.user_id, u.name
+       FROM Group_Members gm
+       JOIN Users u ON gm.user_id = u.user_id
+       LEFT JOIN Availability a ON a.night_id = ? AND a.user_id = gm.user_id
+       WHERE gm.group_id = ? AND u.deleted_at IS NULL AND a.user_id IS NULL`,
+      [nightId, groupId]
+    );
+
+    if (pendingMembers.length === 0) {
+      await conn.query('UPDATE Movie_Nights SET reminder_last_sent_at = NOW() WHERE night_id = ?', [nightId]);
+      return { sent: false, reason: 'no_pending_members', recipients: 0 };
+    }
+
+    const deadlineLabel = formatDateTimeLabel(night.rsvp_deadline);
+    const leadLabel = formatReminderLead(Number(night.reminder_minutes_before));
+    const title = `RSVP reminder: ${night.group_name}`;
+    const message = night.movie_title
+      ? `Please RSVP for "${night.movie_title}" by ${deadlineLabel} (${leadLabel} remaining).`
+      : `Please RSVP for your ${night.group_name} movie night by ${deadlineLabel} (${leadLabel} remaining).`;
+
+    const placeholders = pendingMembers.map(() => '(?, ?, ?, ?, ?)').join(', ');
+    const values = pendingMembers.flatMap((member) => [
+      member.user_id,
+      NOTIFICATION_TYPES.MOVIE_NIGHT,
+      title,
+      message,
+      nightId,
+    ]);
+
+    await conn.query(
+      `INSERT INTO Notifications (user_id, type, title, message, reference_id) VALUES ${placeholders}`,
+      values
+    );
+
+    await conn.query('UPDATE Movie_Nights SET reminder_last_sent_at = NOW() WHERE night_id = ?', [nightId]);
+    return { sent: true, reason: 'dispatched', recipients: pendingMembers.length };
+  });
 }
 
 // Create group (with transaction)
@@ -524,7 +653,7 @@ router.post(
   requireFields('scheduledDate'),
   async (req, res, next) => {
     const { groupId } = req.params;
-    const { scheduledDate, chosenMovieId } = req.body;
+    const { scheduledDate, chosenMovieId, rsvpDeadline, reminderMinutesBefore } = req.body;
 
     try {
       const parsedScheduledDate = parseScheduledDateInput(scheduledDate);
@@ -542,10 +671,47 @@ router.post(
         return next(apiError('Selected movie must already exist in the group watchlist', 400));
       }
 
-      const [result] = await pool.query(
-        'INSERT INTO Movie_Nights (group_id, scheduled_date, chosen_movie_id, status) VALUES (?, ?, ?, ?)',
-        [groupId, parsedScheduledDate.sqlDateTime, parsedMovieId.movieId ?? null, MOVIE_NIGHT_STATUS.PLANNED]
-      );
+      const parsedRsvpDeadline = parseOptionalDateTimeInput(rsvpDeadline, 'rsvpDeadline');
+      if (parsedRsvpDeadline.error) return next(apiError(parsedRsvpDeadline.error, 400));
+      const parsedReminder = parseReminderMinutesInput(reminderMinutesBefore);
+      if (parsedReminder.error) return next(apiError(parsedReminder.error, 400));
+
+      if (parsedReminder.value !== null && parsedReminder.value !== undefined && !parsedRsvpDeadline.value) {
+        return next(apiError('reminderMinutesBefore requires rsvpDeadline', 400));
+      }
+
+      if (parsedRsvpDeadline.value && parsedRsvpDeadline.date.getTime() < Date.now() - 60000) {
+        return next(apiError('rsvpDeadline must be in the future', 400));
+      }
+      if (parsedRsvpDeadline.value && parsedRsvpDeadline.date.getTime() >= parsedScheduledDate.date.getTime()) {
+        return next(apiError('rsvpDeadline must be before scheduledDate', 400));
+      }
+
+      let result;
+      try {
+        [result] = await pool.query(
+          `INSERT INTO Movie_Nights
+            (group_id, scheduled_date, chosen_movie_id, status, is_locked, rsvp_deadline, reminder_minutes_before, reminder_last_sent_at)
+           VALUES (?, ?, ?, ?, FALSE, ?, ?, NULL)`,
+          [
+            groupId,
+            parsedScheduledDate.sqlDateTime,
+            parsedMovieId.movieId ?? null,
+            MOVIE_NIGHT_STATUS.PLANNED,
+            parsedRsvpDeadline.value,
+            parsedReminder.value ?? null,
+          ]
+        );
+      } catch (err) {
+        if (!isMissingColumnError(err)) throw err;
+        if (parsedRsvpDeadline.value || (parsedReminder.provided && parsedReminder.value !== null)) {
+          return next(apiError('RSVP deadlines require the latest database migration', 500));
+        }
+        [result] = await pool.query(
+          'INSERT INTO Movie_Nights (group_id, scheduled_date, chosen_movie_id, status) VALUES (?, ?, ?, ?)',
+          [groupId, parsedScheduledDate.sqlDateTime, parsedMovieId.movieId ?? null, MOVIE_NIGHT_STATUS.PLANNED]
+        );
+      }
 
       res.status(201).json(apiResponse({
         night_id: result.insertId,
@@ -554,6 +720,9 @@ router.post(
         chosen_movie_id: parsedMovieId.movieId ?? null,
         status: MOVIE_NIGHT_STATUS.PLANNED,
         is_locked: false,
+        rsvp_deadline: parsedRsvpDeadline.value,
+        reminder_minutes_before: parsedReminder.value ?? null,
+        reminder_last_sent_at: null,
       }, 'Movie night created successfully'));
     } catch (err) {
       next(err);
@@ -569,7 +738,13 @@ router.put(
   requireMembership(),
   async (req, res, next) => {
     const { groupId, nightId } = req.params;
-    const { scheduledDate, chosenMovieId, status } = req.body;
+    const {
+      scheduledDate,
+      chosenMovieId,
+      status,
+      rsvpDeadline,
+      reminderMinutesBefore,
+    } = req.body;
 
     try {
       const movieNight = await getMovieNightForGroup(groupId, nightId);
@@ -580,6 +755,12 @@ router.put(
 
       const updates = [];
       const values = [];
+      let nextScheduledDate = new Date(movieNight.scheduled_date);
+      let nextRsvpDeadline = movieNight.rsvp_deadline ? new Date(movieNight.rsvp_deadline) : null;
+      let nextReminderMinutes = movieNight.reminder_minutes_before === null
+        ? null
+        : Number(movieNight.reminder_minutes_before);
+      let reminderConfigChanged = false;
 
       if (scheduledDate !== undefined) {
         const parsedScheduledDate = parseScheduledDateInput(scheduledDate);
@@ -589,6 +770,7 @@ router.put(
         }
         updates.push('scheduled_date = ?');
         values.push(parsedScheduledDate.sqlDateTime);
+        nextScheduledDate = parsedScheduledDate.date;
       }
 
       if (chosenMovieId !== undefined) {
@@ -614,10 +796,55 @@ router.put(
         values.push(status);
       }
 
+      const parsedRsvpDeadline = parseOptionalDateTimeInput(rsvpDeadline, 'rsvpDeadline');
+      if (parsedRsvpDeadline.error) return next(apiError(parsedRsvpDeadline.error, 400));
+      if (parsedRsvpDeadline.provided) {
+        updates.push('rsvp_deadline = ?');
+        values.push(parsedRsvpDeadline.value);
+        nextRsvpDeadline = parsedRsvpDeadline.date;
+        reminderConfigChanged = true;
+      }
+
+      const parsedReminder = parseReminderMinutesInput(reminderMinutesBefore);
+      if (parsedReminder.error) return next(apiError(parsedReminder.error, 400));
+      if (parsedReminder.provided) {
+        updates.push('reminder_minutes_before = ?');
+        values.push(parsedReminder.value ?? null);
+        nextReminderMinutes = parsedReminder.value ?? null;
+        reminderConfigChanged = true;
+      }
+
+      if (nextReminderMinutes !== null && !nextRsvpDeadline) {
+        return next(apiError('reminderMinutesBefore requires rsvpDeadline', 400));
+      }
+      if (
+        (parsedRsvpDeadline.provided || parsedReminder.provided)
+        && nextRsvpDeadline
+        && nextRsvpDeadline.getTime() < Date.now() - 60000
+      ) {
+        return next(apiError('rsvpDeadline must be in the future', 400));
+      }
+      if (
+        (parsedRsvpDeadline.provided || parsedReminder.provided || scheduledDate !== undefined)
+        && nextRsvpDeadline
+        && nextRsvpDeadline.getTime() >= nextScheduledDate.getTime()
+      ) {
+        return next(apiError('rsvpDeadline must be before scheduledDate', 400));
+      }
+
+      if (reminderConfigChanged) {
+        updates.push('reminder_last_sent_at = NULL');
+      }
+
       if (updates.length === 0) return next(apiError('No fields to update', 400));
 
       values.push(nightId, groupId);
-      await pool.query(`UPDATE Movie_Nights SET ${updates.join(', ')} WHERE night_id = ? AND group_id = ?`, values);
+      try {
+        await pool.query(`UPDATE Movie_Nights SET ${updates.join(', ')} WHERE night_id = ? AND group_id = ?`, values);
+      } catch (err) {
+        if (!isMissingColumnError(err)) throw err;
+        return next(apiError('RSVP updates require the latest database migration', 500));
+      }
       res.json(apiResponse(null, 'Movie night updated'));
     } catch (err) {
       next(err);
@@ -661,6 +888,46 @@ router.patch(
   }
 );
 
+// Send RSVP reminders for pending members (moderator/owner)
+router.post(
+  '/:groupId/movie-nights/:nightId/rsvp-reminders',
+  requireAuth,
+  validateParamId('groupId', 'nightId'),
+  requireRole(GROUP_MEMBER_ROLE.MODERATOR),
+  async (req, res, next) => {
+    const { groupId, nightId } = req.params;
+    const force = req.body && req.body.force === true;
+
+    try {
+      const result = await sendRsvpReminderForNight(groupId, nightId, { force });
+      if (result.reason === 'not_found') return next(apiError('Movie night not found', 404));
+      if (result.reason === 'missing_config') {
+        return next(apiError('Configure rsvpDeadline and reminderMinutesBefore before sending reminders', 400));
+      }
+
+      const messageMap = {
+        not_planned: 'Movie night reminders only apply to planned events',
+        invalid_deadline: 'Movie night has an invalid RSVP deadline',
+        not_due: 'Reminder is not due yet',
+        already_sent: 'Reminder has already been sent',
+        no_pending_members: 'No pending RSVPs to remind',
+        dispatched: 'RSVP reminders sent',
+      };
+
+      const message = messageMap[result.reason] || 'Reminder processed';
+      res.json(apiResponse(
+        { sent: result.sent, recipients: result.recipients || 0, reason: result.reason },
+        message
+      ));
+    } catch (err) {
+      if (isMissingColumnError(err)) {
+        return next(apiError('RSVP reminders require the latest database migration', 500));
+      }
+      next(err);
+    }
+  }
+);
+
 // Get group movie nights (paginated)
 router.get(
   '/:groupId/movie-nights',
@@ -676,7 +943,7 @@ router.get(
         [req.params.groupId]
       );
 
-      const [rows] = await pool.query(
+      let [rows] = await pool.query(
         `SELECT mn.*, m.title as movie_title, m.poster_url, m.rating
          FROM Movie_Nights mn
          LEFT JOIN Movies m ON mn.chosen_movie_id = m.movie_id
@@ -685,6 +952,64 @@ router.get(
          LIMIT ? OFFSET ?`,
         [req.params.groupId, limit, offset]
       );
+
+      const nightIds = rows.map((night) => Number(night.night_id)).filter((id) => Number.isInteger(id));
+      if (nightIds.length > 0) {
+        const [availabilityRows] = await pool.query(
+          `SELECT mn.night_id, gm.user_id, u.name, a.user_id AS responded_user_id
+           FROM Movie_Nights mn
+           JOIN Group_Members gm ON gm.group_id = mn.group_id
+           JOIN Users u ON gm.user_id = u.user_id
+           LEFT JOIN Availability a ON a.night_id = mn.night_id AND a.user_id = gm.user_id
+           WHERE mn.night_id IN (?) AND u.deleted_at IS NULL`,
+          [nightIds]
+        );
+
+        const byNight = new Map(nightIds.map((id) => [id, {
+          memberCount: 0,
+          responseCount: 0,
+          awaitingNames: [],
+        }]));
+
+        availabilityRows.forEach((row) => {
+          const state = byNight.get(Number(row.night_id));
+          if (!state) return;
+          state.memberCount += 1;
+          if (row.responded_user_id) {
+            state.responseCount += 1;
+          } else if (row.name) {
+            state.awaitingNames.push(row.name);
+          }
+        });
+
+        rows = rows.map((night) => {
+          const state = byNight.get(Number(night.night_id)) || { memberCount: 0, responseCount: 0, awaitingNames: [] };
+          const awaitingMembers = Array.from(new Set(state.awaitingNames));
+          return {
+            ...night,
+            member_count: state.memberCount,
+            response_count: state.responseCount,
+            pending_rsvp_count: Math.max(state.memberCount - state.responseCount, 0),
+            awaiting_members: awaitingMembers,
+          };
+        });
+      }
+
+      for (const night of rows) {
+        if (!Object.prototype.hasOwnProperty.call(night, 'rsvp_deadline')) break;
+        if (!night.rsvp_deadline || !night.reminder_minutes_before) continue;
+        try {
+          await sendRsvpReminderForNight(req.params.groupId, night.night_id, { force: false });
+        } catch (reminderErr) {
+          if (!isMissingColumnError(reminderErr)) {
+            logger.warn('Failed to dispatch RSVP reminder', {
+              groupId: req.params.groupId,
+              nightId: night.night_id,
+              error: reminderErr.message,
+            });
+          }
+        }
+      }
 
       res.json(paginatedResponse(rows, total, page, limit));
     } catch (err) {

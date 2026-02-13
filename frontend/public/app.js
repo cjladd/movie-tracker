@@ -461,10 +461,11 @@ async function removeFriend(friendId) {
 
 // ── Movie Night Functions ────────────────────────────────────────────────────
 
-async function createMovieNight(groupId, scheduledDate, chosenMovieId = null) {
+async function createMovieNight(groupId, scheduledDate, chosenMovieId = null, options = {}) {
     return await apiCall(`/groups/${groupId}/movie-nights`, 'POST', {
         scheduledDate,
-        chosenMovieId
+        chosenMovieId,
+        ...options,
     });
 }
 
@@ -479,6 +480,10 @@ async function getMovieNights(groupId) {
 
 async function setMovieNightLock(groupId, nightId, locked) {
     return await apiCall(`/groups/${groupId}/movie-nights/${nightId}/lock`, 'PATCH', { locked });
+}
+
+async function sendRsvpReminder(groupId, nightId, force = true) {
+    return await apiCall(`/groups/${groupId}/movie-nights/${nightId}/rsvp-reminders`, 'POST', { force });
 }
 
 function getFilenameFromDisposition(disposition, fallback = 'movie-night.ics') {

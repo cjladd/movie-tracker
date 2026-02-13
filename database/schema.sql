@@ -95,12 +95,16 @@ CREATE TABLE Movie_Nights (
     chosen_movie_id INT,
     status ENUM('planned', 'completed', 'cancelled') DEFAULT 'planned',
     is_locked BOOLEAN DEFAULT FALSE,
+    rsvp_deadline DATETIME NULL,
+    reminder_minutes_before INT NULL,
+    reminder_last_sent_at DATETIME NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (group_id) REFERENCES Movie_Groups(group_id) ON DELETE CASCADE,
     FOREIGN KEY (chosen_movie_id) REFERENCES Movies(movie_id) ON DELETE SET NULL,
     INDEX idx_group_id (group_id),
-    INDEX idx_chosen_movie (chosen_movie_id)
+    INDEX idx_chosen_movie (chosen_movie_id),
+    INDEX idx_rsvp_deadline (rsvp_deadline)
 );
 
 -- 8. Availability table (who's available for each movie night)

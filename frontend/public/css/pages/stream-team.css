@@ -599,10 +599,65 @@
   font-size: var(--text-xs);
 }
 
+.movie-night-rsvp-meta {
+  margin-top: 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-overlay);
+  padding: 0.5rem;
+}
+
+.movie-night-rsvp-countdown {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--text-primary);
+}
+
+.movie-night-rsvp-note {
+  margin: 0.2rem 0 0;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.awaiting-row {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+}
+
+.awaiting-label {
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+}
+
+.awaiting-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.awaiting-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(96, 165, 250, 0.35);
+  background: rgba(96, 165, 250, 0.12);
+  color: #bfdbfe;
+  font-size: 0.68rem;
+  padding: 0.16rem 0.45rem;
+}
+
+.awaiting-chip.is-clear {
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.12);
+  color: #a7f3d0;
+}
+
 .movie-night-actions {
   margin-top: 0.55rem;
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 0.4rem;
 }
 

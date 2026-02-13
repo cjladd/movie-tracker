@@ -46,6 +46,9 @@ CALL add_column_if_missing('Movies', 'tmdb_id', 'INT NULL');
 CALL add_column_if_missing('Movie_Nights', 'created_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
 CALL add_column_if_missing('Movie_Nights', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
 CALL add_column_if_missing('Movie_Nights', 'is_locked', 'BOOLEAN DEFAULT FALSE');
+CALL add_column_if_missing('Movie_Nights', 'rsvp_deadline', 'DATETIME NULL');
+CALL add_column_if_missing('Movie_Nights', 'reminder_minutes_before', 'INT NULL');
+CALL add_column_if_missing('Movie_Nights', 'reminder_last_sent_at', 'DATETIME NULL');
 
 CALL add_column_if_missing('Group_Members', 'role', 'ENUM(''owner'', ''moderator'', ''member'') NOT NULL DEFAULT ''member''');
 
@@ -155,6 +158,7 @@ CALL add_index_if_missing('Group_Watchlist', 'idx_added_by', 'added_by');
 CALL add_index_if_missing('Movie_Votes', 'idx_group_movie', 'group_id, movie_id');
 CALL add_index_if_missing('Movie_Nights', 'idx_group_id', 'group_id');
 CALL add_index_if_missing('Movie_Nights', 'idx_chosen_movie', 'chosen_movie_id');
+CALL add_index_if_missing('Movie_Nights', 'idx_rsvp_deadline', 'rsvp_deadline');
 CALL add_index_if_missing('Friend_Requests', 'idx_receiver_status', 'receiver_id, status');
 CALL add_index_if_missing('Friend_Requests', 'idx_sender_id', 'sender_id');
 CALL add_index_if_missing('Friendships', 'idx_friend_id', 'friend_id');
@@ -171,6 +175,10 @@ UPDATE Group_Members gm
 JOIN Movie_Groups mg ON gm.group_id = mg.group_id
 SET gm.role = 'owner'
 WHERE gm.user_id = mg.created_by;
+
+UPDATE Movie_Nights
+SET reminder_minutes_before = NULL
+WHERE reminder_minutes_before IS NOT NULL AND reminder_minutes_before <= 0;
 
 -- Backfill token hashes for previously plaintext reset tokens.
 UPDATE Password_Resets
