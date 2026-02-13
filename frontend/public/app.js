@@ -411,6 +411,21 @@ async function getGroupMembers(groupId) {
     }
 }
 
+async function getGroupActivity(groupId, { eventType = '', actorUserId = '', page = 1, limit = 20 } = {}) {
+    const params = new URLSearchParams();
+    if (eventType) params.set('eventType', eventType);
+    if (actorUserId) params.set('actorUserId', actorUserId);
+    params.set('page', String(page));
+    params.set('limit', String(limit));
+
+    try {
+        return await apiCall(`/groups/${groupId}/activity?${params.toString()}`);
+    } catch (error) {
+        console.error('Failed to fetch group activity:', error);
+        return [];
+    }
+}
+
 async function addGroupMember(groupId, email) {
     return await apiCall(`/groups/${groupId}/members`, 'POST', { email });
 }

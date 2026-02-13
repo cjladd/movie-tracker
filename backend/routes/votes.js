@@ -4,6 +4,7 @@ const { requireAuth } = require('../middleware/auth');
 const { requireFields } = require('../middleware/validate');
 const { verifyMembership, apiResponse, apiError, isPositiveInt } = require('../utils/helpers');
 const { VOTE_MIN, VOTE_MAX } = require('../utils/constants');
+const { GROUP_ACTIVITY_EVENT, recordGroupActivity } = require('../utils/groupActivity');
 
 const router = Router();
 
@@ -35,6 +36,14 @@ router.post(
          ON DUPLICATE KEY UPDATE vote_value = ?, voted_at = NOW()`,
         [userId, groupId, movieId, vote, vote]
       );
+
+      await recordGroupActivity({
+        groupId: Number(groupId),
+        actorUserId: userId,
+        eventType: GROUP_ACTIVITY_EVENT.VOTE_CAST,
+        referenceId: Number(movieId),
+        metadata: { voteValue: vote },
+      });
 
       res.json(apiResponse(null, 'Vote recorded successfully'));
     } catch (err) {

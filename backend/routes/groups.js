@@ -5,10 +5,12 @@ const { validateParamId, requireFields, sanitizeBody } = require('../middleware/
 const { parsePagination, paginatedResponse, apiResponse, apiError, isPositiveInt } = require('../utils/helpers');
 const { MOVIE_NIGHT_STATUS, GROUP_MEMBER_ROLE, NOTIFICATION_TYPES } = require('../utils/constants');
 const { buildMovieNightIcs, toIcsFilename } = require('../utils/ics');
+const { GROUP_ACTIVITY_EVENT, isMissingActivitySchemaError, parseActivityMetadata, recordGroupActivity } = require('../utils/groupActivity');
 const logger = require('../utils/logger');
 
 const router = Router();
 const MOVIE_NIGHT_STATUS_VALUES = new Set(Object.values(MOVIE_NIGHT_STATUS));
+const GROUP_ACTIVITY_EVENT_VALUES = new Set(Object.values(GROUP_ACTIVITY_EVENT));
 const GROUP_ROLE_RANK = {
   [GROUP_MEMBER_ROLE.MEMBER]: 1,
   [GROUP_MEMBER_ROLE.MODERATOR]: 2,
@@ -341,6 +343,13 @@ router.post(
         const groupId = result.insertId;
 
         await insertGroupMember(conn, groupId, userId, GROUP_MEMBER_ROLE.OWNER);
+        await recordGroupActivity({
+          groupId,
+          actorUserId: userId,
+          eventType: GROUP_ACTIVITY_EVENT.GROUP_CREATED,
+          referenceId: groupId,
+          metadata: { groupName },
+        }, conn);
 
         return { group_id: groupId, group_name: groupName, created_by: userId, user_role: GROUP_MEMBER_ROLE.OWNER };
       });
@@ -500,6 +509,14 @@ router.post(
         return next(apiError('User is already a member', 400));
       }
 
+      await recordGroupActivity({
+        groupId: Number(groupId),
+        actorUserId: req.session.userId,
+        targetUserId: newMember.user_id,
+        eventType: GROUP_ACTIVITY_EVENT.MEMBER_ADDED,
+        metadata: { email: newMember.email },
+      });
+
       res.json(apiResponse(
         { user_id: newMember.user_id, name: newMember.name, email: newMember.email, role: GROUP_MEMBER_ROLE.MEMBER },
         'Member added successfully'
@@ -566,6 +583,17 @@ router.patch(
             throw apiError('Group roles require the latest database migration', 500);
           }
 
+          await recordGroupActivity({
+            groupId: Number(groupId),
+            actorUserId: req.session.userId,
+            targetUserId: Number(memberId),
+            eventType: GROUP_ACTIVITY_EVENT.ROLE_CHANGED,
+            metadata: {
+              newRole: GROUP_MEMBER_ROLE.OWNER,
+              ownershipTransferred: true,
+            },
+          }, conn);
+
           return { transferred: true, role: GROUP_MEMBER_ROLE.OWNER };
         }
 
@@ -582,6 +610,17 @@ router.patch(
           if (!isMissingColumnError(err)) throw err;
           throw apiError('Group roles require the latest database migration', 500);
         }
+
+        await recordGroupActivity({
+          groupId: Number(groupId),
+          actorUserId: req.session.userId,
+          targetUserId: Number(memberId),
+          eventType: GROUP_ACTIVITY_EVENT.ROLE_CHANGED,
+          metadata: {
+            newRole: requestedRole,
+            ownershipTransferred: false,
+          },
+        }, conn);
 
         return { transferred: false, role: requestedRole };
       });
@@ -635,10 +674,89 @@ router.delete(
           [groupId, targetId]
         );
         if (result.affectedRows === 0) throw apiError('Member not found in this group', 404);
+
+        await recordGroupActivity({
+          groupId: Number(groupId),
+          actorUserId: actorId,
+          targetUserId: targetId,
+          eventType: GROUP_ACTIVITY_EVENT.MEMBER_REMOVED,
+          metadata: {
+            actorRole: actorContext.role,
+            removedRole: targetContext.role,
+          },
+        }, conn);
       });
 
       res.json(apiResponse(null, 'Member removed successfully'));
     } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// Get group activity timeline (paginated + filterable)
+router.get(
+  '/:groupId/activity',
+  requireAuth,
+  validateParamId('groupId'),
+  requireMembership(),
+  async (req, res, next) => {
+    const { groupId } = req.params;
+    const { page, limit, offset } = parsePagination(req.query);
+    const { eventType, actorUserId } = req.query;
+
+    if (actorUserId !== undefined && actorUserId !== '' && !isPositiveInt(actorUserId)) {
+      return next(apiError('Invalid actorUserId', 400));
+    }
+    if (eventType && !GROUP_ACTIVITY_EVENT_VALUES.has(String(eventType))) {
+      return next(apiError('Invalid eventType filter', 400));
+    }
+
+    const where = ['ga.group_id = ?'];
+    const whereParams = [groupId];
+
+    if (eventType) {
+      where.push('ga.event_type = ?');
+      whereParams.push(String(eventType));
+    }
+    if (actorUserId !== undefined && actorUserId !== '') {
+      where.push('ga.actor_user_id = ?');
+      whereParams.push(Number(actorUserId));
+    }
+
+    const whereSql = where.join(' AND ');
+
+    try {
+      const [[{ total }]] = await pool.query(
+        `SELECT COUNT(*) AS total
+         FROM Group_Activity ga
+         WHERE ${whereSql}`,
+        whereParams
+      );
+
+      const [rows] = await pool.query(
+        `SELECT ga.*,
+                actor.name AS actor_name,
+                target.name AS target_name
+         FROM Group_Activity ga
+         LEFT JOIN Users actor ON actor.user_id = ga.actor_user_id
+         LEFT JOIN Users target ON target.user_id = ga.target_user_id
+         WHERE ${whereSql}
+         ORDER BY ga.created_at DESC
+         LIMIT ? OFFSET ?`,
+        [...whereParams, limit, offset]
+      );
+
+      const normalizedRows = rows.map((row) => ({
+        ...row,
+        metadata: parseActivityMetadata(row.metadata_json),
+      }));
+
+      res.json(paginatedResponse(normalizedRows, total, page, limit));
+    } catch (err) {
+      if (isMissingActivitySchemaError(err)) {
+        return next(apiError('Group activity timeline requires the latest database migration', 500));
+      }
       next(err);
     }
   }
@@ -713,6 +831,19 @@ router.post(
         );
       }
 
+      await recordGroupActivity({
+        groupId: Number(groupId),
+        actorUserId: req.session.userId,
+        eventType: GROUP_ACTIVITY_EVENT.MOVIE_NIGHT_CREATED,
+        referenceId: result.insertId,
+        metadata: {
+          scheduledDate: parsedScheduledDate.sqlDateTime,
+          chosenMovieId: parsedMovieId.movieId ?? null,
+          rsvpDeadline: parsedRsvpDeadline.value || null,
+          reminderMinutesBefore: parsedReminder.value ?? null,
+        },
+      });
+
       res.status(201).json(apiResponse({
         night_id: result.insertId,
         group_id: parseInt(groupId, 10),
@@ -755,6 +886,7 @@ router.put(
 
       const updates = [];
       const values = [];
+      const changedFields = [];
       let nextScheduledDate = new Date(movieNight.scheduled_date);
       let nextRsvpDeadline = movieNight.rsvp_deadline ? new Date(movieNight.rsvp_deadline) : null;
       let nextReminderMinutes = movieNight.reminder_minutes_before === null
@@ -771,6 +903,7 @@ router.put(
         updates.push('scheduled_date = ?');
         values.push(parsedScheduledDate.sqlDateTime);
         nextScheduledDate = parsedScheduledDate.date;
+        changedFields.push('scheduled_date');
       }
 
       if (chosenMovieId !== undefined) {
@@ -786,6 +919,7 @@ router.put(
 
         updates.push('chosen_movie_id = ?');
         values.push(parsedMovieId.movieId ?? null);
+        changedFields.push('chosen_movie_id');
       }
 
       if (status !== undefined) {
@@ -794,6 +928,7 @@ router.put(
         }
         updates.push('status = ?');
         values.push(status);
+        changedFields.push('status');
       }
 
       const parsedRsvpDeadline = parseOptionalDateTimeInput(rsvpDeadline, 'rsvpDeadline');
@@ -803,6 +938,7 @@ router.put(
         values.push(parsedRsvpDeadline.value);
         nextRsvpDeadline = parsedRsvpDeadline.date;
         reminderConfigChanged = true;
+        changedFields.push('rsvp_deadline');
       }
 
       const parsedReminder = parseReminderMinutesInput(reminderMinutesBefore);
@@ -812,6 +948,7 @@ router.put(
         values.push(parsedReminder.value ?? null);
         nextReminderMinutes = parsedReminder.value ?? null;
         reminderConfigChanged = true;
+        changedFields.push('reminder_minutes_before');
       }
 
       if (nextReminderMinutes !== null && !nextRsvpDeadline) {
@@ -834,6 +971,7 @@ router.put(
 
       if (reminderConfigChanged) {
         updates.push('reminder_last_sent_at = NULL');
+        changedFields.push('reminder_last_sent_at');
       }
 
       if (updates.length === 0) return next(apiError('No fields to update', 400));
@@ -845,6 +983,16 @@ router.put(
         if (!isMissingColumnError(err)) throw err;
         return next(apiError('RSVP updates require the latest database migration', 500));
       }
+
+      await recordGroupActivity({
+        groupId: Number(groupId),
+        actorUserId: req.session.userId,
+        eventType: GROUP_ACTIVITY_EVENT.MOVIE_NIGHT_UPDATED,
+        referenceId: Number(nightId),
+        metadata: {
+          changedFields,
+        },
+      });
       res.json(apiResponse(null, 'Movie night updated'));
     } catch (err) {
       next(err);
@@ -881,6 +1029,13 @@ router.patch(
         return next(apiError('Movie-night locking requires the latest database migration', 500));
       }
 
+      await recordGroupActivity({
+        groupId: Number(groupId),
+        actorUserId: req.session.userId,
+        eventType: locked ? GROUP_ACTIVITY_EVENT.MOVIE_NIGHT_LOCKED : GROUP_ACTIVITY_EVENT.MOVIE_NIGHT_UNLOCKED,
+        referenceId: Number(nightId),
+      });
+
       res.json(apiResponse({ night_id: Number(nightId), is_locked: locked }, locked ? 'Movie night locked' : 'Movie night unlocked'));
     } catch (err) {
       next(err);
@@ -913,6 +1068,19 @@ router.post(
         no_pending_members: 'No pending RSVPs to remind',
         dispatched: 'RSVP reminders sent',
       };
+
+      if (result.sent && result.recipients > 0) {
+        await recordGroupActivity({
+          groupId: Number(groupId),
+          actorUserId: req.session.userId,
+          eventType: GROUP_ACTIVITY_EVENT.RSVP_REMINDER_SENT,
+          referenceId: Number(nightId),
+          metadata: {
+            recipients: result.recipients,
+            forced: force,
+          },
+        });
+      }
 
       const message = messageMap[result.reason] || 'Reminder processed';
       res.json(apiResponse(
@@ -1085,6 +1253,14 @@ router.post(
          ON DUPLICATE KEY UPDATE is_available = ?, responded_at = NOW()`,
         [nightId, req.session.userId, isAvailable ? 1 : 0, isAvailable ? 1 : 0]
       );
+
+      await recordGroupActivity({
+        groupId: Number(groupId),
+        actorUserId: req.session.userId,
+        eventType: GROUP_ACTIVITY_EVENT.AVAILABILITY_UPDATED,
+        referenceId: Number(nightId),
+        metadata: { isAvailable: !!isAvailable },
+      });
       res.json(apiResponse(null, 'Availability updated'));
     } catch (err) {
       next(err);
@@ -1142,6 +1318,13 @@ router.post(
         return next(apiError('Movie already in watchlist', 400));
       }
 
+      await recordGroupActivity({
+        groupId: Number(groupId),
+        actorUserId: req.session.userId,
+        eventType: GROUP_ACTIVITY_EVENT.WATCHLIST_ADDED,
+        referenceId: Number(movieId),
+      });
+
       res.json(apiResponse(null, 'Movie added to watchlist successfully'));
     } catch (err) {
       next(err);
@@ -1164,6 +1347,13 @@ router.delete(
         [groupId, movieId]
       );
       if (result.affectedRows === 0) return next(apiError('Movie not in watchlist', 404));
+
+      await recordGroupActivity({
+        groupId: Number(groupId),
+        actorUserId: req.session.userId,
+        eventType: GROUP_ACTIVITY_EVENT.WATCHLIST_REMOVED,
+        referenceId: Number(movieId),
+      });
       res.json(apiResponse(null, 'Movie removed from watchlist'));
     } catch (err) {
       next(err);

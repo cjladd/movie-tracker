@@ -162,7 +162,39 @@ CREATE TABLE Notifications (
     INDEX idx_user_created (user_id, created_at)
 );
 
--- 12. Password_Resets table
+-- 12. Group activity timeline table
+CREATE TABLE Group_Activity (
+    activity_id INT PRIMARY KEY AUTO_INCREMENT,
+    group_id INT NOT NULL,
+    actor_user_id INT NULL,
+    target_user_id INT NULL,
+    event_type ENUM(
+        'group_created',
+        'member_added',
+        'member_removed',
+        'role_changed',
+        'movie_night_created',
+        'movie_night_updated',
+        'movie_night_locked',
+        'movie_night_unlocked',
+        'rsvp_reminder_sent',
+        'availability_updated',
+        'watchlist_added',
+        'watchlist_removed',
+        'vote_cast'
+    ) NOT NULL,
+    reference_id INT NULL,
+    metadata_json JSON NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (group_id) REFERENCES Movie_Groups(group_id) ON DELETE CASCADE,
+    FOREIGN KEY (actor_user_id) REFERENCES Users(user_id) ON DELETE SET NULL,
+    FOREIGN KEY (target_user_id) REFERENCES Users(user_id) ON DELETE SET NULL,
+    INDEX idx_group_created (group_id, created_at),
+    INDEX idx_event_type (event_type),
+    INDEX idx_actor_user (actor_user_id)
+);
+
+-- 13. Password_Resets table
 CREATE TABLE Password_Resets (
     reset_id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
@@ -175,7 +207,7 @@ CREATE TABLE Password_Resets (
     INDEX idx_user_id (user_id)
 );
 
--- 13. Sessions table (for express-mysql-session)
+-- 14. Sessions table (for express-mysql-session)
 CREATE TABLE sessions (
     session_id VARCHAR(128) COLLATE utf8mb4_bin NOT NULL,
     expires INT UNSIGNED NOT NULL,

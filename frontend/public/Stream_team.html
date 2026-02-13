@@ -56,6 +56,7 @@
                 <button class="detail-tab" type="button" data-tab="members">Members</button>
                 <button class="detail-tab active" type="button" data-tab="watchlist">Watchlist</button>
                 <button class="detail-tab" type="button" data-tab="movieNights">Movie Nights</button>
+                <button class="detail-tab" type="button" data-tab="timeline">Timeline</button>
             </div>
 
             <div id="membersTab" class="tab-content">
@@ -160,6 +161,27 @@
                     <p class="calendar-day-summary" id="calendarDaySummary">Select a day to schedule a movie night.</p>
                 </div>
             </div>
+
+            <div id="timelineTab" class="tab-content">
+                <div class="timeline-controls card">
+                    <div class="form-group">
+                        <label for="timelineEventFilter">Filter events</label>
+                        <select id="timelineEventFilter">
+                            <option value="">All activity</option>
+                            <option value="member_added">Members added</option>
+                            <option value="member_removed">Members removed</option>
+                            <option value="role_changed">Role changes</option>
+                            <option value="movie_night_created">Movie nights created</option>
+                            <option value="movie_night_updated">Movie nights updated</option>
+                            <option value="rsvp_reminder_sent">RSVP reminders</option>
+                            <option value="watchlist_added">Watchlist additions</option>
+                            <option value="watchlist_removed">Watchlist removals</option>
+                            <option value="vote_cast">Votes</option>
+                        </select>
+                    </div>
+                </div>
+                <ul id="timelineList" class="timeline-list"></ul>
+            </div>
         </section>
     </main>
 
@@ -181,6 +203,7 @@
         let currentGroupName = '';
         let groupsCache = [];
         let movieNightsCache = [];
+        let timelineFilter = '';
         let calendarViewDate = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
         const GROUP_ROLE_ORDER = { member: 1, moderator: 2, owner: 3 };
 
@@ -210,6 +233,8 @@
         const calendarDaySummary = document.getElementById('calendarDaySummary');
         const calendarPrevMonth = document.getElementById('calendarPrevMonth');
         const calendarNextMonth = document.getElementById('calendarNextMonth');
+        const timelineEventFilter = document.getElementById('timelineEventFilter');
+        const timelineList = document.getElementById('timelineList');
 
         document.addEventListener('DOMContentLoaded', async () => {
             await ensureAuthState();
@@ -543,6 +568,10 @@
             calendarPrevMonth.addEventListener('click', () => shiftCalendarMonth(-1));
             calendarNextMonth.addEventListener('click', () => shiftCalendarMonth(1));
             movieNightsList.addEventListener('click', handleMovieNightsListActions);
+            timelineEventFilter.addEventListener('change', () => {
+                timelineFilter = timelineEventFilter.value;
+                loadTimeline();
+            });
         }
 
         async function loadGroups() {
@@ -645,6 +674,8 @@
             currentGroupRole = normalizeRole(group.user_role);
             groupDetailTitle.textContent = currentGroupName;
             groupDetailRole.textContent = `Role: ${formatRole(currentGroupRole)}`;
+            timelineFilter = '';
+            timelineEventFilter.value = '';
             groupDetail.classList.add('active');
             await loadWatchlistMovies();
             switchTab('watchlist');
@@ -663,7 +694,8 @@
             const tabIdMap = {
                 members: 'membersTab',
                 watchlist: 'watchlistTab',
-                movieNights: 'movieNightsTab'
+                movieNights: 'movieNightsTab',
+                timeline: 'timelineTab'
             };
 
             document.querySelectorAll('.detail-tab').forEach((tab) => {
@@ -680,6 +712,72 @@
             if (tabName === 'members') loadMembers();
             if (tabName === 'watchlist') loadWatchlist();
             if (tabName === 'movieNights') loadMovieNights();
+            if (tabName === 'timeline') loadTimeline();
+        }
+
+        function describeTimelineEvent(activity) {
+            const actor = activity.actor_name ? escapeHtml(activity.actor_name) : 'System';
+            const target = activity.target_name ? escapeHtml(activity.target_name) : 'member';
+            const metadata = activity && activity.metadata && typeof activity.metadata === 'object'
+                ? activity.metadata
+                : {};
+
+            switch (activity.event_type) {
+            case 'group_created':
+                return `${actor} created this group`;
+            case 'member_added':
+                return `${actor} added ${target}`;
+            case 'member_removed':
+                return `${actor} removed ${target}`;
+            case 'role_changed':
+                return `${actor} updated ${target}'s role${metadata.newRole ? ` to ${escapeHtml(metadata.newRole)}` : ''}`;
+            case 'movie_night_created':
+                return `${actor} scheduled a movie night`;
+            case 'movie_night_updated':
+                return `${actor} updated movie-night details`;
+            case 'movie_night_locked':
+                return `${actor} locked the movie-night schedule`;
+            case 'movie_night_unlocked':
+                return `${actor} unlocked the movie-night schedule`;
+            case 'rsvp_reminder_sent':
+                return `${actor} sent RSVP reminders${metadata.recipients ? ` (${metadata.recipients} recipients)` : ''}`;
+            case 'availability_updated':
+                return `${actor} updated availability`;
+            case 'watchlist_added':
+                return `${actor} added a movie to the watchlist`;
+            case 'watchlist_removed':
+                return `${actor} removed a movie from the watchlist`;
+            case 'vote_cast':
+                return `${actor} cast a vote${metadata.voteValue ? ` (${metadata.voteValue}/5)` : ''}`;
+            default:
+                return `${actor} performed a group action`;
+            }
+        }
+
+        async function loadTimeline() {
+            if (!currentGroupId) return;
+            timelineList.innerHTML = '<li class="timeline-item card">Loading timeline...</li>';
+
+            try {
+                const timelineItems = normalizeCollection(await getGroupActivity(currentGroupId, {
+                    eventType: timelineFilter || '',
+                    limit: 40,
+                }));
+
+                if (timelineItems.length === 0) {
+                    timelineList.innerHTML = '<li class="empty-state card">No activity recorded yet</li>';
+                    return;
+                }
+
+                timelineList.innerHTML = timelineItems.map((activity) => `
+                    <li class="timeline-item card">
+                        <p class="timeline-item-message">${describeTimelineEvent(activity)}</p>
+                        <time class="timeline-item-time" datetime="${escapeHtml(activity.created_at)}">${formatDateTime(activity.created_at)}</time>
+                    </li>
+                `).join('');
+            } catch (error) {
+                timelineList.innerHTML = '<li class="empty-state card">Failed to load activity timeline</li>';
+            }
         }
 
         async function loadMembers() {

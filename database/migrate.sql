@@ -217,6 +217,38 @@ CREATE TABLE IF NOT EXISTS Notifications (
     INDEX idx_user_created (user_id, created_at)
 );
 
+-- Create Group_Activity table
+CREATE TABLE IF NOT EXISTS Group_Activity (
+    activity_id INT PRIMARY KEY AUTO_INCREMENT,
+    group_id INT NOT NULL,
+    actor_user_id INT NULL,
+    target_user_id INT NULL,
+    event_type ENUM(
+      'group_created',
+      'member_added',
+      'member_removed',
+      'role_changed',
+      'movie_night_created',
+      'movie_night_updated',
+      'movie_night_locked',
+      'movie_night_unlocked',
+      'rsvp_reminder_sent',
+      'availability_updated',
+      'watchlist_added',
+      'watchlist_removed',
+      'vote_cast'
+    ) NOT NULL,
+    reference_id INT NULL,
+    metadata_json JSON NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (group_id) REFERENCES Movie_Groups(group_id) ON DELETE CASCADE,
+    FOREIGN KEY (actor_user_id) REFERENCES Users(user_id) ON DELETE SET NULL,
+    FOREIGN KEY (target_user_id) REFERENCES Users(user_id) ON DELETE SET NULL,
+    INDEX idx_group_created (group_id, created_at),
+    INDEX idx_event_type (event_type),
+    INDEX idx_actor_user (actor_user_id)
+);
+
 -- Create Password_Resets table
 CREATE TABLE IF NOT EXISTS Password_Resets (
     reset_id INT PRIMARY KEY AUTO_INCREMENT,
