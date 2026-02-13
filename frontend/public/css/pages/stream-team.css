@@ -75,6 +75,17 @@
   font-size: clamp(1.3rem, 2.5vw, 1.8rem);
 }
 
+.group-detail-heading {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.group-detail-role {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
 .detail-tabs {
   display: flex;
   gap: 0.5rem;
@@ -105,6 +116,12 @@
   border-radius: var(--radius-sm);
   padding: 0.55rem 0.7rem;
   margin-bottom: 0.55rem;
+  font-size: var(--text-xs);
+}
+
+.members-permission-hint {
+  margin: 0 0 0.65rem;
+  color: var(--text-secondary);
   font-size: var(--text-xs);
 }
 
@@ -160,6 +177,13 @@
   padding: 0.7rem;
 }
 
+.member-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
 .movie-night-form-header p {
   margin: -0.15rem 0 0.6rem;
   color: var(--text-secondary);
@@ -186,6 +210,49 @@
   color: var(--text-secondary);
   font-size: var(--text-xs);
   margin-top: 0.2rem;
+}
+
+.member-role-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.member-role-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  background: var(--bg-overlay);
+  color: var(--text-secondary);
+  padding: 0.16rem 0.5rem;
+  font-size: 0.7rem;
+}
+
+.member-role-badge.role-owner {
+  border-color: rgba(250, 204, 21, 0.4);
+  color: #fde68a;
+  background: rgba(250, 204, 21, 0.14);
+}
+
+.member-role-badge.role-moderator {
+  border-color: rgba(96, 165, 250, 0.4);
+  color: #bfdbfe;
+  background: rgba(96, 165, 250, 0.14);
+}
+
+.member-role-badge.role-member {
+  border-color: rgba(148, 163, 184, 0.4);
+  color: #e2e8f0;
+  background: rgba(148, 163, 184, 0.14);
+}
+
+.member-role-select {
+  min-width: 7.4rem;
+  font-size: var(--text-xs);
+  padding: 0.3rem 0.45rem;
 }
 
 .watchlist-header {
@@ -475,6 +542,12 @@
   margin-bottom: 0.35rem;
 }
 
+.movie-night-header-tags {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
 .movie-night-date {
   font-weight: 700;
   font-size: var(--text-sm);
@@ -485,6 +558,25 @@
   border-radius: var(--radius-full);
   padding: 0.2rem 0.5rem;
   text-transform: capitalize;
+}
+
+.movie-night-lock {
+  font-size: 0.65rem;
+  border-radius: var(--radius-full);
+  padding: 0.18rem 0.45rem;
+  border: 1px solid var(--border);
+}
+
+.movie-night-lock.is-locked {
+  color: #fed7aa;
+  border-color: rgba(251, 146, 60, 0.45);
+  background: rgba(251, 146, 60, 0.14);
+}
+
+.movie-night-lock.is-open {
+  color: #bbf7d0;
+  border-color: rgba(74, 222, 128, 0.4);
+  background: rgba(74, 222, 128, 0.12);
 }
 
 .status-planned {
@@ -511,6 +603,7 @@
   margin-top: 0.55rem;
   display: flex;
   justify-content: flex-end;
+  gap: 0.4rem;
 }
 
 @media (max-width: 768px) {
@@ -528,6 +621,15 @@
   .group-detail-header {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .member-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .member-role-controls {
+    justify-content: flex-start;
   }
 
   .add-member-row {

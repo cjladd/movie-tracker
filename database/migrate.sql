@@ -45,6 +45,9 @@ CALL add_column_if_missing('Movies', 'tmdb_id', 'INT NULL');
 
 CALL add_column_if_missing('Movie_Nights', 'created_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
 CALL add_column_if_missing('Movie_Nights', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+CALL add_column_if_missing('Movie_Nights', 'is_locked', 'BOOLEAN DEFAULT FALSE');
+
+CALL add_column_if_missing('Group_Members', 'role', 'ENUM(''owner'', ''moderator'', ''member'') NOT NULL DEFAULT ''member''');
 
 CALL add_column_if_missing('Availability', 'responded_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
 CALL add_column_if_missing('Password_Resets', 'token_hash', 'CHAR(64) NULL');
@@ -147,6 +150,7 @@ DELIMITER ;
 
 CALL add_index_if_missing('Movie_Groups', 'idx_created_by', 'created_by');
 CALL add_index_if_missing('Group_Members', 'idx_user_id', 'user_id');
+CALL add_index_if_missing('Group_Members', 'idx_group_role', 'group_id, role');
 CALL add_index_if_missing('Group_Watchlist', 'idx_added_by', 'added_by');
 CALL add_index_if_missing('Movie_Votes', 'idx_group_movie', 'group_id, movie_id');
 CALL add_index_if_missing('Movie_Nights', 'idx_group_id', 'group_id');
@@ -157,6 +161,16 @@ CALL add_index_if_missing('Friendships', 'idx_friend_id', 'friend_id');
 CALL add_unique_index_if_missing('Movies', 'uq_movies_tmdb_id', 'tmdb_id');
 CALL add_unique_index_if_missing('Password_Resets', 'uq_password_resets_token_hash', 'token_hash');
 CALL add_index_if_missing('Password_Resets', 'idx_token_hash', 'token_hash');
+
+-- Ensure group roles are normalized and owner is backfilled from group creator.
+UPDATE Group_Members
+SET role = 'member'
+WHERE role IS NULL OR role NOT IN ('owner', 'moderator', 'member');
+
+UPDATE Group_Members gm
+JOIN Movie_Groups mg ON gm.group_id = mg.group_id
+SET gm.role = 'owner'
+WHERE gm.user_id = mg.created_by;
 
 -- Backfill token hashes for previously plaintext reset tokens.
 UPDATE Password_Resets

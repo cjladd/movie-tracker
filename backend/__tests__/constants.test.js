@@ -30,6 +30,14 @@ describe('constants', () => {
     });
   });
 
+  test('GROUP_MEMBER_ROLE has expected values', () => {
+    expect(constants.GROUP_MEMBER_ROLE).toEqual({
+      OWNER: 'owner',
+      MODERATOR: 'moderator',
+      MEMBER: 'member',
+    });
+  });
+
   test('PAGINATION defaults are sensible', () => {
     expect(constants.PAGINATION.DEFAULT_PAGE).toBe(1);
     expect(constants.PAGINATION.DEFAULT_LIMIT).toBeGreaterThan(0);

@@ -37,11 +37,13 @@ CREATE TABLE Movie_Groups (
 CREATE TABLE Group_Members (
     group_id INT,
     user_id INT,
+    role ENUM('owner', 'moderator', 'member') NOT NULL DEFAULT 'member',
     joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (group_id, user_id),
     FOREIGN KEY (group_id) REFERENCES Movie_Groups(group_id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
-    INDEX idx_user_id (user_id)
+    INDEX idx_user_id (user_id),
+    INDEX idx_group_role (group_id, role)
 );
 
 -- 4. Movies table
@@ -92,6 +94,7 @@ CREATE TABLE Movie_Nights (
     scheduled_date DATETIME NOT NULL,
     chosen_movie_id INT,
     status ENUM('planned', 'completed', 'cancelled') DEFAULT 'planned',
+    is_locked BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (group_id) REFERENCES Movie_Groups(group_id) ON DELETE CASCADE,

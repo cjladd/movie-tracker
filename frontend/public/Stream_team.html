@@ -45,7 +45,10 @@
 
         <section id="groupDetail" class="group-detail card" data-animate>
             <div class="group-detail-header">
-                <h3 class="group-detail-title" id="groupDetailTitle">Group Name</h3>
+                <div class="group-detail-heading">
+                    <h3 class="group-detail-title" id="groupDetailTitle">Group Name</h3>
+                    <p class="group-detail-role" id="groupDetailRole">Role: Member</p>
+                </div>
                 <button class="btn btn-secondary" id="backToGroups" type="button">Back to Groups</button>
             </div>
 
@@ -58,6 +61,7 @@
             <div id="membersTab" class="tab-content">
                 <div class="success-message" id="memberSuccess" aria-live="polite"></div>
                 <div class="error-message" id="memberError" aria-live="assertive"></div>
+                <p class="members-permission-hint" id="memberPermissionHint"></p>
 
                 <div class="add-member-form card">
                     <h4>Invite Member</h4>
@@ -152,8 +156,12 @@
     <script src="app.js"></script>
     <script>
         let currentGroupId = null;
+        let currentGroupRole = 'member';
+        let currentGroupName = '';
+        let groupsCache = [];
         let movieNightsCache = [];
         let calendarViewDate = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+        const GROUP_ROLE_ORDER = { member: 1, moderator: 2, owner: 3 };
 
         const content = document.getElementById('content');
         const createGroupBtn = document.getElementById('createGroupBtn');
@@ -164,7 +172,9 @@
         const backToGroups = document.getElementById('backToGroups');
 
         const groupDetailTitle = document.getElementById('groupDetailTitle');
+        const groupDetailRole = document.getElementById('groupDetailRole');
         const membersList = document.getElementById('membersList');
+        const memberPermissionHint = document.getElementById('memberPermissionHint');
         const watchlistVotingGrid = document.getElementById('watchlistVotingGrid');
         const movieNightsList = document.getElementById('movieNightsList');
         const movieNightPlanCount = document.getElementById('movieNightPlanCount');
@@ -188,6 +198,20 @@
             if (Array.isArray(result)) return result;
             if (result && Array.isArray(result.data)) return result.data;
             return [];
+        }
+
+        function normalizeRole(role) {
+            if (role === 'owner' || role === 'moderator' || role === 'member') return role;
+            return 'member';
+        }
+
+        function hasMinimumRole(minimumRole) {
+            return (GROUP_ROLE_ORDER[currentGroupRole] || 0) >= (GROUP_ROLE_ORDER[minimumRole] || 0);
+        }
+
+        function formatRole(role) {
+            const normalized = normalizeRole(role);
+            return normalized.charAt(0).toUpperCase() + normalized.slice(1);
         }
 
         function initializeMovieNightScheduler() {
@@ -405,6 +429,8 @@
             document.getElementById('memberEmailInput').addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') handleAddMember();
             });
+            membersList.addEventListener('change', handleMemberRoleChange);
+            membersList.addEventListener('click', handleMemberRemoval);
 
             document.getElementById('createMovieNightBtn').addEventListener('click', handleCreateMovieNight);
             movieNightDateInput.addEventListener('change', handleMovieNightDateChange);
@@ -431,6 +457,10 @@
 
             try {
                 const groups = normalizeCollection(await getGroups());
+                groupsCache = groups.map((group) => ({
+                    ...group,
+                    user_role: normalizeRole(group.user_role || (Number(group.created_by) === Number(currentUser?.id) ? 'owner' : 'member')),
+                }));
                 if (!checkAuth()) {
                     content.innerHTML = `
                         <div class="login-prompt card">
@@ -451,7 +481,7 @@
                     `;
                     return;
                 }
-                displayGroups(groups);
+                displayGroups(groupsCache);
             } catch (error) {
                 content.innerHTML = '<div class="empty-state card"><h3>Error loading groups</h3><p>Please refresh and try again.</p></div>';
             }
@@ -468,7 +498,8 @@
                     <div class="group-name">${escapeHtml(group.group_name)}</div>
                     <div class="group-info">
                         Created: ${formatDate(group.created_at)}<br>
-                        Creator: ${escapeHtml(group.creator_name || 'Unknown')}
+                        Creator: ${escapeHtml(group.creator_name || 'Unknown')}<br>
+                        Your role: ${formatRole(group.user_role)}
                     </div>
                     <div class="group-actions">
                         <button class="btn btn-secondary js-members" type="button">View Members</button>
@@ -476,8 +507,8 @@
                     </div>
                 `;
 
-                card.querySelector('.js-members').addEventListener('click', () => enterGroup(group.group_id, group.group_name));
-                card.querySelector('.js-enter').addEventListener('click', () => enterGroup(group.group_id, group.group_name));
+                card.querySelector('.js-members').addEventListener('click', () => enterGroup(group));
+                card.querySelector('.js-enter').addEventListener('click', () => enterGroup(group));
                 grid.appendChild(card);
             });
 
@@ -503,12 +534,24 @@
             }
         }
 
-        async function enterGroup(groupId, groupName) {
-            currentGroupId = groupId;
-            groupDetailTitle.textContent = groupName;
+        async function enterGroup(group) {
+            currentGroupId = group.group_id;
+            currentGroupName = group.group_name;
+            currentGroupRole = normalizeRole(group.user_role);
+            groupDetailTitle.textContent = currentGroupName;
+            groupDetailRole.textContent = `Role: ${formatRole(currentGroupRole)}`;
             groupDetail.classList.add('active');
             await loadWatchlistMovies();
             switchTab('watchlist');
+        }
+
+        function syncCurrentGroupRoleFromCache() {
+            const cachedGroup = groupsCache.find((group) => Number(group.group_id) === Number(currentGroupId));
+            if (!cachedGroup) return;
+            currentGroupRole = normalizeRole(cachedGroup.user_role);
+            currentGroupName = cachedGroup.group_name || currentGroupName;
+            groupDetailTitle.textContent = currentGroupName;
+            groupDetailRole.textContent = `Role: ${formatRole(currentGroupRole)}`;
         }
 
         function switchTab(tabName) {
@@ -536,8 +579,29 @@
 
         async function loadMembers() {
             if (!currentGroupId) return;
+            const addMemberForm = document.querySelector('.add-member-form');
+            if (addMemberForm) addMemberForm.style.display = hasMinimumRole('moderator') ? '' : 'none';
+
+            if (memberPermissionHint) {
+                memberPermissionHint.textContent = hasMinimumRole('moderator')
+                    ? 'You can invite members and manage removals based on your role.'
+                    : 'Only moderators and owners can invite or remove members.';
+            }
+
             try {
-                const members = normalizeCollection(await getGroupMembers(currentGroupId));
+                const members = normalizeCollection(await getGroupMembers(currentGroupId))
+                    .map((member) => ({
+                        ...member,
+                        role: normalizeRole(member.role || (Number(member.user_id) === Number(currentUser?.id) && currentGroupRole === 'owner'
+                            ? 'owner'
+                            : 'member')),
+                    }))
+                    .sort((a, b) => {
+                        const roleDiff = (GROUP_ROLE_ORDER[b.role] || 0) - (GROUP_ROLE_ORDER[a.role] || 0);
+                        if (roleDiff !== 0) return roleDiff;
+                        return new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime();
+                    });
+
                 if (members.length === 0) {
                     membersList.innerHTML = '<li class="empty-state card">No members yet</li>';
                     return;
@@ -549,10 +613,66 @@
                             <div class="member-name">${escapeHtml(member.name)}</div>
                             <div class="member-email">${escapeHtml(member.email)}</div>
                         </div>
+                        <div class="member-role-controls">
+                            <span class="member-role-badge role-${member.role}">${formatRole(member.role)}</span>
+                            ${currentGroupRole === 'owner' && Number(member.user_id) !== Number(currentUser?.id) ? `
+                                <label class="sr-only" for="role-${member.user_id}">Role for ${escapeHtml(member.name)}</label>
+                                <select id="role-${member.user_id}" class="member-role-select" data-member-id="${member.user_id}">
+                                    <option value="member" ${member.role === 'member' ? 'selected' : ''}>Member</option>
+                                    <option value="moderator" ${member.role === 'moderator' ? 'selected' : ''}>Moderator</option>
+                                    <option value="owner" ${member.role === 'owner' ? 'selected' : ''}>Owner</option>
+                                </select>
+                            ` : ''}
+                            ${hasMinimumRole('moderator')
+                                && Number(member.user_id) !== Number(currentUser?.id)
+                                && member.role !== 'owner'
+                                && (currentGroupRole === 'owner' || member.role === 'member') ? `
+                                <button class="btn btn-ghost js-remove-member" data-member-id="${member.user_id}" type="button">Remove</button>
+                            ` : ''}
+                        </div>
                     </li>
                 `).join('');
             } catch (error) {
                 membersList.innerHTML = '<li class="empty-state card">Error loading members</li>';
+            }
+        }
+
+        async function handleMemberRoleChange(event) {
+            const select = event.target.closest('.member-role-select');
+            if (!select || !currentGroupId || !hasMinimumRole('owner')) return;
+
+            const memberId = Number(select.dataset.memberId);
+            const role = normalizeRole(select.value);
+            if (!memberId) return;
+
+            try {
+                await updateGroupMemberRole(currentGroupId, memberId, role);
+                showSuccess(document.getElementById('memberSuccess'), role === 'owner' ? 'Ownership transferred successfully' : 'Role updated');
+                await loadGroups();
+                syncCurrentGroupRoleFromCache();
+                await loadMembers();
+            } catch (error) {
+                showError(document.getElementById('memberError'), error.message || 'Failed to update role');
+                await loadMembers();
+            }
+        }
+
+        async function handleMemberRemoval(event) {
+            const removeButton = event.target.closest('.js-remove-member');
+            if (!removeButton || !currentGroupId || !hasMinimumRole('moderator')) return;
+
+            const memberId = Number(removeButton.dataset.memberId);
+            if (!memberId) return;
+            if (!confirm('Remove this member from the group?')) return;
+
+            try {
+                await removeGroupMember(currentGroupId, memberId);
+                showSuccess(document.getElementById('memberSuccess'), 'Member removed');
+                await loadGroups();
+                syncCurrentGroupRoleFromCache();
+                await loadMembers();
+            } catch (error) {
+                showError(document.getElementById('memberError'), error.message || 'Failed to remove member');
             }
         }
 
@@ -563,6 +683,11 @@
 
             if (!currentGroupId) {
                 showError(errorDiv, 'Select a group before inviting members');
+                return;
+            }
+
+            if (!hasMinimumRole('moderator')) {
+                showError(errorDiv, 'Only moderators and owners can invite members');
                 return;
             }
 
@@ -718,10 +843,21 @@
                     <li class="movie-night-item card">
                         <div class="movie-night-header">
                             <div class="movie-night-date">${formatDateTime(night.scheduled_date)}</div>
-                            <div class="movie-night-status status-${night.status}">${night.status}</div>
+                            <div class="movie-night-header-tags">
+                                <div class="movie-night-status status-${night.status}">${night.status}</div>
+                                <div class="movie-night-lock ${night.is_locked ? 'is-locked' : 'is-open'}">${night.is_locked ? 'Locked' : 'Open'}</div>
+                            </div>
                         </div>
                         <div class="movie-night-movie">${night.movie_title ? `Movie: ${escapeHtml(night.movie_title)}` : 'No movie selected yet'}</div>
                         <div class="movie-night-actions">
+                            ${hasMinimumRole('moderator') ? `
+                                <button
+                                    class="btn btn-ghost js-toggle-lock"
+                                    data-night-id="${night.night_id}"
+                                    data-locked="${night.is_locked ? '1' : '0'}"
+                                    type="button"
+                                >${night.is_locked ? 'Unlock Schedule' : 'Lock Schedule'}</button>
+                            ` : ''}
                             <button class="btn btn-secondary js-export-ics" data-night-id="${night.night_id}" type="button">Export .ics</button>
                         </div>
                     </li>
@@ -762,6 +898,28 @@
         }
 
         async function handleMovieNightsListActions(event) {
+            const lockButton = event.target.closest('.js-toggle-lock');
+            if (lockButton && currentGroupId && hasMinimumRole('moderator')) {
+                const nightId = Number(lockButton.dataset.nightId);
+                const currentlyLocked = lockButton.dataset.locked === '1';
+                if (!nightId) return;
+
+                lockButton.disabled = true;
+                const originalLabel = lockButton.textContent;
+                lockButton.textContent = currentlyLocked ? 'Unlocking...' : 'Locking...';
+
+                try {
+                    await setMovieNightLock(currentGroupId, nightId, !currentlyLocked);
+                    showSuccess(document.getElementById('movieNightSuccess'), currentlyLocked ? 'Movie night unlocked' : 'Movie night locked');
+                    await loadMovieNights();
+                } catch (error) {
+                    showError(document.getElementById('movieNightError'), error.message || 'Failed to update lock status');
+                    lockButton.disabled = false;
+                    lockButton.textContent = originalLabel;
+                }
+                return;
+            }
+
             const exportButton = event.target.closest('.js-export-ics');
             if (!exportButton || !currentGroupId) return;
 

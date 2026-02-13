@@ -18,6 +18,12 @@ module.exports = {
     CANCELLED: 'cancelled',
   },
 
+  GROUP_MEMBER_ROLE: {
+    OWNER: 'owner',
+    MODERATOR: 'moderator',
+    MEMBER: 'member',
+  },
+
   NOTIFICATION_TYPES: {
     GROUP_INVITE: 'group_invite',
     MOVIE_NIGHT: 'movie_night',

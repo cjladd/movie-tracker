@@ -415,6 +415,14 @@ async function addGroupMember(groupId, email) {
     return await apiCall(`/groups/${groupId}/members`, 'POST', { email });
 }
 
+async function updateGroupMemberRole(groupId, memberId, role) {
+    return await apiCall(`/groups/${groupId}/members/${memberId}/role`, 'PATCH', { role });
+}
+
+async function removeGroupMember(groupId, memberId) {
+    return await apiCall(`/groups/${groupId}/members/${memberId}`, 'DELETE');
+}
+
 // ── Friends / Invites API ────────────────────────────────────────────────────
 
 async function getFriends() {
@@ -467,6 +475,10 @@ async function getMovieNights(groupId) {
         console.error('Failed to fetch movie nights:', error);
         return [];
     }
+}
+
+async function setMovieNightLock(groupId, nightId, locked) {
+    return await apiCall(`/groups/${groupId}/movie-nights/${nightId}/lock`, 'PATCH', { locked });
 }
 
 function getFilenameFromDisposition(disposition, fallback = 'movie-night.ics') {
