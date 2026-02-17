@@ -502,6 +502,57 @@
             return chips + extra;
         }
 
+        function getCurrentUserRsvpState(night) {
+            if (night.current_user_is_available === null || night.current_user_is_available === undefined) {
+                return 'pending';
+            }
+            return Boolean(night.current_user_is_available) ? 'yes' : 'no';
+        }
+
+        function formatCurrentUserRsvp(night) {
+            const state = getCurrentUserRsvpState(night);
+            if (state === 'yes') return 'Your RSVP: Attending';
+            if (state === 'no') return 'Your RSVP: Not attending';
+            return 'Your RSVP: Pending';
+        }
+
+        function canSubmitRsvp(night) {
+            if (night.status !== 'planned') return false;
+            if (!night.rsvp_deadline) return true;
+            const deadline = parseDateValue(night.rsvp_deadline);
+            if (!deadline) return false;
+            return deadline.getTime() >= Date.now();
+        }
+
+        function renderRsvpActions(night) {
+            const state = getCurrentUserRsvpState(night);
+            const canSubmit = canSubmitRsvp(night);
+            const closed = !!night.rsvp_deadline && !canSubmit;
+
+            return `
+                <div class="movie-night-rsvp-row">
+                    <p class="movie-night-rsvp-status state-${state}">${formatCurrentUserRsvp(night)}</p>
+                    <div class="movie-night-rsvp-actions">
+                        <button
+                            class="btn btn-ghost js-rsvp-choice ${state === 'yes' ? 'is-selected' : ''}"
+                            data-night-id="${night.night_id}"
+                            data-available="1"
+                            ${canSubmit ? '' : 'disabled'}
+                            type="button"
+                        >Attending</button>
+                        <button
+                            class="btn btn-ghost js-rsvp-choice ${state === 'no' ? 'is-selected' : ''}"
+                            data-night-id="${night.night_id}"
+                            data-available="0"
+                            ${canSubmit ? '' : 'disabled'}
+                            type="button"
+                        >Not Attending</button>
+                    </div>
+                    ${closed ? '<p class="movie-night-rsvp-closed">RSVP is closed for this event.</p>' : ''}
+                </div>
+            `;
+        }
+
         function formatReminderLeadLabel(minutes) {
             const value = Number(minutes);
             if (!Number.isFinite(value) || value <= 0) return 'No reminder configured';
@@ -1059,6 +1110,7 @@
                                 <span class="awaiting-label">${Number(night.pending_rsvp_count || 0)} awaiting response</span>
                                 <div class="awaiting-chips">${renderAwaitingMembersChips(night)}</div>
                             </div>
+                            ${renderRsvpActions(night)}
                         </div>
                         <div class="movie-night-actions">
                             ${hasMinimumRole('moderator') ? `
@@ -1144,6 +1196,39 @@
         }
 
         async function handleMovieNightsListActions(event) {
+            const rsvpButton = event.target.closest('.js-rsvp-choice');
+            if (rsvpButton && currentGroupId) {
+                const nightId = Number(rsvpButton.dataset.nightId);
+                const isAvailable = rsvpButton.dataset.available === '1';
+                if (!nightId || rsvpButton.disabled) return;
+
+                const rsvpButtons = Array.from(
+                    movieNightsList.querySelectorAll(`.js-rsvp-choice[data-night-id="${nightId}"]`)
+                );
+                const originalLabels = rsvpButtons.map((button) => button.textContent);
+                rsvpButtons.forEach((button) => { button.disabled = true; });
+                rsvpButton.textContent = 'Saving...';
+
+                try {
+                    await setMovieNightAvailability(currentGroupId, nightId, isAvailable);
+                    showSuccess(
+                        document.getElementById('movieNightSuccess'),
+                        isAvailable ? 'RSVP saved: attending' : 'RSVP saved: not attending'
+                    );
+                    await loadMovieNights();
+                    if (document.getElementById('timelineTab').classList.contains('active')) {
+                        await loadTimeline();
+                    }
+                } catch (error) {
+                    showError(document.getElementById('movieNightError'), error.message || 'Failed to update RSVP');
+                    rsvpButtons.forEach((button, index) => {
+                        button.disabled = false;
+                        button.textContent = originalLabels[index];
+                    });
+                }
+                return;
+            }
+
             const reminderButton = event.target.closest('.js-send-rsvp-reminder');
             if (reminderButton && currentGroupId && hasMinimumRole('moderator')) {
                 const nightId = Number(reminderButton.dataset.nightId);

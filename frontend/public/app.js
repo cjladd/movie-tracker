@@ -501,6 +501,14 @@ async function sendRsvpReminder(groupId, nightId, force = true) {
     return await apiCall(`/groups/${groupId}/movie-nights/${nightId}/rsvp-reminders`, 'POST', { force });
 }
 
+async function setMovieNightAvailability(groupId, nightId, isAvailable) {
+    return await apiCall(`/groups/${groupId}/movie-nights/${nightId}/availability`, 'POST', { isAvailable });
+}
+
+async function getMovieNightAvailability(groupId, nightId) {
+    return await apiCall(`/groups/${groupId}/movie-nights/${nightId}/availability`);
+}
+
 function getFilenameFromDisposition(disposition, fallback = 'movie-night.ics') {
     if (!disposition) return fallback;
     const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
@@ -572,14 +580,19 @@ async function getMovieVotes(groupId, movieId) {
 
 // ── Notification Functions ───────────────────────────────────────────────────
 
-async function getNotifications() {
+async function getNotifications({ page = 1, limit = 20 } = {}) {
     if (!checkAuth()) return [];
-    try {
-        return await apiCall('/notifications');
-    } catch (error) {
-        console.error('Failed to fetch notifications:', error);
-        return [];
-    }
+    const params = new URLSearchParams();
+    params.set('page', String(page));
+    params.set('limit', String(limit));
+    return await apiCall(`/notifications?${params.toString()}`);
+}
+
+async function getUnreadNotificationsCount() {
+    if (!checkAuth()) return 0;
+    const result = await apiCall('/notifications/unread-count');
+    const count = Number(result && result.count);
+    return Number.isFinite(count) && count >= 0 ? count : 0;
 }
 
 async function markNotificationAsRead(notificationId) {

@@ -1112,13 +1112,16 @@ router.get(
       );
 
       let [rows] = await pool.query(
-        `SELECT mn.*, m.title as movie_title, m.poster_url, m.rating
+        `SELECT mn.*, m.title as movie_title, m.poster_url, m.rating,
+                self_av.is_available AS current_user_is_available,
+                self_av.responded_at AS current_user_responded_at
          FROM Movie_Nights mn
          LEFT JOIN Movies m ON mn.chosen_movie_id = m.movie_id
+         LEFT JOIN Availability self_av ON self_av.night_id = mn.night_id AND self_av.user_id = ?
          WHERE mn.group_id = ?
          ORDER BY mn.scheduled_date ASC
          LIMIT ? OFFSET ?`,
-        [req.params.groupId, limit, offset]
+        [req.session.userId, req.params.groupId, limit, offset]
       );
 
       const nightIds = rows.map((night) => Number(night.night_id)).filter((id) => Number.isInteger(id));
@@ -1153,12 +1156,16 @@ router.get(
         rows = rows.map((night) => {
           const state = byNight.get(Number(night.night_id)) || { memberCount: 0, responseCount: 0, awaitingNames: [] };
           const awaitingMembers = Array.from(new Set(state.awaitingNames));
+          const currentUserIsAvailable = night.current_user_is_available === null || night.current_user_is_available === undefined
+            ? null
+            : Boolean(Number(night.current_user_is_available));
           return {
             ...night,
             member_count: state.memberCount,
             response_count: state.responseCount,
             pending_rsvp_count: Math.max(state.memberCount - state.responseCount, 0),
             awaiting_members: awaitingMembers,
+            current_user_is_available: currentUserIsAvailable,
           };
         });
       }
@@ -1242,10 +1249,23 @@ router.post(
     const { isAvailable } = req.body;
 
     if (isAvailable === undefined) return next(apiError('isAvailable is required', 400));
+    if (typeof isAvailable !== 'boolean') return next(apiError('isAvailable must be a boolean value', 400));
 
     try {
       const movieNight = await getMovieNightForGroup(groupId, nightId);
       if (!movieNight) return next(apiError('Movie night not found', 404));
+      if (movieNight.status !== MOVIE_NIGHT_STATUS.PLANNED) {
+        return next(apiError('RSVP is only available for planned movie nights', 400));
+      }
+      if (movieNight.rsvp_deadline) {
+        const deadline = new Date(movieNight.rsvp_deadline);
+        if (Number.isNaN(deadline.getTime())) {
+          return next(apiError('Movie night has an invalid RSVP deadline', 500));
+        }
+        if (Date.now() > deadline.getTime()) {
+          return next(apiError('RSVP deadline has passed', 400));
+        }
+      }
 
       await pool.query(
         `INSERT INTO Availability (night_id, user_id, is_available, responded_at)
@@ -1259,9 +1279,9 @@ router.post(
         actorUserId: req.session.userId,
         eventType: GROUP_ACTIVITY_EVENT.AVAILABILITY_UPDATED,
         referenceId: Number(nightId),
-        metadata: { isAvailable: !!isAvailable },
+        metadata: { isAvailable },
       });
-      res.json(apiResponse(null, 'Availability updated'));
+      res.json(apiResponse({ is_available: isAvailable }, 'Availability updated'));
     } catch (err) {
       next(err);
     }

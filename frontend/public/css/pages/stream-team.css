@@ -666,6 +666,43 @@
   color: #a7f3d0;
 }
 
+.movie-night-rsvp-row {
+  margin-top: 0.55rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.movie-night-rsvp-status {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.movie-night-rsvp-status.state-yes {
+  color: #a7f3d0;
+}
+
+.movie-night-rsvp-status.state-no {
+  color: #fecaca;
+}
+
+.movie-night-rsvp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.js-rsvp-choice.is-selected {
+  border-color: rgba(125, 211, 252, 0.55);
+  background: rgba(56, 189, 248, 0.16);
+}
+
+.movie-night-rsvp-closed {
+  margin: 0;
+  font-size: 0.68rem;
+  color: #fca5a5;
+}
+
 .movie-night-actions {
   margin-top: 0.55rem;
   display: flex;

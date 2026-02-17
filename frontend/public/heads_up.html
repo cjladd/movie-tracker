@@ -66,6 +66,7 @@
     <script>
         let notifications = [];
         let currentFilter = 'all';
+        let unreadCountFromServer = null;
 
         const content = document.getElementById('content');
         const unreadCount = document.getElementById('unreadCount');
@@ -118,9 +119,10 @@
             }
 
             try {
-                const apiResult = await getNotifications();
+                const apiResult = await getNotifications({ page: 1, limit: 100 });
                 notifications = normalizeCollection(apiResult).map(normalizeNotification);
                 displayNotifications();
+                await refreshUnreadCount();
                 updateNotificationCount();
             } catch (error) {
                 showError(getErrorMessage(error, 'Failed to load notifications. Please try again.'));
@@ -281,8 +283,8 @@
         }
 
         function updateNotificationCount() {
-            const unread = notifications.filter((n) => !n.read);
-            const count = unread.length;
+            const localUnreadCount = notifications.filter((n) => !n.read).length;
+            const count = Number.isInteger(unreadCountFromServer) ? unreadCountFromServer : localUnreadCount;
 
             if (count > 0) {
                 unreadCount.textContent = count;
@@ -296,11 +298,24 @@
             document.title = count > 0 ? `(${count}) Heads Up - MovieNightPlanner` : 'Heads Up - MovieNightPlanner';
         }
 
+        async function refreshUnreadCount() {
+            try {
+                unreadCountFromServer = await getUnreadNotificationsCount();
+            } catch (_error) {
+                unreadCountFromServer = null;
+            }
+        }
+
         async function markAsRead(notificationId) {
             try {
                 await markNotificationAsRead(notificationId);
                 const notification = notifications.find((n) => n.id === notificationId);
-                if (notification) notification.read = true;
+                if (notification && !notification.read) {
+                    notification.read = true;
+                    if (Number.isInteger(unreadCountFromServer)) {
+                        unreadCountFromServer = Math.max(0, unreadCountFromServer - 1);
+                    }
+                }
                 displayNotifications();
                 updateNotificationCount();
                 showSuccess('Notification marked as read');
@@ -313,6 +328,7 @@
             try {
                 await markAllNotificationsAsRead();
                 notifications.forEach((n) => { n.read = true; });
+                unreadCountFromServer = 0;
                 displayNotifications();
                 updateNotificationCount();
                 showSuccess('All notifications marked as read');
