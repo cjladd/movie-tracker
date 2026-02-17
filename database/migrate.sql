@@ -181,9 +181,22 @@ SET reminder_minutes_before = NULL
 WHERE reminder_minutes_before IS NOT NULL AND reminder_minutes_before <= 0;
 
 -- Backfill token hashes for previously plaintext reset tokens.
-UPDATE Password_Resets
-SET token_hash = SHA2(token, 256)
-WHERE token_hash IS NULL AND token IS NOT NULL;
+SET @has_password_reset_token_column = (
+  SELECT COUNT(*)
+  FROM information_schema.columns
+  WHERE table_schema = DATABASE()
+    AND table_name = 'Password_Resets'
+    AND column_name = 'token'
+);
+
+SET @password_reset_backfill_sql = IF(
+  @has_password_reset_token_column > 0,
+  'UPDATE Password_Resets SET token_hash = SHA2(token, 256) WHERE token_hash IS NULL AND token IS NOT NULL',
+  'SELECT 1'
+);
+PREPARE stmt_password_reset_backfill FROM @password_reset_backfill_sql;
+EXECUTE stmt_password_reset_backfill;
+DEALLOCATE PREPARE stmt_password_reset_backfill;
 
 -- Add cascade deletes to Friend_Requests and Friendships
 CALL drop_fk_if_exists('Friend_Requests', 'friend_requests_ibfk_1');
