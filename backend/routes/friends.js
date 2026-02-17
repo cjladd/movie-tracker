@@ -3,7 +3,8 @@ const { pool, withTransaction } = require('../config/database');
 const { requireAuth } = require('../middleware/auth');
 const { validateParamId, requireFields, sanitizeBody, validateEmail } = require('../middleware/validate');
 const { getUserByEmail, parsePagination, paginatedResponse, apiResponse, apiError } = require('../utils/helpers');
-const { FRIEND_REQUEST_STATUS } = require('../utils/constants');
+const { FRIEND_REQUEST_STATUS, NOTIFICATION_TYPES } = require('../utils/constants');
+const { insertNotifications } = require('../utils/notifications');
 const logger = require('../utils/logger');
 
 const router = Router();
@@ -80,10 +81,31 @@ router.post(
       );
       if (existingRequest.length > 0) return next(apiError('Friend request already pending', 400));
 
-      await pool.query(
+      const [requestResult] = await pool.query(
         'INSERT INTO Friend_Requests (sender_id, receiver_id, status, requested_at) VALUES (?, ?, ?, NOW())',
         [senderId, receiver.user_id, FRIEND_REQUEST_STATUS.PENDING]
       );
+
+      try {
+        const [senderRows] = await pool.query(
+          'SELECT name FROM Users WHERE user_id = ? AND deleted_at IS NULL',
+          [senderId]
+        );
+        const senderName = senderRows[0] ? senderRows[0].name : 'Someone';
+        await insertNotifications(pool, [{
+          userId: receiver.user_id,
+          type: NOTIFICATION_TYPES.FRIEND_REQUEST,
+          title: `Friend request from ${senderName}`,
+          message: `${senderName} sent you a friend request.`,
+          referenceId: requestResult.insertId || null,
+        }]);
+      } catch (notifyErr) {
+        logger.warn('Failed to queue friend request notification', {
+          senderId,
+          receiverId: receiver.user_id,
+          error: notifyErr.message,
+        });
+      }
 
       logger.info(`Friend request sent: ${senderId} -> ${receiver.user_id}`);
       res.json(apiResponse(null, 'Friend request sent'));
@@ -121,6 +143,28 @@ router.post(
           'INSERT IGNORE INTO Friendships (user_id, friend_id, created_at) VALUES (?, ?, NOW()), (?, ?, NOW())',
           [senderId, receiverId, receiverId, senderId]
         );
+
+        try {
+          const [receiverRows] = await conn.query(
+            'SELECT name FROM Users WHERE user_id = ? AND deleted_at IS NULL',
+            [receiverId]
+          );
+          const receiverName = receiverRows[0] ? receiverRows[0].name : 'Your friend';
+          await insertNotifications(conn, [{
+            userId: senderId,
+            type: NOTIFICATION_TYPES.FRIEND_ACCEPTED,
+            title: 'Friend request accepted',
+            message: `${receiverName} accepted your friend request.`,
+            referenceId: Number(requestId),
+          }]);
+        } catch (notifyErr) {
+          logger.warn('Failed to queue friend accepted notification', {
+            senderId,
+            receiverId,
+            requestId: Number(requestId),
+            error: notifyErr.message,
+          });
+        }
       });
 
       logger.info(`Friend request accepted: ${requestId}`);

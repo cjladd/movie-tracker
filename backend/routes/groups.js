@@ -6,6 +6,7 @@ const { parsePagination, paginatedResponse, apiResponse, apiError, isPositiveInt
 const { MOVIE_NIGHT_STATUS, GROUP_MEMBER_ROLE, NOTIFICATION_TYPES } = require('../utils/constants');
 const { buildMovieNightIcs, toIcsFilename } = require('../utils/ics');
 const { GROUP_ACTIVITY_EVENT, isMissingActivitySchemaError, parseActivityMetadata, recordGroupActivity } = require('../utils/groupActivity');
+const { getGroupRecipientUserIds, insertNotificationForUserIfPreferred, insertNotifications } = require('../utils/notifications');
 const logger = require('../utils/logger');
 
 const router = Router();
@@ -284,14 +285,28 @@ async function sendRsvpReminderForNight(groupId, nightId, { force = false } = {}
       if (now < triggerAt) return { sent: false, reason: 'not_due', recipients: 0 };
     }
 
-    const [pendingMembers] = await conn.query(
-      `SELECT gm.user_id, u.name
-       FROM Group_Members gm
-       JOIN Users u ON gm.user_id = u.user_id
-       LEFT JOIN Availability a ON a.night_id = ? AND a.user_id = gm.user_id
-       WHERE gm.group_id = ? AND u.deleted_at IS NULL AND a.user_id IS NULL`,
-      [nightId, groupId]
-    );
+    let pendingMembers;
+    try {
+      [pendingMembers] = await conn.query(
+        `SELECT gm.user_id, u.name
+         FROM Group_Members gm
+         JOIN Users u ON gm.user_id = u.user_id
+         LEFT JOIN Availability a ON a.night_id = ? AND a.user_id = gm.user_id
+         WHERE gm.group_id = ? AND u.deleted_at IS NULL AND a.user_id IS NULL
+           AND u.email_notifications = TRUE`,
+        [nightId, groupId]
+      );
+    } catch (err) {
+      if (!isMissingColumnError(err)) throw err;
+      [pendingMembers] = await conn.query(
+        `SELECT gm.user_id, u.name
+         FROM Group_Members gm
+         JOIN Users u ON gm.user_id = u.user_id
+         LEFT JOIN Availability a ON a.night_id = ? AND a.user_id = gm.user_id
+         WHERE gm.group_id = ? AND u.deleted_at IS NULL AND a.user_id IS NULL`,
+        [nightId, groupId]
+      );
+    }
 
     if (pendingMembers.length === 0) {
       await conn.query('UPDATE Movie_Nights SET reminder_last_sent_at = NOW() WHERE night_id = ?', [nightId]);
@@ -516,6 +531,28 @@ router.post(
         eventType: GROUP_ACTIVITY_EVENT.MEMBER_ADDED,
         metadata: { email: newMember.email },
       });
+
+      try {
+        const [groupRows] = await pool.query(
+          'SELECT group_name FROM Movie_Groups WHERE group_id = ? AND deleted_at IS NULL',
+          [groupId]
+        );
+        const groupName = groupRows[0] ? groupRows[0].group_name : 'your Stream Team';
+        await insertNotificationForUserIfPreferred({
+          userId: newMember.user_id,
+          preferenceColumn: 'group_notifications',
+          type: NOTIFICATION_TYPES.GROUP_INVITE,
+          title: `Added to ${groupName}`,
+          message: `You were added to "${groupName}". Open Stream Team to see the latest plan.`,
+          referenceId: Number(groupId),
+        });
+      } catch (notifyErr) {
+        logger.warn('Failed to queue group invite notification', {
+          groupId: Number(groupId),
+          userId: Number(newMember.user_id),
+          error: notifyErr.message,
+        });
+      }
 
       res.json(apiResponse(
         { user_id: newMember.user_id, name: newMember.name, email: newMember.email, role: GROUP_MEMBER_ROLE.MEMBER },
@@ -843,6 +880,46 @@ router.post(
           reminderMinutesBefore: parsedReminder.value ?? null,
         },
       });
+
+      try {
+        const [groupRows] = await pool.query(
+          'SELECT group_name FROM Movie_Groups WHERE group_id = ? AND deleted_at IS NULL',
+          [groupId]
+        );
+        const groupName = groupRows[0] ? groupRows[0].group_name : 'your Stream Team';
+        const recipientUserIds = await getGroupRecipientUserIds(
+          Number(groupId),
+          {
+            excludeUserIds: [req.session.userId],
+            preferenceColumn: 'email_notifications',
+          }
+        );
+
+        if (recipientUserIds.length > 0) {
+          const scheduledLabel = formatDateTimeLabel(parsedScheduledDate.sqlDateTime);
+          const title = `Movie night scheduled: ${groupName}`;
+          const message = parsedMovieId.movieId
+            ? `A new movie night is set for ${scheduledLabel}. Check Stream Team for the selected movie and RSVP details.`
+            : `A new movie night is set for ${scheduledLabel}. Check Stream Team and cast your RSVP.`;
+
+          await insertNotifications(
+            pool,
+            recipientUserIds.map((userId) => ({
+              userId,
+              type: NOTIFICATION_TYPES.MOVIE_NIGHT,
+              title,
+              message,
+              referenceId: result.insertId,
+            }))
+          );
+        }
+      } catch (notifyErr) {
+        logger.warn('Failed to queue movie-night notifications', {
+          groupId: Number(groupId),
+          nightId: Number(result.insertId),
+          error: notifyErr.message,
+        });
+      }
 
       res.status(201).json(apiResponse({
         night_id: result.insertId,
@@ -1344,6 +1421,46 @@ router.post(
         eventType: GROUP_ACTIVITY_EVENT.WATCHLIST_ADDED,
         referenceId: Number(movieId),
       });
+
+      try {
+        const [contextRows] = await pool.query(
+          `SELECT mg.group_name, m.title AS movie_title
+           FROM Movie_Groups mg
+           LEFT JOIN Movies m ON m.movie_id = ?
+           WHERE mg.group_id = ? AND mg.deleted_at IS NULL`,
+          [movieId, groupId]
+        );
+        const context = contextRows[0] || {};
+        const groupName = context.group_name || 'your Stream Team';
+        const movieTitle = context.movie_title || 'A movie';
+
+        const recipientUserIds = await getGroupRecipientUserIds(
+          Number(groupId),
+          {
+            excludeUserIds: [req.session.userId],
+            preferenceColumn: 'group_notifications',
+          }
+        );
+
+        if (recipientUserIds.length > 0) {
+          await insertNotifications(
+            pool,
+            recipientUserIds.map((userId) => ({
+              userId,
+              type: NOTIFICATION_TYPES.WATCHLIST_ADD,
+              title: `Watchlist update: ${groupName}`,
+              message: `"${movieTitle}" was added to the group watchlist.`,
+              referenceId: Number(movieId),
+            }))
+          );
+        }
+      } catch (notifyErr) {
+        logger.warn('Failed to queue watchlist notifications', {
+          groupId: Number(groupId),
+          movieId: Number(movieId),
+          error: notifyErr.message,
+        });
+      }
 
       res.json(apiResponse(null, 'Movie added to watchlist successfully'));
     } catch (err) {
