@@ -1,7 +1,7 @@
 {
-  "name": "movie-tracker-backend",
+  "name": "watchpartyhq-backend",
   "version": "0.1.0",
-  "description": "API server for the Movie Tracker project",
+  "description": "API server for the WatchPartyHQ project",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

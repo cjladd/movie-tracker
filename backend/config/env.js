@@ -59,6 +59,6 @@ module.exports = {
   email: {
     resendApiKey: process.env.RESEND_API_KEY || '',
     resendFrom: process.env.RESEND_FROM_EMAIL || '',
-    resendFromName: process.env.RESEND_FROM_NAME || 'MovieNightPlanner',
+    resendFromName: process.env.RESEND_FROM_NAME || 'WatchPartyHQ',
   },
 };

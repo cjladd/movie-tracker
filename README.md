@@ -1,4 +1,4 @@
-# Movie Night Planner (movie-tracker)
+# WatchPartyHQ (movie-tracker)
 
 Collaborative movie night app: create groups, build a watchlist, vote on movies, and pull fresh data from TMDB.
 

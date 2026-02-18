@@ -54,7 +54,7 @@ function buildMovieNightIcs(event) {
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//MovieNightPlanner//Stream Teams//EN',
+    'PRODID:-//WatchPartyHQ//Stream Teams//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     `X-WR-CALNAME:${escapeIcsText(event.calendarName || 'Movie Nights')}`,

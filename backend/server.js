@@ -155,7 +155,7 @@ app.get('/health', async (_req, res) => {
 // --------------- API routes ---------------
 
 app.get('/api', (_req, res) => {
-  res.json({ success: true, status: 'Movie Tracker API v1' });
+  res.json({ success: true, status: 'WatchPartyHQ API v1' });
 });
 
 app.use('/api/users', authRoutes);

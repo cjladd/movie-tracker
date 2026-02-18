@@ -8,7 +8,7 @@ function buildResetEmailHtml({ name, resetUrl }) {
       <h2 style="margin: 0 0 12px;">Password Reset Request</h2>
       <p style="margin: 0 0 12px;">Hi ${safeName},</p>
       <p style="margin: 0 0 12px;">
-        We received a request to reset your MovieNightPlanner password.
+        We received a request to reset your WatchPartyHQ password.
       </p>
       <p style="margin: 0 0 16px;">
         <a href="${resetUrl}" style="display: inline-block; background: #2563eb; color: #fff; padding: 10px 14px; text-decoration: none; border-radius: 6px;">
@@ -27,7 +27,7 @@ function buildResetEmailText({ name, resetUrl }) {
   return [
     `Hi ${safeName},`,
     '',
-    'We received a request to reset your MovieNightPlanner password.',
+    'We received a request to reset your WatchPartyHQ password.',
     `Use this link to reset it: ${resetUrl}`,
     '',
     'If you did not request this, you can ignore this email.',
@@ -57,7 +57,7 @@ async function sendViaResend({ to, subject, html, text }) {
 }
 
 async function sendPasswordResetEmail({ toEmail, toName, resetUrl }) {
-  const subject = 'Reset your MovieNightPlanner password';
+  const subject = 'Reset your WatchPartyHQ password';
   const html = buildResetEmailHtml({ name: toName, resetUrl });
   const text = buildResetEmailText({ name: toName, resetUrl });
 
