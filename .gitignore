@@ -1,3 +1,7 @@
+# OS/editor noise
+.DS_Store
+Thumbs.db
+
 # Dependencies
 node_modules/
 
@@ -12,13 +16,13 @@ npm-debug.log*
 
 # Build output
 frontend/build/
+frontend/public/dist/
 
-# OS files
-.DS_Store
-Thumbs.db
-
-# IDE
+# IDE / local tooling
 .vscode/
 .idea/
-
 .claude/
+
+# Local keys (never commit)
+secret-keys
+secret-keys.pub
