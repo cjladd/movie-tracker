@@ -1,0 +1,782 @@
+.st-main {
+  width: min(1240px, calc(100% - 2rem));
+  margin: 0 auto;
+  display: grid;
+  gap: 1rem;
+  padding-bottom: 2rem;
+}
+
+.st-header {
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.st-header h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+}
+
+.st-header p {
+  margin: 0.35rem 0 0;
+  color: var(--text-secondary);
+}
+
+.groups-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.8rem;
+}
+
+.group-card {
+  padding: 0.9rem;
+}
+
+.group-name {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+}
+
+.group-info {
+  margin-top: 0.45rem;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
+.group-actions {
+  margin-top: 0.75rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.group-detail {
+  display: none;
+  padding: 1rem;
+}
+
+.group-detail.active {
+  display: block;
+}
+
+.group-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  margin-bottom: 0.7rem;
+}
+
+.group-detail-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.3rem, 2.5vw, 1.8rem);
+}
+
+.group-detail-heading {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.group-detail-role {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
+.detail-tabs {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.8rem;
+}
+
+.detail-tab {
+  border: 1px solid var(--border);
+  background: var(--bg-overlay);
+  color: var(--text-secondary);
+  border-radius: var(--radius-full);
+  padding: 0.45rem 0.75rem;
+}
+
+.detail-tab.active {
+  background: var(--gradient-primary);
+  color: #fff;
+  border-color: transparent;
+}
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.success-message,
+.error-message {
+  display: none;
+  border-radius: var(--radius-sm);
+  padding: 0.55rem 0.7rem;
+  margin-bottom: 0.55rem;
+  font-size: var(--text-xs);
+}
+
+.members-permission-hint {
+  margin: 0 0 0.65rem;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
+.success-message {
+  border: 1px solid rgba(16, 185, 129, 0.45);
+  color: #a7f3d0;
+  background: rgba(16, 185, 129, 0.12);
+}
+
+.error-message {
+  border: 1px solid rgba(244, 63, 94, 0.45);
+  color: #fecdd3;
+  background: rgba(244, 63, 94, 0.12);
+}
+
+.add-member-form,
+.create-movie-night-form {
+  padding: 0.75rem;
+  margin-bottom: 0.7rem;
+}
+
+.timeline-controls {
+  padding: 0.75rem;
+  margin-bottom: 0.7rem;
+}
+
+.movie-night-calendar {
+  padding: 0.75rem;
+  margin-bottom: 0.7rem;
+}
+
+.movie-night-plans {
+  padding: 0.75rem;
+  margin-bottom: 0.7rem;
+}
+
+.add-member-form h4,
+.create-movie-night-form h4,
+.watchlist-header h4 {
+  margin: 0 0 0.55rem;
+  font-size: 1rem;
+}
+
+.add-member-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+}
+
+.members-list,
+.movie-nights-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.timeline-list {
+  display: grid;
+  gap: 0.55rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.member-item,
+.movie-night-item {
+  padding: 0.7rem;
+}
+
+.member-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.movie-night-form-header p {
+  margin: -0.15rem 0 0.6rem;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
+.movie-night-date-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.movie-night-selected-preview {
+  margin: 0.05rem 0 0.6rem;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
+.member-name {
+  font-weight: 700;
+}
+
+.member-email {
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  margin-top: 0.2rem;
+}
+
+.member-role-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.member-role-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  background: var(--bg-overlay);
+  color: var(--text-secondary);
+  padding: 0.16rem 0.5rem;
+  font-size: 0.7rem;
+}
+
+.member-role-badge.role-owner {
+  border-color: rgba(250, 204, 21, 0.4);
+  color: #fde68a;
+  background: rgba(250, 204, 21, 0.14);
+}
+
+.member-role-badge.role-moderator {
+  border-color: rgba(96, 165, 250, 0.4);
+  color: #bfdbfe;
+  background: rgba(96, 165, 250, 0.14);
+}
+
+.member-role-badge.role-member {
+  border-color: rgba(148, 163, 184, 0.4);
+  color: #e2e8f0;
+  background: rgba(148, 163, 184, 0.14);
+}
+
+.member-role-select {
+  min-width: 7.4rem;
+  font-size: var(--text-xs);
+  padding: 0.3rem 0.45rem;
+}
+
+.watchlist-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.6rem;
+}
+
+.watchlist-voting-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.7rem;
+}
+
+.watchlist-item {
+  overflow: hidden;
+}
+
+.watchlist-poster {
+  background: var(--bg-overlay);
+  aspect-ratio: 2 / 3;
+}
+
+.watchlist-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.watchlist-info {
+  padding: 0.65rem;
+}
+
+.watchlist-title {
+  font-weight: 700;
+  font-size: var(--text-sm);
+}
+
+.watchlist-year,
+.watchlist-meta {
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  margin-top: 0.25rem;
+}
+
+.voting-section {
+  border-top: 1px solid var(--border);
+  background: var(--bg-overlay);
+  padding: 0.6rem;
+}
+
+.voting-header,
+.vote-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.voting-title,
+.average-rating,
+.vote-count {
+  font-size: var(--text-xs);
+}
+
+.star-rating {
+  display: flex;
+  gap: 0.25rem;
+  margin: 0.45rem 0;
+}
+
+.star {
+  cursor: pointer;
+  color: var(--text-tertiary);
+  font-size: 1rem;
+}
+
+.star.active,
+.star.hover {
+  color: var(--star-rating);
+}
+
+.your-vote {
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
+.vote-breakdown {
+  display: none;
+  margin-top: 0.45rem;
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  border-radius: var(--radius-sm);
+  padding: 0.45rem;
+}
+
+.vote-breakdown.show { display: block; }
+
+.vote-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: var(--text-xs);
+}
+
+.vote-bar-fill {
+  flex: 1;
+  height: 5px;
+  border-radius: var(--radius-full);
+  background: var(--bg-overlay);
+  overflow: hidden;
+}
+
+.vote-bar-progress {
+  height: 100%;
+  background: var(--gradient-primary);
+}
+
+.form-group {
+  margin-bottom: 0.55rem;
+}
+
+.form-group label {
+  display: block;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  margin-bottom: 0.2rem;
+}
+
+.movie-night-calendar-header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.movie-night-plans-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
+  margin-bottom: 0.65rem;
+}
+
+.movie-night-plans-header h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.movie-night-plan-count {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  background: var(--bg-overlay);
+}
+
+.movie-night-calendar-header h5 {
+  margin: 0;
+  text-align: center;
+  font-size: var(--text-sm);
+  font-family: var(--font-display);
+}
+
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  margin-bottom: 0.35rem;
+  color: var(--text-tertiary);
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.calendar-weekdays span {
+  text-align: center;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.25rem;
+}
+
+.calendar-day {
+  min-height: 48px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-overlay);
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  padding: 0.3rem 0.2rem;
+  transition: border-color 140ms ease, transform 140ms ease;
+}
+
+.calendar-day:not(.calendar-day-empty):hover {
+  border-color: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.calendar-day-empty {
+  border: 0;
+  background: transparent;
+}
+
+.calendar-day-number {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.calendar-day-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1rem;
+  min-height: 1rem;
+  border-radius: var(--radius-full);
+  padding: 0 0.25rem;
+  background: rgba(96, 165, 250, 0.2);
+  color: #dbeafe;
+  font-size: 0.65rem;
+}
+
+.calendar-day.today {
+  border-color: rgba(96, 165, 250, 0.55);
+}
+
+.calendar-day.has-night {
+  border-color: rgba(96, 165, 250, 0.42);
+}
+
+.calendar-day.selected {
+  border-color: transparent;
+  background: var(--gradient-primary);
+  color: #fff;
+}
+
+.calendar-day.selected .calendar-day-count {
+  background: rgba(255, 255, 255, 0.24);
+  color: #fff;
+}
+
+.calendar-day-summary {
+  margin: 0.55rem 0 0;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
+.empty-state,
+.login-prompt {
+  text-align: center;
+  padding: 1rem;
+}
+
+.modal {
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  width: min(520px, calc(100% - 2rem));
+}
+
+.modal-content h3 {
+  margin: 0 0 0.55rem;
+  font-family: var(--font-display);
+}
+
+.modal-content input {
+  margin-bottom: 0.6rem;
+}
+
+.movie-night-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.movie-night-header-tags {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.movie-night-date {
+  font-weight: 700;
+  font-size: var(--text-sm);
+}
+
+.movie-night-status {
+  font-size: var(--text-xs);
+  border-radius: var(--radius-full);
+  padding: 0.2rem 0.5rem;
+  text-transform: capitalize;
+}
+
+.movie-night-lock {
+  font-size: 0.65rem;
+  border-radius: var(--radius-full);
+  padding: 0.18rem 0.45rem;
+  border: 1px solid var(--border);
+}
+
+.movie-night-lock.is-locked {
+  color: #fed7aa;
+  border-color: rgba(251, 146, 60, 0.45);
+  background: rgba(251, 146, 60, 0.14);
+}
+
+.movie-night-lock.is-open {
+  color: #bbf7d0;
+  border-color: rgba(74, 222, 128, 0.4);
+  background: rgba(74, 222, 128, 0.12);
+}
+
+.status-planned {
+  color: #c4b5fd;
+  background: rgba(139, 92, 246, 0.2);
+}
+
+.status-completed {
+  color: #86efac;
+  background: rgba(16, 185, 129, 0.2);
+}
+
+.status-cancelled {
+  color: #fda4af;
+  background: rgba(244, 63, 94, 0.2);
+}
+
+.movie-night-movie {
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
+.movie-night-rsvp-meta {
+  margin-top: 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-overlay);
+  padding: 0.5rem;
+}
+
+.movie-night-rsvp-countdown {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--text-primary);
+}
+
+.movie-night-rsvp-note {
+  margin: 0.2rem 0 0;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.awaiting-row {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+}
+
+.awaiting-label {
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+}
+
+.awaiting-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.awaiting-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(96, 165, 250, 0.35);
+  background: rgba(96, 165, 250, 0.12);
+  color: #bfdbfe;
+  font-size: 0.68rem;
+  padding: 0.16rem 0.45rem;
+}
+
+.awaiting-chip.is-clear {
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.12);
+  color: #a7f3d0;
+}
+
+.movie-night-rsvp-row {
+  margin-top: 0.55rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.movie-night-rsvp-status {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.movie-night-rsvp-status.state-yes {
+  color: #a7f3d0;
+}
+
+.movie-night-rsvp-status.state-no {
+  color: #fecaca;
+}
+
+.movie-night-rsvp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.js-rsvp-choice.is-selected {
+  border-color: rgba(125, 211, 252, 0.55);
+  background: rgba(56, 189, 248, 0.16);
+}
+
+.movie-night-rsvp-closed {
+  margin: 0;
+  font-size: 0.68rem;
+  color: #fca5a5;
+}
+
+.movie-night-actions {
+  margin-top: 0.55rem;
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.timeline-item {
+  padding: 0.7rem;
+}
+
+.timeline-item-message {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+}
+
+.timeline-item-time {
+  margin-top: 0.3rem;
+  display: inline-block;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+}
+
+@media (max-width: 768px) {
+  .st-main {
+    width: calc(100% - 1rem);
+  }
+
+  .st-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .group-actions,
+  .watchlist-header,
+  .group-detail-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .member-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .member-role-controls {
+    justify-content: flex-start;
+  }
+
+  .add-member-row {
+    grid-template-columns: 1fr;
+  }
+
+  .movie-night-date-row {
+    grid-template-columns: 1fr;
+  }
+
+  .movie-night-calendar-header {
+    grid-template-columns: 1fr;
+  }
+
+  .movie-night-calendar-header h5 {
+    order: -1;
+  }
+}
+
+@media (max-width: 480px) {
+  .watchlist-voting-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .star {
+    font-size: 1.1rem;
+  }
+}

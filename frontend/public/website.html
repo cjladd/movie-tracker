@@ -1,320 +1,85 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-    <title>MovieNightPlanner</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="WatchPartyHQ - Discover trending movies, plan movie nights with friends, and never miss a great film again.">
+    <meta property="og:title" content="WatchPartyHQ - Home">
+    <meta property="og:description" content="Discover trending movies, plan movie nights with friends, and never miss a great film again.">
+    <meta property="og:type" content="website">
+    <link rel="canonical" href="website.html">
+    <title>WatchPartyHQ</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        /* Hero Section Styles */
-        .hero-section {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            max-width: 1200px;
-            margin: 40px auto;
-            padding: 20px;
-            min-height: 400px;
-        }
-
-        .hero-content {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            width: 100%;
-            gap: 40px;
-        }
-
-        .hero-text {
-            flex: 1;
-            max-width: 500px;
-        }
-
-        .hero-text h1 {
-            font-size: 48px;
-            font-weight: bold;
-            line-height: 1.1;
-            margin-bottom: 20px;
-            color: #fff;
-        }
-
-        .hero-text p {
-            font-size: 18px;
-            color: #ccc;
-            margin-top: 10px;
-        }
-
-        .hero-movie {
-            flex: 1;
-            max-width: 500px;
-            position: relative;
-        }
-
-        .hero-movie img {
-            width: 100%;
-            height: 600px;
-            object-fit: cover;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-        }
-
-        .hero-movie-info {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 15px;
-            border-radius: 8px;
-            backdrop-filter: blur(10px);
-        }
-
-        .hero-movie-info h3 {
-            color: #fff;
-            font-size: 22px;
-            margin: 0 0 10px 0;
-        }
-
-        .rating {
-            color: #ffd700;
-            font-weight: bold;
-        }
-
-        /* Featured Movies Section */
-        .featured-section {
-            max-width: 1200px;
-            margin: 60px auto;
-            padding: 20px;
-        }
-
-        .featured-section h2 {
-            text-align: center;
-            font-size: 36px;
-            color: #fff;
-            margin-bottom: 40px;
-        }
-
-        .movies-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 20px;
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-
-        .movie-card {
-            background: #111;
-            border-radius: 8px;
-            overflow: hidden;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            cursor: pointer;
-        }
-
-        .movie-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(138, 43, 226, 0.3);
-        }
-
-        .movie-poster {
-            width: 100%;
-            height: 200px;
-            overflow: hidden;
-        }
-
-        .movie-poster img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.3s ease;
-        }
-
-        .movie-card:hover .movie-poster img {
-            transform: scale(1.05);
-        }
-
-        .movie-info {
-            padding: 15px;
-            text-align: center;
-        }
-
-        .movie-info h4 {
-            color: #fff;
-            font-size: 14px;
-            margin: 0 0 8px 0;
-            font-weight: bold;
-        }
-
-        .movie-info p {
-            color: #999;
-            font-size: 12px;
-            margin: 0;
-        }
-
-        /* Loading State */
-        .loading {
-            text-align: center;
-            padding: 60px 20px;
-            color: #999;
-        }
-
-        .loading::after {
-            content: '';
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 2px solid #333;
-            border-radius: 50%;
-            border-top-color: blueviolet;
-            animation: spin 1s ease-in-out infinite;
-            margin-left: 10px;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* Error State */
-        .error {
-            text-align: center;
-            padding: 60px 20px;
-            color: #ff6666;
-        }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .hero-content {
-                flex-direction: column;
-                text-align: center;
-            }
-
-            .hero-text h1 {
-                font-size: 36px;
-            }
-
-            .hero-movie {
-                max-width: 400px;
-            }
-
-            .hero-movie img {
-                height: 500px;
-            }
-
-            .movies-grid {
-                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-                gap: 15px;
-            }
-
-            .featured-section h2 {
-                font-size: 28px;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="css/pages/website.css">
 </head>
-
 <body>
     <header class="header">
-        <h1 class="logo">MovieNightPlanner</h1>
-
-        <nav class="main-nav">
-            <div class="item">
-                <a class="menu-link" href="website.html">Home</a>
-                
-            </div>
-
-            <div class="item">
-                <a class="menu-link" href="Binge_Bank.html">Binge Bank</a>
-                
-            </div>
-
-            <div class="item">
-                <a class="menu-link" href="Stream_team.html">Stream Team</a>
-                
-            </div>
-
-            <div class="item">
-                <a class="menu-link" href="Friends.html">Friends</a>
-            </div>
-
-            <div class="item">
-                <a class="menu-link" href="heads_up.html">Heads up</a>
-                
-            </div>
-
-           
-
-
-            <div class="item">
-                <a class="menu-link" href="Setting.html">Setting</a>
-                
-            </div>
-
-            <!-- Log In item -->
-            <div class="item">
-                <a class="menu-link" href="Log_In.html" id="loginLink">Log In</a>
-            </div>
-
-            <!-- Sign Up item -->
-            <div class="item">
-                <a class="menu-link" href="Sign_Up.html" id="signUpLink">Sign Up</a>
-            </div>
-
-            <!-- Sign Out item (hidden by default) -->
-            <div class="item">
-                <a class="menu-link" href="#" id="logoutLink" style="display: none;">Sign Out</a>
-            </div>
+        <a href="website.html" class="logo-link" aria-label="WatchPartyHQ home">
+            <h1 class="logo">WatchPartyHQ</h1>
+        </a>
+        <nav class="main-nav" aria-label="Main navigation">
+            <a href="website.html">Home</a>
+            <a href="Binge_Bank.html">Binge Bank</a>
+            <a href="Stream_team.html">Stream Team</a>
+            <a href="Friends.html">Friends</a>
+            <a href="heads_up.html">Heads Up</a>
+            <a href="Setting.html">Settings</a>
         </nav>
+        <div class="nav-auth">
+            <a href="Log_In.html" id="loginLink" class="nav-auth-btn nav-auth-ghost">Log In</a>
+            <a href="Sign_Up.html" id="signUpLink" class="nav-auth-btn nav-auth-primary">Sign Up</a>
+            <button type="button" id="logoutLink" class="nav-auth-btn nav-auth-primary" style="display:none;">Sign Out</button>
+        </div>
     </header>
 
-    <!-- Hero Section -->
-    <section class="hero-section">
-        <div id="hero-section" class="loading">
-            Loading featured content...
-        </div>
-    </section>
+    <main class="landing-main" id="mainContent">
+        <section class="landing-hero" data-animate>
+            <div id="hero-section" class="hero-shell loading">Loading featured content...</div>
+            <div class="hero-orb hero-orb--purple" aria-hidden="true"></div>
+            <div class="hero-orb hero-orb--cyan" aria-hidden="true"></div>
+        </section>
 
-    <!-- Featured Movies Section -->
-    <section class="featured-section">
-        <div id="featured-movies" class="loading">
-            Loading movies...
+        <section class="section" data-animate>
+            <div class="section-heading">
+                <h2>Featured Tonight</h2>
+                <p>Fresh picks from your community database.</p>
+            </div>
+            <div id="featured-movies" class="loading featured-shell">Loading movies...</div>
+        </section>
+
+        <section class="section" data-animate>
+            <div class="section-heading">
+                <h2>Trending This Week</h2>
+                <p>Global momentum from TMDB, ready for your watchlist.</p>
+            </div>
+            <div id="trending-movies" class="loading trending-shell">Loading trends...</div>
+        </section>
+    </main>
+
+    <footer class="site-footer" data-animate>
+        <p>WatchPartyHQ · Plan better movie nights together.</p>
+    </footer>
+
+    <div id="movieModal" class="modal" style="display:none;" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="modalTitle">
+        <div class="modal-content">
+            <button class="modal-close close" type="button" aria-label="Close movie details" onclick="closeHomeModal()">x</button>
+            <div class="modal-header" id="modalHeader">
+                <div class="modal-header-content">
+                    <div class="modal-title" id="modalTitle"></div>
+                    <div class="modal-meta" id="modalMeta"></div>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div id="modalDescription"></div>
+                <div class="group-selector" id="groupSelector" style="display:none;">
+                    <h4>Add to Group Watchlist</h4>
+                    <div class="group-list" id="groupList"></div>
+                </div>
+            </div>
         </div>
-    </section>
+    </div>
 
     <script src="app.js"></script>
-
-    <!-- Error handling -->
-    <script>
-        window.addEventListener('error', function (e) {
-            console.error('JavaScript Error:', e.error);
-            const heroSection = document.getElementById('hero-section');
-            const featuredSection = document.getElementById('featured-movies');
-
-            if (heroSection && heroSection.classList.contains('loading')) {
-                heroSection.innerHTML = `<div class="error">Error: ${e.error.message}</div>`;
-                heroSection.classList.remove('loading');
-            }
-
-            if (featuredSection && featuredSection.classList.contains('loading')) {
-                featuredSection.innerHTML = `<div class="error">Error: ${e.error.message}</div>`;
-                featuredSection.classList.remove('loading');
-            }
-        });
-
-        setTimeout(function () {
-            const heroSection = document.getElementById('hero-section');
-            const featuredSection = document.getElementById('featured-movies');
-
-            if (heroSection && heroSection.classList.contains('loading')) {
-                heroSection.innerHTML = `<div class="error">Content failed to load. Check console for errors.</div>`;
-                heroSection.classList.remove('loading');
-            }
-
-            if (featuredSection && featuredSection.classList.contains('loading')) {
-                featuredSection.innerHTML = `<div class="error">Movies failed to load. Check console for errors.</div>`;
-                featuredSection.classList.remove('loading');
-            }
-        }, 10000);
-    </script>
+    <script src="js/homepage.js"></script>
 </body>
-
 </html>

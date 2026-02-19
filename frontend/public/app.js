@@ -1,48 +1,111 @@
-// API Base URL
-const API_URL = 'http://localhost:4000/api';
+// API Base URL - use relative path so it works on any domain
+const API_URL = '/api';
 
-// Store user data in localStorage after login
-let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
+// Keep auth state in memory and validate it against the server on load.
+let currentUser = null;
+let authStatePromise = null;
+const THEME_KEY = 'mnp_theme';
+const LAST_SEED_KEY = 'mnp_last_seed_at';
 
-// API Helper Functions
+function normalizeCollection(result) {
+    if (Array.isArray(result)) return result;
+    if (result && Array.isArray(result.data)) return result.data;
+    return [];
+}
+
+function getErrorMessage(error, fallback = 'Request failed') {
+    if (error && typeof error.message === 'string' && error.message.trim()) {
+        return error.message;
+    }
+    return fallback;
+}
+
+function setStatusMessage(successEl, errorEl, message, type = 'error', autoHideMs = 0) {
+    if (type === 'success' && successEl) {
+        successEl.textContent = message;
+        successEl.style.display = 'block';
+    }
+    if (type === 'error' && errorEl) {
+        errorEl.textContent = message;
+        errorEl.style.display = 'block';
+    }
+    if (type === 'success' && errorEl) errorEl.style.display = 'none';
+    if (type === 'error' && successEl) successEl.style.display = 'none';
+
+    if (typeof showToast === 'function') {
+        showToast(message, type === 'success' ? 'success' : 'error');
+    }
+
+    if (autoHideMs > 0) {
+        window.setTimeout(() => {
+            if (successEl) successEl.style.display = 'none';
+            if (errorEl) errorEl.style.display = 'none';
+        }, autoHideMs);
+    }
+}
+
+function renderStandardState(container, type, title, message) {
+    if (!container) return;
+    const safeTitle = escapeHtml(title || '');
+    const safeMessage = escapeHtml(message || '');
+
+    if (type === 'loading') {
+        container.innerHTML = `
+            <div class="loading-spinner" role="status" aria-live="polite">
+                <div class="spinner"></div>
+                <span class="sr-only">Loading</span>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = `
+        <div class="empty-state card" role="${type === 'error' ? 'alert' : 'status'}" aria-live="${type === 'error' ? 'assertive' : 'polite'}">
+            <h3>${safeTitle}</h3>
+            ${safeMessage ? `<p>${safeMessage}</p>` : ''}
+        </div>
+    `;
+}
+
+// ── Core API Helper ──────────────────────────────────────────────────────────
+
 async function apiCall(endpoint, method = 'GET', data = null) {
     const options = {
         method,
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        credentials: 'include' // This ensures session cookies are sent
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
     };
 
     if (data) {
         options.body = JSON.stringify(data);
     }
 
+    const response = await fetch(`${API_URL}${endpoint}`, options);
+    let result = {};
     try {
-        const response = await fetch(`${API_URL}${endpoint}`, options);
-        const result = await response.json();
-
-        if (!response.ok) {
-            throw new Error(result.error || 'API call failed');
-        }
-
-        return result;
-    } catch (error) {
-        console.error('API Error:', error);
-        throw error;
+        result = await response.json();
+    } catch (_e) {
+        result = {};
     }
+
+    if (!response.ok) {
+        const err = new Error(result.error || result.message || 'API call failed');
+        err.status = response.status;
+        if (response.status === 401 && endpoint !== '/users/login' && endpoint !== '/users/register') {
+            clearAuthState();
+            updateAuthUI();
+        }
+        throw err;
+    }
+
+    // Unwrap standardized { success, data, message } response format
+    return result.data !== undefined ? result.data : result;
 }
 
-// TMDB API Functions
+// ── TMDB API Functions ───────────────────────────────────────────────────────
+
 async function seedDatabaseWithTMDBMovies() {
-    try {
-        const result = await apiCall('/tmdb/seed', 'POST');
-        console.log('Database seeded successfully:', result);
-        return result;
-    } catch (error) {
-        console.error('Failed to seed database:', error);
-        throw error;
-    }
+    return await apiCall('/tmdb/seed', 'POST');
 }
 
 async function searchMovies(query, page = 1) {
@@ -73,21 +136,11 @@ async function getTrendingMovies() {
 }
 
 async function getMovieDetails(tmdbId) {
-    try {
-        return await apiCall(`/tmdb/movie/${tmdbId}`);
-    } catch (error) {
-        console.error('Failed to fetch movie details:', error);
-        throw error;
-    }
+    return await apiCall(`/tmdb/movie/${tmdbId}`);
 }
 
 async function addMovieToGroup(tmdbMovie, groupId) {
-    try {
-        return await apiCall('/tmdb/add-to-group', 'POST', { tmdbMovie, groupId });
-    } catch (error) {
-        console.error('Failed to add movie to group:', error);
-        throw error;
-    }
+    return await apiCall('/tmdb/add-to-group', 'POST', { tmdbMovie, groupId });
 }
 
 async function getFeaturedMovies() {
@@ -108,86 +161,239 @@ async function getHeroMovie() {
     }
 }
 
-// Authentication Functions
-async function register(name, email, password) {
-    try {
-        const result = await apiCall('/users/register', 'POST', { name, email, password });
-        return result;
-    } catch (error) {
-        throw error;
+// ── Authentication Functions ─────────────────────────────────────────────────
+
+function setCurrentUser(user) {
+    currentUser = user || null;
+    if (currentUser) {
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    } else {
+        localStorage.removeItem('currentUser');
     }
+}
+
+function clearAuthState() {
+    setCurrentUser(null);
+    if (typeof homeUserGroups !== 'undefined') {
+        homeUserGroups = [];
+    }
+}
+
+async function ensureAuthState(forceRefresh = false) {
+    if (!forceRefresh && authStatePromise) return authStatePromise;
+
+    authStatePromise = (async () => {
+        try {
+            const user = await apiCall('/users/me');
+            setCurrentUser(user);
+            return currentUser;
+        } catch (error) {
+            if (error.status === 401 || error.status === 404) {
+                clearAuthState();
+                return null;
+            }
+            console.error('Failed to validate auth state:', error);
+            clearAuthState();
+            return null;
+        } finally {
+            updateAuthUI();
+        }
+    })();
+
+    return authStatePromise;
+}
+
+async function register(name, email, password) {
+    return await apiCall('/users/register', 'POST', { name, email, password });
 }
 
 async function login(email, password) {
-    try {
-        const result = await apiCall('/users/login', 'POST', { email, password });
-        currentUser = result.user;
-        localStorage.setItem('currentUser', JSON.stringify(currentUser));
-
-        // Redirect to homepage after successful login
-        setTimeout(() => {
-            window.location.href = 'website.html';
-        }, 1000);
-
-        return result;
-    } catch (error) {
-        throw error;
+    const user = await apiCall('/users/login', 'POST', { email, password });
+    setCurrentUser(user);
+    if (typeof homeUserGroups !== 'undefined') {
+        homeUserGroups = [];
     }
+    authStatePromise = Promise.resolve(currentUser);
+    updateAuthUI();
+    showToast('Logged in successfully', 'success');
+    setTimeout(() => { window.location.href = 'website.html'; }, 1000);
+    return user;
 }
 
-function logout() {
-    currentUser = null;
-    localStorage.removeItem('currentUser');
-    // Call logout API
-    apiCall('/users/logout', 'POST').catch(console.error);
+async function logout() {
+    try {
+        await apiCall('/users/logout', 'POST');
+        showToast('Logged out', 'info');
+    } catch (err) {
+        console.error('Logout failed:', err);
+        showToast('Logout request failed, local session cleared', 'warning');
+    }
+    clearAuthState();
+    authStatePromise = Promise.resolve(null);
+    updateAuthUI();
+    window.location.href = 'website.html';
 }
 
 function checkAuth() {
-    if (!currentUser) {
-        return false;
-    }
-    return true;
+    return !!currentUser;
 }
 
-function updateAuthUI() {
-    const loginLink = document.getElementById('loginLink');
-    const signupLink = document.getElementById('signupLink');
+function getPreferredTheme() {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === 'light' || saved === 'dark') return saved;
+    return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+}
 
-    if (currentUser && loginLink && signupLink) {
-        loginLink.textContent = 'Logout';
-        loginLink.href = '#';
-        loginLink.onclick = e => {
-            e.preventDefault();
-            if (confirm('Are you sure you want to logout?')) {
-                logout();
-                window.location.href = 'Log_In.html';
+function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem(THEME_KEY, theme);
+}
+
+function initMobileNavToggle() {
+    const header = document.querySelector('.header');
+    const nav = document.querySelector('.main-nav');
+    if (!header || !nav) return;
+
+    let menuToggle = document.getElementById('navMobileToggle');
+    if (!menuToggle) {
+        menuToggle = document.createElement('button');
+        menuToggle.id = 'navMobileToggle';
+        menuToggle.type = 'button';
+        menuToggle.className = 'btn-icon nav-mobile-toggle';
+        menuToggle.setAttribute('aria-label', 'Toggle navigation menu');
+        menuToggle.setAttribute('aria-expanded', 'false');
+        menuToggle.textContent = 'Menu';
+        header.appendChild(menuToggle);
+    }
+
+    const closeNav = () => {
+        nav.classList.remove('nav-open');
+        menuToggle.textContent = 'Menu';
+        menuToggle.setAttribute('aria-expanded', 'false');
+    };
+
+    menuToggle.addEventListener('click', () => {
+        const isOpen = nav.classList.toggle('nav-open');
+        menuToggle.textContent = isOpen ? 'Close' : 'Menu';
+        menuToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+
+    nav.querySelectorAll('a').forEach((link) => {
+        link.addEventListener('click', closeNav);
+    });
+
+    const navAuth = document.querySelector('.nav-auth');
+    if (navAuth) {
+        navAuth.querySelectorAll('a, button').forEach((el) => {
+            el.addEventListener('click', closeNav);
+        });
+    }
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closeNav();
+    });
+}
+
+function setActiveNavLink() {
+    const pageName = window.location.pathname.split('/').pop() || 'website.html';
+    const links = document.querySelectorAll('.main-nav > a');
+    links.forEach((link) => {
+        const href = link.getAttribute('href');
+        if (!href || href.startsWith('#')) return;
+        if (href === pageName || (pageName === 'index.html' && href === 'website.html')) {
+            link.classList.add('active');
+            link.setAttribute('aria-current', 'page');
+        } else {
+            link.classList.remove('active');
+            link.removeAttribute('aria-current');
+        }
+    });
+}
+
+function initSkipLink() {
+    const main = document.querySelector('main');
+    if (!main) return;
+
+    if (!main.id) {
+        main.id = 'mainContent';
+    }
+    if (!main.hasAttribute('tabindex')) {
+        main.setAttribute('tabindex', '-1');
+    }
+    if (document.querySelector('.skip-link')) return;
+
+    const skipLink = document.createElement('a');
+    skipLink.className = 'skip-link';
+    skipLink.href = `#${main.id}`;
+    skipLink.textContent = 'Skip to main content';
+    document.body.insertBefore(skipLink, document.body.firstChild);
+}
+
+function ensureToastContainer() {
+    let container = document.getElementById('toastContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+    }
+    return container;
+}
+
+function showToast(message, type = 'info', duration = 4000) {
+    const container = ensureToastContainer();
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+    toast.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
+    toast.textContent = message;
+    container.appendChild(toast);
+
+    window.setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(12px)';
+        toast.style.transition = 'opacity 180ms ease, transform 180ms ease';
+        window.setTimeout(() => toast.remove(), 180);
+    }, duration);
+}
+
+function initScrollObserver() {
+    const targets = document.querySelectorAll('[data-animate]');
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (targets.length === 0 || !('IntersectionObserver' in window) || reduceMotion) {
+        targets.forEach((el) => el.classList.add('is-visible'));
+        return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('is-visible');
+                observer.unobserve(entry.target);
             }
-        };
+        });
+    }, { threshold: 0.12, rootMargin: '0px 0px -5% 0px' });
 
-        signupLink.textContent = currentUser.name;
-        signupLink.href = 'Setting.html';
-        signupLink.onclick = null;
-    }
+    targets.forEach((el) => observer.observe(el));
 }
 
-// Group Management Functions
+function shouldSeedMovies() {
+    const last = localStorage.getItem(LAST_SEED_KEY);
+    if (!last) return true;
+    const elapsed = Date.now() - Number(last);
+    const oneDay = 24 * 60 * 60 * 1000;
+    return Number.isNaN(elapsed) || elapsed > oneDay;
+}
+
+// ── Group Management Functions ───────────────────────────────────────────────
+
 async function createGroup(groupName) {
     if (!checkAuth()) return;
-
-    try {
-        const result = await apiCall('/groups', 'POST', {
-            groupName
-        });
-        return result;
-    } catch (error) {
-        console.error('Failed to create group:', error);
-        throw error;
-    }
+    return await apiCall('/groups', 'POST', { groupName });
 }
 
 async function getGroups() {
     if (!checkAuth()) return [];
-
     try {
         return await apiCall('/groups');
     } catch (error) {
@@ -205,82 +411,77 @@ async function getGroupMembers(groupId) {
     }
 }
 
+async function getGroupActivity(groupId, { eventType = '', actorUserId = '', page = 1, limit = 20 } = {}) {
+    const params = new URLSearchParams();
+    if (eventType) params.set('eventType', eventType);
+    if (actorUserId) params.set('actorUserId', actorUserId);
+    params.set('page', String(page));
+    params.set('limit', String(limit));
+
+    try {
+        return await apiCall(`/groups/${groupId}/activity?${params.toString()}`);
+    } catch (error) {
+        console.error('Failed to fetch group activity:', error);
+        return [];
+    }
+}
+
 async function addGroupMember(groupId, email) {
-    try {
-        return await apiCall(`/groups/${groupId}/members`, 'POST', { email });
-    } catch (error) {
-        console.error('Failed to add group member:', error);
-        throw error;
-    }
+    return await apiCall(`/groups/${groupId}/members`, 'POST', { email });
 }
 
-/**************************\
- * Friends / Invites API  *
-\**************************/
+async function updateGroupMemberRole(groupId, memberId, role) {
+    return await apiCall(`/groups/${groupId}/members/${memberId}/role`, 'PATCH', { role });
+}
 
-// Get list of current friends
+async function removeGroupMember(groupId, memberId) {
+    return await apiCall(`/groups/${groupId}/members/${memberId}`, 'DELETE');
+}
+
+// ── Friends / Invites API ────────────────────────────────────────────────────
+
 async function getFriends() {
-  const res = await fetch('/api/friends', { credentials: 'include' });
-  if (!res.ok) throw new Error('Failed to fetch friends');
-  return res.json();
-}
-
-// Get pending friend requests
-async function getFriendRequests() {
-  const res = await fetch('/api/friends/requests', { credentials: 'include' });
-  if (!res.ok) throw new Error('Failed to fetch friend requests');
-  return res.json();
-}
-
-// Send a friend request by email
-async function sendFriendRequest(email) {
-  const res = await fetch('/api/friends/request', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify({ email })
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Failed to send friend request');
-  return data;
-}
-
-// Accept a pending friend request
-async function acceptFriendRequest(requestId) {
-  const res = await fetch('/api/friends/accept', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify({ requestId })
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Failed to accept friend request');
-  return data;
-}
-
-// Remove an existing friend
-async function removeFriend(friendId) {
-  const res = await fetch(`/api/friends/${friendId}`, {
-    method: 'DELETE',
-    credentials: 'include'
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Failed to remove friend');
-  return data;
-}
-
-
-// Movie Night Functions
-async function createMovieNight(groupId, scheduledDate, chosenMovieId = null) {
     try {
-        return await apiCall(`/groups/${groupId}/movie-nights`, 'POST', {
-            scheduledDate,
-            chosenMovieId
-        });
+        return await apiCall('/friends');
     } catch (error) {
-        console.error('Failed to create movie night:', error);
-        throw error;
+        console.error('Failed to fetch friends:', error);
+        return [];
     }
+}
+
+async function getFriendRequests() {
+    try {
+        return await apiCall('/friends/requests');
+    } catch (error) {
+        console.error('Failed to fetch friend requests:', error);
+        return [];
+    }
+}
+
+async function sendFriendRequest(email) {
+    return await apiCall('/friends/requests', 'POST', { email });
+}
+
+async function acceptFriendRequest(requestId) {
+    return await apiCall(`/friends/requests/${requestId}/accept`, 'POST');
+}
+
+async function declineFriendRequest(requestId) {
+    return await apiCall(`/friends/requests/${requestId}/decline`, 'POST');
+}
+
+async function removeFriend(friendId) {
+    return await apiCall(`/friends/${friendId}`, 'DELETE');
+}
+
+// ── Movie Night Functions ────────────────────────────────────────────────────
+
+async function createMovieNight(groupId, scheduledDate, chosenMovieId = null, options = {}) {
+    return await apiCall(`/groups/${groupId}/movie-nights`, 'POST', {
+        scheduledDate,
+        chosenMovieId,
+        ...options,
+    });
 }
 
 async function getMovieNights(groupId) {
@@ -292,14 +493,65 @@ async function getMovieNights(groupId) {
     }
 }
 
-// Watchlist Functions
-async function addToWatchlist(groupId, movieId) {
-    try {
-        return await apiCall(`/groups/${groupId}/watchlist`, 'POST', { movieId });
-    } catch (error) {
-        console.error('Failed to add to watchlist:', error);
-        throw error;
+async function setMovieNightLock(groupId, nightId, locked) {
+    return await apiCall(`/groups/${groupId}/movie-nights/${nightId}/lock`, 'PATCH', { locked });
+}
+
+async function sendRsvpReminder(groupId, nightId, force = true) {
+    return await apiCall(`/groups/${groupId}/movie-nights/${nightId}/rsvp-reminders`, 'POST', { force });
+}
+
+async function setMovieNightAvailability(groupId, nightId, isAvailable) {
+    return await apiCall(`/groups/${groupId}/movie-nights/${nightId}/availability`, 'POST', { isAvailable });
+}
+
+async function getMovieNightAvailability(groupId, nightId) {
+    return await apiCall(`/groups/${groupId}/movie-nights/${nightId}/availability`);
+}
+
+function getFilenameFromDisposition(disposition, fallback = 'movie-night.ics') {
+    if (!disposition) return fallback;
+    const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+    if (utf8Match && utf8Match[1]) {
+        return decodeURIComponent(utf8Match[1]);
     }
+
+    const plainMatch = disposition.match(/filename="?([^"]+)"?/i);
+    return plainMatch && plainMatch[1] ? plainMatch[1] : fallback;
+}
+
+async function exportMovieNightIcs(groupId, nightId) {
+    const response = await fetch(`${API_URL}/groups/${groupId}/movie-nights/${nightId}/ics`, {
+        method: 'GET',
+        credentials: 'include'
+    });
+
+    if (!response.ok) {
+        let errMessage = 'Failed to export calendar invite';
+        try {
+            const errorBody = await response.json();
+            errMessage = errorBody.error || errorBody.message || errMessage;
+        } catch (_error) {
+            // Keep generic fallback message when API does not return JSON.
+        }
+        const err = new Error(errMessage);
+        err.status = response.status;
+        throw err;
+    }
+
+    const blob = await response.blob();
+    const filename = getFilenameFromDisposition(
+        response.headers.get('content-disposition'),
+        `movie-night-${nightId}.ics`
+    );
+
+    return { blob, filename };
+}
+
+// ── Watchlist Functions ──────────────────────────────────────────────────────
+
+async function addToWatchlist(groupId, movieId) {
+    return await apiCall(`/groups/${groupId}/watchlist`, 'POST', { movieId });
 }
 
 async function getWatchlist(groupId) {
@@ -311,18 +563,10 @@ async function getWatchlist(groupId) {
     }
 }
 
-// Voting Functions
+// ── Voting Functions ─────────────────────────────────────────────────────────
+
 async function voteOnMovie(groupId, movieId, voteValue) {
-    try {
-        return await apiCall('/votes', 'POST', {
-            groupId,
-            movieId,
-            voteValue
-        });
-    } catch (error) {
-        console.error('Failed to vote on movie:', error);
-        throw error;
-    }
+    return await apiCall('/votes', 'POST', { groupId, movieId, voteValue });
 }
 
 async function getMovieVotes(groupId, movieId) {
@@ -334,37 +578,33 @@ async function getMovieVotes(groupId, movieId) {
     }
 }
 
-// Notification Functions
-async function getNotifications() {
-    if (!checkAuth()) return [];
+// ── Notification Functions ───────────────────────────────────────────────────
 
-    try {
-        return await apiCall('/notifications');
-    } catch (error) {
-        console.error('Failed to fetch notifications:', error);
-        return [];
-    }
+async function getNotifications({ page = 1, limit = 20 } = {}) {
+    if (!checkAuth()) return [];
+    const params = new URLSearchParams();
+    params.set('page', String(page));
+    params.set('limit', String(limit));
+    return await apiCall(`/notifications?${params.toString()}`);
+}
+
+async function getUnreadNotificationsCount() {
+    if (!checkAuth()) return 0;
+    const result = await apiCall('/notifications/unread-count');
+    const count = Number(result && result.count);
+    return Number.isFinite(count) && count >= 0 ? count : 0;
 }
 
 async function markNotificationAsRead(notificationId) {
-    try {
-        return await apiCall(`/notifications/${notificationId}/read`, 'POST');
-    } catch (error) {
-        console.error('Failed to mark notification as read:', error);
-        throw error;
-    }
+    return await apiCall(`/notifications/${notificationId}/read`, 'POST');
 }
 
 async function markAllNotificationsAsRead() {
-    try {
-        return await apiCall('/notifications/read-all', 'POST');
-    } catch (error) {
-        console.error('Failed to mark all notifications as read:', error);
-        throw error;
-    }
+    return await apiCall('/notifications/read-all', 'POST');
 }
 
-// Movie Functions
+// ── Movie Functions ──────────────────────────────────────────────────────────
+
 async function getMovies() {
     try {
         return await apiCall('/movies');
@@ -383,218 +623,80 @@ async function getMovie(movieId) {
     }
 }
 
-// Homepage Functions
-async function loadHomepageContent() {
-    console.log('🎬 Starting to load homepage content...');
+// Homepage runtime is loaded from `js/homepage.js` on `website.html`.
 
-    try {
-        // First, seed database
-        console.log('📚 Seeding database...');
-        await seedDatabaseWithTMDBMovies();
+// ── Navigation & Auth UI ─────────────────────────────────────────────────────
 
-        // Load featured movies
-        console.log('🎥 Loading featured movies...');
-        const featuredMovies = await getFeaturedMovies();
+function updateAuthUI() {
+    const loginLink = document.getElementById('loginLink');
+    const signUpLink = document.getElementById('signUpLink');
+    const logoutLink = document.getElementById('logoutLink');
 
-        if (featuredMovies && featuredMovies.length > 0) {
-            console.log(`✅ Found ${featuredMovies.length} movies`);
+    if (!loginLink || !signUpLink || !logoutLink) return;
 
-            // Display hero movie (first one)
-            displayHeroMovie(featuredMovies[0]);
+    if (currentUser) {
+        loginLink.style.display = 'none';
+        signUpLink.style.display = 'none';
+        logoutLink.style.display = '';
 
-            // Display featured movies
-            displayFeaturedMovies(featuredMovies);
-        } else {
-            console.log('⚠️ No movies found');
-            showError('No movies found in database');
+        let userBtn = document.getElementById('navUserBtn');
+        if (!userBtn) {
+            userBtn = document.createElement('a');
+            userBtn.id = 'navUserBtn';
+            userBtn.className = 'nav-auth-btn nav-auth-ghost';
+            userBtn.href = 'Setting.html';
+            logoutLink.parentNode.insertBefore(userBtn, logoutLink);
         }
-    } catch (error) {
-        console.error('❌ Error loading homepage content:', error);
-        showError(`Failed to load content: ${error.message}`);
+        userBtn.textContent = currentUser.name;
+    } else {
+        loginLink.style.display = '';
+        signUpLink.style.display = '';
+        logoutLink.style.display = 'none';
+
+        const userBtn = document.getElementById('navUserBtn');
+        if (userBtn) userBtn.remove();
     }
 }
 
-function displayHeroMovie(movie) {
-    const heroSection = document.getElementById('hero-section');
-    if (!heroSection) {
-        console.error('Hero section element not found');
-        return;
-    }
+// ── Initialization ───────────────────────────────────────────────────────────
 
-    // FIXED: Safely handle rating
-    let ratingDisplay = 'N/A';
-    if (movie.rating !== null && movie.rating !== undefined && !isNaN(movie.rating)) {
-        ratingDisplay = Number(movie.rating).toFixed(1);
-    }
-
-    const posterUrl = movie.poster_url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAwIiBoZWlnaHQ9IjYwMCIgdmlld0JveD0iMCAwIDUwMCA2MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI1MDAiIGhlaWdodD0iNjAwIiBmaWxsPSIjMzMzIi8+Cjx0ZXh0IHg9IjI1MCIgeT0iMzAwIiBmaWxsPSIjNjY2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiPk5vIFBvc3RlcjwvdGV4dD4KPHN2Zz4=';
-
-    heroSection.innerHTML = `
-        <div class="hero-content">
-            <div class="hero-text">
-                <h1>Watch your<br>Favorite<br>Movie</h1>
-                <p>Anytime Anywhere with Anyone</p>
-            </div>
-            <div class="hero-movie">
-                <img src="${posterUrl}" alt="${movie.title}">
-                <div class="hero-movie-info">
-                    <h3>${movie.title} (${movie.release_year || 'Unknown'})</h3>
-                    <div class="rating">${ratingDisplay}/10</div>
-                </div>
-            </div>
-        </div>
-    `;
-
-    heroSection.classList.remove('loading');
-    console.log('✅ Hero movie displayed:', movie.title);
-}
-
-function displayFeaturedMovies(movies) {
-    const featuredSection = document.getElementById('featured-movies');
-    if (!featuredSection) {
-        console.error('Featured movies section element not found');
-        return;
-    }
-
-    const movieCards = movies.map(movie => {
-        const posterUrl = movie.poster_url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDE0MCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxNDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjMzMzIi8+Cjx0ZXh0IHg9IjcwIiB5PSIxMDAiIGZpbGw9IiM2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiI+Tm8gUG9zdGVyPC90ZXh0Pgo8L3N2Zz4=';
-
-        return `
-            <div class="movie-card" data-movie-id="${movie.movie_id}">
-                <div class="movie-poster">
-                    <img src="${posterUrl}" alt="${movie.title}">
-                </div>
-                <div class="movie-info">
-                    <h4>${movie.title}</h4>
-                    <p>${movie.release_year || 'Unknown'}</p>
-                </div>
-            </div>
-        `;
-    }).join('');
-
-    featuredSection.innerHTML = `
-        <h2>Top 8 Movies</h2>
-        <div class="movies-grid">
-            ${movieCards}
-        </div>
-    `;
-
-    featuredSection.classList.remove('loading');
-    console.log(`✅ Featured movies displayed: ${movies.length} movies`);
-}
-
-function showError(message) {
-    const heroSection = document.getElementById('hero-section');
-    const featuredSection = document.getElementById('featured-movies');
-
-    if (heroSection && heroSection.classList.contains('loading')) {
-        heroSection.innerHTML = `<div class="error">${message}</div>`;
-        heroSection.classList.remove('loading');
-    }
-
-    if (featuredSection && featuredSection.classList.contains('loading')) {
-        featuredSection.innerHTML = `<div class="error">${message}</div>`;
-        featuredSection.classList.remove('loading');
-    }
-}
-
-// Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🚀 DOM loaded, initializing app...');
-    updateAuthNav();
+    applyTheme(getPreferredTheme());
+    initSkipLink();
     updateAuthUI();
+    ensureAuthState().catch((error) => {
+        console.error('Auth initialization failed:', error);
+    });
+    initMobileNavToggle();
+    setActiveNavLink();
+    initScrollObserver();
 
-    // Add page-specific initialization
-    const currentPage = window.location.pathname.split('/').pop() || 'website.html';
-    console.log(`📄 Current page: ${currentPage}`);
+    const pageName = window.location.pathname.split('/').pop() || 'website.html';
 
     const logoutLink = document.getElementById('logoutLink');
     if (logoutLink) {
         logoutLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        logout();
+            e.preventDefault();
+            if (confirm('Are you sure you want to sign out?')) {
+                logout();
+            }
         });
-    }       
+    }
 
-
-    switch (currentPage) {
+    switch (pageName) {
         case 'website.html':
         case '':
         case '/':
         case 'index.html':
-            console.log('🏠 Loading homepage content...');
-            loadHomepageContent();
-            break;
-
-        case 'Stream_team.html':
-            console.log('👥 Loading groups page...');
-            // Groups page will handle its own loading
-            break;
-
-        case 'Binge_Bank.html':
-            console.log('🎥 Loading movies page...');
-            // Movies page will handle its own loading
-            break;
-
-        case 'heads_up.html':
-            console.log('🔔 Loading notifications page...');
-            // Notifications page will handle its own loading
+            if (typeof loadHomepageContent === 'function') {
+                loadHomepageContent();
+            }
             break;
     }
 });
 
-// Helper functions for specific pages (keeping for compatibility)
+// ── Utility Functions ────────────────────────────────────────────────────────
 
-// Toggle nav links based on authentication state
-function updateAuthNav() {
-  const loginLink = document.getElementById('loginLink');
-  const signUpLink = document.getElementById('signUpLink');
-  const logoutLink = document.getElementById('logoutLink');
-
-  // If these elements aren’t found on the current page, do nothing
-  if (!loginLink || !signUpLink || !logoutLink) return;
-
-  if (currentUser) {
-    loginLink.style.display = 'none';
-    signUpLink.style.display = 'none';
-    logoutLink.style.display = 'inline-block';
-  } else {
-    loginLink.style.display = '';
-    signUpLink.style.display = '';
-    logoutLink.style.display = 'none';
-  }
-}
-
-// Perform logout
-async function logout() {
-  try {
-    await fetch('/api/users/logout', {
-      method: 'POST',
-      credentials: 'include'
-    });
-  } catch (err) {
-    console.error('Logout failed:', err);
-  }
-  currentUser = null;
-  localStorage.removeItem('currentUser');
-  updateAuthNav();
-  // Redirect to home or login page after logout
-  window.location.href = 'website.html';
-}
-
-
-async function loadGroups() {
-    if (!checkAuth()) return;
-    const groups = await getGroups();
-    console.log('Groups:', groups);
-}
-
-async function loadMovies() {
-    const movies = await getMovies();
-    console.log('Movies:', movies);
-}
-
-// Utility functions
 function escapeHtml(text) {
     const map = {
         '&': '&amp;',
@@ -626,5 +728,3 @@ function getTimeAgo(dateString) {
 
     return formatDate(dateString);
 }
-
-console.log('✅ app.js loaded successfully');

@@ -1,0 +1,373 @@
+/* ── Buttons ──────────────────────────────────────────────────────────────── */
+.btn,
+button {
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  line-height: 1;
+  padding: 0.65rem 1rem;
+  transition: transform var(--transition-bounce), box-shadow var(--transition-base), border-color var(--transition-base), background var(--transition-base), color var(--transition-base);
+}
+
+.skip-link {
+  position: fixed;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 1300;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+  color: #111827;
+  border: 2px solid #111827;
+  text-decoration: none;
+  transform: translateY(-140%);
+  transition: transform var(--transition-fast);
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
+:where(a, button, input, select, textarea, [role="button"], [tabindex]):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--primary) 65%, #ffffff);
+  outline-offset: 2px;
+}
+
+.btn:hover,
+button:hover {
+  transform: translateY(-1px) scale(1.03);
+}
+
+.btn-primary,
+button:not(.btn-secondary):not(.btn-danger):not(.btn-ghost):not(.btn-icon) {
+  color: #fff;
+  background: var(--gradient-primary);
+  box-shadow: var(--glow-primary-subtle);
+}
+
+.btn-primary:hover,
+button:not(.btn-secondary):not(.btn-danger):not(.btn-ghost):not(.btn-icon):hover {
+  background: var(--gradient-primary-hover);
+  box-shadow: var(--glow-primary);
+}
+
+.btn-secondary {
+  color: var(--text-primary);
+  background: var(--glass-bg);
+  border-color: var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur));
+}
+
+.btn-secondary:hover {
+  box-shadow: var(--glow-cyan);
+}
+
+.btn-danger {
+  color: #fff;
+  background: linear-gradient(135deg, #fb7185 0%, #e11d48 100%);
+}
+
+.btn-danger:hover {
+  box-shadow: var(--glow-rose);
+}
+
+.btn-ghost {
+  color: var(--text-secondary);
+  background: transparent;
+  border-color: transparent;
+}
+
+.btn-ghost:hover {
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.btn-icon {
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: var(--radius-full);
+  background: var(--glass-bg);
+  border-color: var(--glass-border);
+  color: var(--text-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.btn-icon:hover {
+  box-shadow: var(--glow-primary);
+}
+
+.is-loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.is-loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 1s linear infinite;
+}
+
+/* ── Cards ────────────────────────────────────────────────────────────────── */
+.card,
+.movie-card,
+.group-card,
+.friend-card,
+.notification-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(var(--glass-blur));
+  transition: transform var(--transition-base), border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.card:hover,
+.movie-card:hover,
+.group-card:hover,
+.friend-card:hover,
+.notification-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-lg), var(--glow-primary-subtle);
+}
+
+/* ── Inputs ───────────────────────────────────────────────────────────────── */
+.input,
+input,
+select,
+textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  padding: 0.7rem 0.85rem;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-tertiary);
+}
+
+.input:focus,
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: var(--glow-primary);
+}
+
+.field-error {
+  border-color: var(--rose) !important;
+  box-shadow: var(--glow-rose) !important;
+  animation: shake 280ms ease-in-out;
+}
+
+.field-success {
+  border-color: var(--emerald) !important;
+  box-shadow: var(--glow-emerald) !important;
+}
+
+/* ── Modal ────────────────────────────────────────────────────────────────── */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: var(--modal-backdrop);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  width: min(540px, calc(100% - 2rem));
+  border-radius: var(--radius-xl);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-xl);
+  padding: 1.25rem;
+  animation: slideInUp var(--transition-base) ease;
+}
+
+.modal-close {
+  float: right;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+}
+
+.modal-close:hover {
+  color: var(--text-primary);
+  transform: rotate(90deg);
+}
+
+/* ── Toasts ───────────────────────────────────────────────────────────────── */
+.toast-container {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 1200;
+  display: grid;
+  gap: 0.65rem;
+  width: min(360px, calc(100vw - 2rem));
+}
+
+.toast {
+  border-radius: var(--radius-md);
+  padding: 0.8rem 0.9rem;
+  color: var(--text-primary);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(var(--glass-blur));
+  animation: slideInRight 240ms ease;
+}
+
+.toast.success { border-color: rgba(16, 185, 129, 0.4); box-shadow: var(--glow-emerald); }
+.toast.error { border-color: rgba(244, 63, 94, 0.4); box-shadow: var(--glow-rose); }
+.toast.info { border-color: rgba(6, 182, 212, 0.4); box-shadow: var(--glow-cyan); }
+.toast.warning { border-color: rgba(245, 158, 11, 0.4); box-shadow: var(--glow-amber); }
+
+/* ── Movie Card Overlay (shared) ─────────────────────────────────────────── */
+.movie-card-overlay {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  border-radius: var(--radius-lg);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-md);
+}
+
+.movie-card-overlay img {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  display: block;
+  transition: transform var(--transition-base), filter var(--transition-base);
+}
+
+.movie-card-overlay:hover img {
+  transform: scale(1.04);
+  filter: brightness(0.75);
+}
+
+.movie-card-overlay:hover {
+  transform: translateY(-4px);
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-lg), var(--glow-primary-subtle);
+}
+
+.movie-card-overlay .card-overlay {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 0.75rem;
+  background: linear-gradient(180deg, transparent 0%, rgba(11, 13, 19, 0.92) 100%);
+}
+
+.movie-card-overlay .card-overlay h4 {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.movie-card-overlay .card-overlay p {
+  margin: 0.2rem 0 0;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
+/* ── Movie Detail Modal (shared by homepage + Binge Bank) ────────────────── */
+.modal-header {
+  min-height: 220px;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+}
+
+.modal-header-content {
+  width: 100%;
+  padding: 1rem;
+  background: linear-gradient(180deg, transparent 0%, rgba(11, 13, 19, 0.92) 100%);
+}
+
+.modal-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 2.6vw, 2rem);
+}
+
+.modal-meta {
+  display: flex;
+  gap: 0.8rem;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
+.modal-body {
+  padding: 1rem;
+}
+
+.modal-overview {
+  color: var(--text-secondary);
+  margin-bottom: 0.7rem;
+}
+
+.modal .modal-close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 2;
+}
+
+.group-selector {
+  margin-top: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-overlay);
+  padding: 0.8rem;
+}
+
+.group-list {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.group-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-raised);
+  padding: 0.45rem 0.55rem;
+}
+
+.group-name {
+  font-size: var(--text-sm);
+}
+
+.add-to-group-btn {
+  min-width: 76px;
+}
+
+/* ── Focus-Visible States ────────────────────────────────────────────────── */
+.chip:focus-visible,
+.tab:focus-visible,
+.page-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}

@@ -1,712 +1,212 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stream Team - MovieNightPlanner</title>
+    <meta name="description" content="Stream Team - Create and manage movie watching groups with your friends on WatchPartyHQ.">
+    <meta property="og:title" content="Stream Team - WatchPartyHQ">
+    <meta property="og:description" content="Create and manage movie watching groups with your friends on WatchPartyHQ.">
+    <meta property="og:type" content="website">
+    <link rel="canonical" href="Stream_team.html">
+    <title>Stream Team - WatchPartyHQ</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .team-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-
-        .create-group-btn {
-            background: blueviolet;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: all 0.3s;
-        }
-
-        .create-group-btn:hover {
-            background: #7b3ff2;
-            transform: translateY(-2px);
-        }
-
-        .groups-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 30px;
-        }
-
-        .group-card {
-            background: #111;
-            border-radius: 8px;
-            padding: 20px;
-            transition: transform 0.3s, box-shadow 0.3s;
-            cursor: pointer;
-        }
-
-        .group-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 20px rgba(138, 43, 226, 0.3);
-        }
-
-        .group-name {
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: #fff;
-        }
-
-        .group-info {
-            color: #999;
-            font-size: 14px;
-            margin-bottom: 15px;
-        }
-
-        .group-actions {
-            display: flex;
-            gap: 10px;
-        }
-
-        .group-btn {
-            background: #222;
-            color: #fff;
-            border: 1px solid #444;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s;
-        }
-
-        .group-btn:hover {
-            background: #333;
-            border-color: blueviolet;
-        }
-
-        .group-btn.primary {
-            background: blueviolet;
-            border-color: blueviolet;
-        }
-
-        .group-btn.primary:hover {
-            background: #7b3ff2;
-        }
-
-        /* Group Detail View */
-        .group-detail {
-            display: none;
-            background: #111;
-            border-radius: 8px;
-            padding: 30px;
-            margin-top: 20px;
-        }
-
-        .group-detail.active {
-            display: block;
-        }
-
-        .group-detail-header {
-            display: flex;
-            justify-content: between;
-            align-items: center;
-            margin-bottom: 30px;
-            border-bottom: 1px solid #333;
-            padding-bottom: 15px;
-        }
-
-        .group-detail-title {
-            font-size: 24px;
-            font-weight: bold;
-            color: #fff;
-            margin: 0;
-        }
-
-        .back-btn {
-            background: #333;
-            color: #fff;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        .back-btn:hover {
-            background: #444;
-        }
-
-        .detail-tabs {
-            display: flex;
-            gap: 20px;
-            border-bottom: 2px solid #333;
-            margin-bottom: 30px;
-        }
-
-        .detail-tab {
-            padding: 10px 20px;
-            color: #999;
-            cursor: pointer;
-            transition: all 0.3s;
-            border-bottom: 2px solid transparent;
-            margin-bottom: -2px;
-        }
-
-        .detail-tab:hover {
-            color: #fff;
-        }
-
-        .detail-tab.active {
-            color: blueviolet;
-            border-bottom-color: blueviolet;
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        .members-list {
-            display: grid;
-            gap: 15px;
-        }
-
-        .member-item {
-            background: #222;
-            padding: 15px;
-            border-radius: 6px;
-            display: flex;
-            justify-content: between;
-            align-items: center;
-        }
-
-        .member-info {
-            flex: 1;
-        }
-
-        .member-name {
-            font-weight: bold;
-            color: #fff;
-            margin-bottom: 5px;
-        }
-
-        .member-email {
-            color: #999;
-            font-size: 14px;
-        }
-
-        .add-member-form {
-            background: #222;
-            padding: 20px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-        }
-
-        .add-member-form input {
-            width: 70%;
-            padding: 10px;
-            background: #333;
-            border: 1px solid #555;
-            border-radius: 4px;
-            color: #fff;
-            margin-right: 10px;
-        }
-
-        .add-member-form button {
-            background: blueviolet;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .movie-nights-list {
-            display: grid;
-            gap: 20px;
-        }
-
-        .movie-night-item {
-            background: #222;
-            padding: 20px;
-            border-radius: 6px;
-        }
-
-        .movie-night-header {
-            display: flex;
-            justify-content: between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .movie-night-date {
-            font-weight: bold;
-            color: #fff;
-            font-size: 18px;
-        }
-
-        .movie-night-status {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-
-        .status-planned {
-            background: rgba(138, 43, 226, 0.2);
-            color: blueviolet;
-        }
-
-        .status-completed {
-            background: rgba(76, 175, 80, 0.2);
-            color: #4caf50;
-        }
-
-        .status-cancelled {
-            background: rgba(255, 68, 68, 0.2);
-            color: #ff4444;
-        }
-
-        .create-movie-night-form {
-            background: #222;
-            padding: 20px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            color: #ccc;
-            margin-bottom: 5px;
-            font-size: 14px;
-        }
-
-        .form-group input,
-        .form-group select {
-            width: 100%;
-            padding: 10px;
-            background: #333;
-            border: 1px solid #555;
-            border-radius: 4px;
-            color: #fff;
-        }
-
-        .watchlist-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 20px;
-        }
-
-        .watchlist-item {
-            background: #222;
-            border-radius: 6px;
-            overflow: hidden;
-            transition: transform 0.3s;
-        }
-
-        .watchlist-item:hover {
-            transform: scale(1.05);
-        }
-
-        .watchlist-poster {
-            width: 100%;
-            height: 250px;
-            background: #333;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #666;
-        }
-
-        .watchlist-poster img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .watchlist-info {
-            padding: 15px;
-        }
-
-        .watchlist-title {
-            font-weight: bold;
-            color: #fff;
-            margin-bottom: 5px;
-            font-size: 14px;
-        }
-
-        .watchlist-year {
-            color: #999;
-            font-size: 12px;
-        }
-
-        .watchlist-voting-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 25px;
-        }
-
-        .watchlist-meta {
-            color: #ccc;
-            font-size: 12px;
-            margin-bottom: 15px;
-        }
-
-        /* Voting Interface */
-        .voting-section {
-            border-top: 1px solid #333;
-            padding: 15px;
-            background: #1a1a1a;
-        }
-
-        .voting-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .voting-title {
-            font-size: 14px;
-            font-weight: bold;
-            color: #fff;
-        }
-
-        .average-rating {
-            color: #ffd700;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .star-rating {
-            display: flex;
-            gap: 5px;
-            margin-bottom: 10px;
-        }
-
-        .star {
-            cursor: pointer;
-            color: #666;
-            font-size: 20px;
-            transition: color 0.3s;
-        }
-
-        .star:hover,
-        .star.active {
-            color: #ffd700;
-        }
-
-        .star.hover {
-            color: #ffed4e;
-        }
-
-        .your-vote {
-            font-size: 12px;
-            color: #999;
-            margin-bottom: 10px;
-        }
-
-        .vote-stats {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 12px;
-            color: #666;
-        }
-
-        .vote-count {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .vote-breakdown {
-            background: #111;
-            padding: 10px;
-            border-radius: 6px;
-            margin-top: 10px;
-            display: none;
-        }
-
-        .vote-breakdown.show {
-            display: block;
-        }
-
-        .vote-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 5px;
-            font-size: 11px;
-        }
-
-        .vote-bar-fill {
-            height: 4px;
-            background: #333;
-            border-radius: 2px;
-            overflow: hidden;
-            flex: 1;
-            margin: 0 10px;
-        }
-
-        .vote-bar-progress {
-            height: 100%;
-            background: blueviolet;
-            transition: width 0.3s;
-        }
-
-        .loading-vote {
-            opacity: 0.5;
-            pointer-events: none;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 1000;
-        }
-
-        .modal-content {
-            position: relative;
-            background: #111;
-            margin: 100px auto;
-            padding: 30px;
-            width: 90%;
-            max-width: 500px;
-            border-radius: 8px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
-        }
-
-        .close {
-            position: absolute;
-            right: 20px;
-            top: 20px;
-            font-size: 28px;
-            color: #999;
-            cursor: pointer;
-        }
-
-        .close:hover {
-            color: #fff;
-        }
-
-        .modal h2 {
-            margin-bottom: 20px;
-            color: #fff;
-        }
-
-        .modal input {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 20px;
-            background: #222;
-            border: 1px solid #444;
-            color: #fff;
-            border-radius: 4px;
-            font-size: 16px;
-        }
-
-        .modal button {
-            background: blueviolet;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            width: 100%;
-        }
-
-        .modal button:hover {
-            background: #7b3ff2;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #999;
-        }
-
-        .empty-state h3 {
-            font-size: 24px;
-            margin-bottom: 10px;
-            color: #fff;
-        }
-
-        .login-prompt {
-            text-align: center;
-            padding: 60px 20px;
-            background: #111;
-            border-radius: 8px;
-            margin-top: 30px;
-        }
-
-        .login-prompt h3 {
-            margin-bottom: 15px;
-            color: #fff;
-        }
-
-        .login-prompt a {
-            color: blueviolet;
-            text-decoration: none;
-        }
-
-        .success-message,
-        .error-message {
-            padding: 10px 15px;
-            border-radius: 4px;
-            margin-bottom: 15px;
-            display: none;
-        }
-
-        .success-message {
-            background: rgba(76, 175, 80, 0.1);
-            border: 1px solid #4caf50;
-            color: #66bb6a;
-        }
-
-        .error-message {
-            background: rgba(255, 68, 68, 0.1);
-            border: 1px solid #ff4444;
-            color: #ff6666;
-        }
-    </style>
+    <link rel="stylesheet" href="css/pages/stream-team.css">
 </head>
-
 <body>
     <header class="header">
-        <h1 class="logo">MovieNightPlanner</h1>
-        <nav class="main-nav">
+        <a href="website.html" class="logo-link" aria-label="WatchPartyHQ home">
+            <h1 class="logo">WatchPartyHQ</h1>
+        </a>
+        <nav class="main-nav" aria-label="Main navigation">
             <a href="website.html">Home</a>
             <a href="Binge_Bank.html">Binge Bank</a>
             <a href="Stream_team.html">Stream Team</a>
             <a href="Friends.html">Friends</a>
-            <a href="heads_up.html">Heads up</a>
-            <a href="Setting.html">Setting</a>
-            <a href="Log_In.html" id="loginLink">Log In</a>
-            <a href="Sign_Up.html" id="signUpLink">Sign Up</a>
-            <a href="#" id="logoutLink" style="display: none;">Sign Out</a>
+            <a href="heads_up.html">Heads Up</a>
+            <a href="Setting.html">Settings</a>
         </nav>
+        <div class="nav-auth">
+            <a href="Log_In.html" id="loginLink" class="nav-auth-btn nav-auth-ghost">Log In</a>
+            <a href="Sign_Up.html" id="signUpLink" class="nav-auth-btn nav-auth-primary">Sign Up</a>
+            <button type="button" id="logoutLink" class="nav-auth-btn nav-auth-primary" style="display:none;">Sign Out</button>
+        </div>
     </header>
 
-    <div class="container">
-        <div class="team-header">
-            <h1>Your Stream Teams</h1>
-            <button class="create-group-btn" id="createGroupBtn">Create New Group</button>
-        </div>
+    <main class="st-main">
+        <section class="st-header card" data-animate>
+            <div>
+                <h2>Your Stream Teams</h2>
+                <p>Create groups, vote on watchlists, and schedule nights from one workspace.</p>
+            </div>
+            <button class="btn btn-primary" id="createGroupBtn" type="button">Create New Group</button>
+        </section>
 
-        <div id="content">
-            <!-- Groups will be loaded here -->
-        </div>
+        <section id="content" data-animate></section>
 
-        <!-- Group Detail View -->
-        <div id="groupDetail" class="group-detail">
+        <section id="groupDetail" class="group-detail card" data-animate>
             <div class="group-detail-header">
-                <h2 class="group-detail-title" id="groupDetailTitle">Group Name</h2>
-                <button class="back-btn" id="backToGroups">← Back to Groups</button>
+                <div class="group-detail-heading">
+                    <h3 class="group-detail-title" id="groupDetailTitle">Group Name</h3>
+                    <p class="group-detail-role" id="groupDetailRole">Role: Member</p>
+                </div>
+                <button class="btn btn-secondary" id="backToGroups" type="button">Back to Groups</button>
             </div>
 
             <div class="detail-tabs">
-                <div class="detail-tab active" data-tab="members">Members</div>
-                <div class="detail-tab" data-tab="watchlist">Watchlist</div>
-                <div class="detail-tab" data-tab="movie-nights">Movie Nights</div>
+                <button class="detail-tab" type="button" data-tab="members">Members</button>
+                <button class="detail-tab active" type="button" data-tab="watchlist">Watchlist</button>
+                <button class="detail-tab" type="button" data-tab="movieNights">Movie Nights</button>
+                <button class="detail-tab" type="button" data-tab="timeline">Timeline</button>
             </div>
 
-            <!-- Members Tab -->
-            <div id="membersTab" class="tab-content active">
-                <div class="success-message" id="memberSuccess"></div>
-                <div class="error-message" id="memberError"></div>
+            <div id="membersTab" class="tab-content">
+                <div class="success-message" id="memberSuccess" aria-live="polite"></div>
+                <div class="error-message" id="memberError" aria-live="assertive"></div>
+                <p class="members-permission-hint" id="memberPermissionHint"></p>
 
-                <div class="add-member-form">
-                    <h3>Invite Member</h3>
-                    <input type="email" id="memberEmailInput" placeholder="Enter email address...">
-                    <button id="addMemberBtn">Invite</button>
+                <div class="add-member-form card">
+                    <h4>Invite Member</h4>
+                    <div class="add-member-row">
+                        <label for="memberEmailInput" class="sr-only">Member email</label>
+                        <input type="email" id="memberEmailInput" placeholder="friend@example.com">
+                        <button class="btn btn-primary" id="addMemberBtn" type="button">Invite</button>
+                    </div>
                 </div>
 
-                <div class="members-list" id="membersList">
-                    <!-- Members will be loaded here -->
-                </div>
+                <ul class="members-list" id="membersList"></ul>
             </div>
 
-            <!-- Watchlist Tab -->
-            <div id="watchlistTab" class="tab-content">
-                <div class="watchlist-header"
-                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h3 style="margin: 0; color: #fff;">Group Watchlist</h3>
-                    <a href="Binge_Bank.html" class="group-btn primary">Add More Movies</a>
+            <div id="watchlistTab" class="tab-content active">
+                <div class="watchlist-header">
+                    <h4>Group Watchlist</h4>
+                    <a href="Binge_Bank.html" class="btn btn-primary">Add Movies</a>
                 </div>
-
-                <div class="watchlist-voting-grid" id="watchlistVotingGrid">
-                    <!-- Watchlist items with voting will be loaded here -->
-                </div>
+                <div class="watchlist-voting-grid" id="watchlistVotingGrid"></div>
             </div>
 
-            <!-- Movie Nights Tab -->
             <div id="movieNightsTab" class="tab-content">
-                <div class="success-message" id="movieNightSuccess"></div>
-                <div class="error-message" id="movieNightError"></div>
+                <div class="success-message" id="movieNightSuccess" aria-live="polite"></div>
+                <div class="error-message" id="movieNightError" aria-live="assertive"></div>
 
-                <div class="create-movie-night-form">
-                    <h3>Schedule Movie Night</h3>
-                    <div class="form-group">
-                        <label for="movieNightDate">Date & Time:</label>
-                        <input type="datetime-local" id="movieNightDate">
+                <div class="create-movie-night-form card">
+                    <div class="movie-night-form-header">
+                        <h4>Schedule Movie Night</h4>
+                        <p>Pick a calendar date, set a start time, and export invites in one click.</p>
+                    </div>
+                    <div class="movie-night-date-row">
+                        <div class="form-group">
+                            <label for="movieNightDate">Calendar Date</label>
+                            <input type="date" id="movieNightDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="movieNightTime">Start Time</label>
+                            <input type="time" id="movieNightTime" value="20:00">
+                        </div>
+                    </div>
+                    <p class="movie-night-selected-preview" id="movieNightSelectedPreview">No date selected yet.</p>
+                    <div class="movie-night-date-row">
+                        <div class="form-group">
+                            <label for="rsvpDeadlineDate">RSVP Deadline Date (optional)</label>
+                            <input type="date" id="rsvpDeadlineDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="rsvpDeadlineTime">RSVP Deadline Time (optional)</label>
+                            <input type="time" id="rsvpDeadlineTime" value="18:00">
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label for="chosenMovie">Movie (optional):</label>
+                        <label for="rsvpReminderMinutes">Reminder Timing</label>
+                        <select id="rsvpReminderMinutes">
+                            <option value="">No automatic reminder</option>
+                            <option value="1440">24 hours before</option>
+                            <option value="360">6 hours before</option>
+                            <option value="120">2 hours before</option>
+                            <option value="60">1 hour before</option>
+                            <option value="30">30 minutes before</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="chosenMovie">Movie (optional)</label>
                         <select id="chosenMovie">
                             <option value="">Select a movie from watchlist...</option>
                         </select>
                     </div>
-                    <button id="createMovieNightBtn" class="group-btn primary">Schedule Movie Night</button>
+                    <button id="createMovieNightBtn" class="btn btn-primary" type="button">Schedule Movie Night</button>
                 </div>
 
-                <div class="movie-nights-list" id="movieNightsList">
-                    <!-- Movie nights will be loaded here -->
+                <div class="movie-night-plans card">
+                    <div class="movie-night-plans-header">
+                        <h4>Planned Movie Nights</h4>
+                        <span class="movie-night-plan-count" id="movieNightPlanCount">0 planned</span>
+                    </div>
+                    <ul class="movie-nights-list" id="movieNightsList"></ul>
+                </div>
+
+                <div class="movie-night-calendar card">
+                    <div class="movie-night-calendar-header">
+                        <button class="btn btn-ghost" id="calendarPrevMonth" type="button" aria-label="Previous month">Previous</button>
+                        <h5 id="calendarMonthLabel">Calendar</h5>
+                        <button class="btn btn-ghost" id="calendarNextMonth" type="button" aria-label="Next month">Next</button>
+                    </div>
+                    <div class="calendar-weekdays" aria-hidden="true">
+                        <span>Sun</span>
+                        <span>Mon</span>
+                        <span>Tue</span>
+                        <span>Wed</span>
+                        <span>Thu</span>
+                        <span>Fri</span>
+                        <span>Sat</span>
+                    </div>
+                    <div class="calendar-grid" id="movieNightCalendarGrid"></div>
+                    <p class="calendar-day-summary" id="calendarDaySummary">Select a day to schedule a movie night.</p>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Create Group Modal -->
-    <div id="createModal" class="modal">
+            <div id="timelineTab" class="tab-content">
+                <div class="timeline-controls card">
+                    <div class="form-group">
+                        <label for="timelineEventFilter">Filter events</label>
+                        <select id="timelineEventFilter">
+                            <option value="">All activity</option>
+                            <option value="member_added">Members added</option>
+                            <option value="member_removed">Members removed</option>
+                            <option value="role_changed">Role changes</option>
+                            <option value="movie_night_created">Movie nights created</option>
+                            <option value="movie_night_updated">Movie nights updated</option>
+                            <option value="rsvp_reminder_sent">RSVP reminders</option>
+                            <option value="watchlist_added">Watchlist additions</option>
+                            <option value="watchlist_removed">Watchlist removals</option>
+                            <option value="vote_cast">Votes</option>
+                        </select>
+                    </div>
+                </div>
+                <ul id="timelineList" class="timeline-list"></ul>
+            </div>
+        </section>
+    </main>
+
+    <div id="createModal" class="modal" style="display:none;">
         <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2>Create a New Group</h2>
-            <div class="error-message" id="createGroupError"></div>
-            <input type="text" id="groupNameInput" placeholder="Enter group name..." maxlength="100">
-            <button id="confirmCreateBtn">Create Group</button>
+            <button class="modal-close close" aria-label="Close" type="button">x</button>
+            <h3>Create a New Group</h3>
+            <div class="error-message" id="createGroupError" aria-live="assertive"></div>
+            <label for="groupNameInput" class="sr-only">Group name</label>
+            <input type="text" id="groupNameInput" placeholder="Enter group name" maxlength="100">
+            <button id="confirmCreateBtn" class="btn btn-primary" type="button">Create Group</button>
         </div>
     </div>
 
     <script src="app.js"></script>
     <script>
-        // State management
         let currentGroupId = null;
-        let currentGroup = null;
+        let currentGroupRole = 'member';
+        let currentGroupName = '';
+        let groupsCache = [];
+        let movieNightsCache = [];
+        let timelineFilter = '';
+        let calendarViewDate = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+        const GROUP_ROLE_ORDER = { member: 1, moderator: 2, owner: 3 };
 
-        // DOM elements
         const content = document.getElementById('content');
         const createGroupBtn = document.getElementById('createGroupBtn');
         const createModal = document.getElementById('createModal');
@@ -715,108 +215,460 @@
         const confirmCreateBtn = document.getElementById('confirmCreateBtn');
         const backToGroups = document.getElementById('backToGroups');
 
-        // Detail view elements
         const groupDetailTitle = document.getElementById('groupDetailTitle');
+        const groupDetailRole = document.getElementById('groupDetailRole');
         const membersList = document.getElementById('membersList');
+        const memberPermissionHint = document.getElementById('memberPermissionHint');
         const watchlistVotingGrid = document.getElementById('watchlistVotingGrid');
         const movieNightsList = document.getElementById('movieNightsList');
+        const movieNightPlanCount = document.getElementById('movieNightPlanCount');
+        const movieNightDateInput = document.getElementById('movieNightDate');
+        const movieNightTimeInput = document.getElementById('movieNightTime');
+        const rsvpDeadlineDateInput = document.getElementById('rsvpDeadlineDate');
+        const rsvpDeadlineTimeInput = document.getElementById('rsvpDeadlineTime');
+        const rsvpReminderMinutesInput = document.getElementById('rsvpReminderMinutes');
+        const movieNightSelectedPreview = document.getElementById('movieNightSelectedPreview');
+        const calendarMonthLabel = document.getElementById('calendarMonthLabel');
+        const movieNightCalendarGrid = document.getElementById('movieNightCalendarGrid');
+        const calendarDaySummary = document.getElementById('calendarDaySummary');
+        const calendarPrevMonth = document.getElementById('calendarPrevMonth');
+        const calendarNextMonth = document.getElementById('calendarNextMonth');
+        const timelineEventFilter = document.getElementById('timelineEventFilter');
+        const timelineList = document.getElementById('timelineList');
 
-        // Initialize page
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            await ensureAuthState();
+            initializeMovieNightScheduler();
             loadGroups();
             setupEventListeners();
         });
 
-        function setupEventListeners() {
-            // Modal controls
-            document.querySelectorAll('.close').forEach(closeBtn => {
-                closeBtn.onclick = function () {
-                    this.closest('.modal').style.display = 'none';
-                }
-            });
+        function normalizeCollection(result) {
+            if (Array.isArray(result)) return result;
+            if (result && Array.isArray(result.data)) return result.data;
+            return [];
+        }
 
-            window.onclick = function (event) {
-                if (event.target.classList.contains('modal')) {
-                    event.target.style.display = 'none';
+        function normalizeRole(role) {
+            if (role === 'owner' || role === 'moderator' || role === 'member') return role;
+            return 'member';
+        }
+
+        function hasMinimumRole(minimumRole) {
+            return (GROUP_ROLE_ORDER[currentGroupRole] || 0) >= (GROUP_ROLE_ORDER[minimumRole] || 0);
+        }
+
+        function formatRole(role) {
+            const normalized = normalizeRole(role);
+            return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+        }
+
+        function initializeMovieNightScheduler() {
+            const today = new Date();
+            const todayString = toDateInputValue(today);
+            movieNightDateInput.min = todayString;
+            rsvpDeadlineDateInput.min = todayString;
+            if (!movieNightTimeInput.value) movieNightTimeInput.value = '20:00';
+            if (!rsvpDeadlineTimeInput.value) rsvpDeadlineTimeInput.value = '18:00';
+            updateSelectedDatePreview();
+            renderMovieNightCalendar([]);
+        }
+
+        function toDateInputValue(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function parseDateValue(value) {
+            if (!value) return null;
+            if (value instanceof Date) return value;
+            const raw = String(value);
+            const normalized = raw.includes(' ') ? raw.replace(' ', 'T') : raw;
+            const parsed = new Date(normalized);
+            return Number.isNaN(parsed.getTime()) ? null : parsed;
+        }
+
+        function toDateKey(date) {
+            return toDateInputValue(date);
+        }
+
+        function buildSelectedDateTime() {
+            const dateValue = movieNightDateInput.value;
+            if (!dateValue) return null;
+            const timeValue = movieNightTimeInput.value || '20:00';
+            return `${dateValue}T${timeValue}`;
+        }
+
+        function buildRsvpDeadlineDateTime() {
+            const dateValue = rsvpDeadlineDateInput.value;
+            if (!dateValue) return null;
+            const timeValue = rsvpDeadlineTimeInput.value || '18:00';
+            return `${dateValue}T${timeValue}`;
+        }
+
+        function handleMovieNightDateChange() {
+            if (movieNightDateInput.value) {
+                const selectedDate = parseDateValue(`${movieNightDateInput.value}T12:00`);
+                if (selectedDate) {
+                    calendarViewDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+                }
+            }
+            updateSelectedDatePreview();
+            renderMovieNightCalendar(movieNightsCache);
+        }
+
+        function updateSelectedDatePreview() {
+            const dateTimeValue = buildSelectedDateTime();
+            rsvpDeadlineDateInput.max = movieNightDateInput.value || '';
+            if (!dateTimeValue) {
+                movieNightSelectedPreview.textContent = 'No date selected yet.';
+                updateCalendarDaySummary();
+                return;
+            }
+
+            const selectedDate = parseDateValue(dateTimeValue);
+            if (!selectedDate) {
+                movieNightSelectedPreview.textContent = 'Selected date is invalid.';
+                updateCalendarDaySummary();
+                return;
+            }
+
+            const formatted = selectedDate.toLocaleString([], {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+            });
+            let previewText = `Selected: ${formatted}`;
+
+            const rsvpDateTimeValue = buildRsvpDeadlineDateTime();
+            if (rsvpDateTimeValue) {
+                const rsvpDate = parseDateValue(rsvpDateTimeValue);
+                if (rsvpDate) {
+                    const deadlineFormatted = rsvpDate.toLocaleString([], {
+                        weekday: 'short',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                    });
+                    previewText += ` | RSVP closes: ${deadlineFormatted}`;
+                } else {
+                    previewText += ' | RSVP deadline is invalid';
                 }
             }
 
-            // Create group
-            createGroupBtn.onclick = function () {
+            movieNightSelectedPreview.textContent = previewText;
+            updateCalendarDaySummary(movieNightDateInput.value);
+        }
+
+        function shiftCalendarMonth(offset) {
+            calendarViewDate = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() + offset, 1);
+            renderMovieNightCalendar(movieNightsCache);
+        }
+
+        function countNightsByDate(movieNights) {
+            return movieNights.reduce((acc, night) => {
+                const date = parseDateValue(night.scheduled_date);
+                if (!date) return acc;
+                const key = toDateKey(date);
+                acc[key] = (acc[key] || 0) + 1;
+                return acc;
+            }, {});
+        }
+
+        function renderMovieNightCalendar(movieNights) {
+            const nightsByDate = countNightsByDate(movieNights);
+            const year = calendarViewDate.getFullYear();
+            const month = calendarViewDate.getMonth();
+            const firstDayOffset = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const selectedDate = movieNightDateInput.value;
+            const todayKey = toDateKey(new Date());
+
+            calendarMonthLabel.textContent = calendarViewDate.toLocaleDateString([], {
+                month: 'long',
+                year: 'numeric',
+            });
+
+            let html = '';
+            for (let i = 0; i < firstDayOffset; i += 1) {
+                html += '<span class="calendar-day calendar-day-empty" aria-hidden="true"></span>';
+            }
+
+            for (let day = 1; day <= daysInMonth; day += 1) {
+                const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const hasNight = Boolean(nightsByDate[dateKey]);
+                const classes = [
+                    'calendar-day',
+                    hasNight ? 'has-night' : '',
+                    selectedDate === dateKey ? 'selected' : '',
+                    todayKey === dateKey ? 'today' : '',
+                ].filter(Boolean).join(' ');
+
+                html += `
+                    <button class="${classes}" data-date="${dateKey}" type="button">
+                        <span class="calendar-day-number">${day}</span>
+                        ${hasNight ? `<span class="calendar-day-count">${nightsByDate[dateKey]}</span>` : ''}
+                    </button>
+                `;
+            }
+
+            movieNightCalendarGrid.innerHTML = html;
+            movieNightCalendarGrid.querySelectorAll('.calendar-day[data-date]').forEach((dayButton) => {
+                dayButton.addEventListener('click', () => {
+                    movieNightDateInput.value = dayButton.dataset.date;
+                    updateSelectedDatePreview();
+                    renderMovieNightCalendar(movieNightsCache);
+                });
+            });
+
+            updateCalendarDaySummary(selectedDate);
+        }
+
+        function updateCalendarDaySummary(dateKey = '') {
+            if (!dateKey) {
+                calendarDaySummary.textContent = 'Select a day to schedule a movie night.';
+                return;
+            }
+
+            const selectedNights = movieNightsCache.filter((night) => {
+                const parsed = parseDateValue(night.scheduled_date);
+                return parsed && toDateKey(parsed) === dateKey;
+            });
+
+            if (selectedNights.length === 0) {
+                const selectedDate = parseDateValue(`${dateKey}T12:00`);
+                const label = selectedDate
+                    ? selectedDate.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })
+                    : dateKey;
+                calendarDaySummary.textContent = `No scheduled movie nights on ${label}.`;
+                return;
+            }
+
+            const summary = selectedNights
+                .slice(0, 2)
+                .map((night) => {
+                    const startAt = parseDateValue(night.scheduled_date);
+                    const timeLabel = startAt
+                        ? startAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+                        : 'Time TBD';
+                    return night.movie_title
+                        ? `${timeLabel} - ${night.movie_title}`
+                        : `${timeLabel} - Movie TBD`;
+                })
+                .join(' | ');
+
+            const moreCount = selectedNights.length > 2 ? ` (+${selectedNights.length - 2} more)` : '';
+            calendarDaySummary.textContent = `${selectedNights.length} scheduled: ${summary}${moreCount}`;
+        }
+
+        function formatRelativeDuration(ms) {
+            const totalMinutes = Math.max(1, Math.round(Math.abs(ms) / 60000));
+            const days = Math.floor(totalMinutes / (24 * 60));
+            const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+            const minutes = totalMinutes % 60;
+
+            if (days > 0) return `${days}d ${hours}h`;
+            if (hours > 0) return `${hours}h ${minutes}m`;
+            return `${minutes}m`;
+        }
+
+        function formatRsvpCountdown(deadlineValue) {
+            if (!deadlineValue) return 'No RSVP deadline set';
+            const deadline = parseDateValue(deadlineValue);
+            if (!deadline) return 'RSVP deadline unavailable';
+
+            const diffMs = deadline.getTime() - Date.now();
+            if (diffMs >= 0) return `RSVP closes in ${formatRelativeDuration(diffMs)}`;
+            return `RSVP closed ${formatRelativeDuration(diffMs)} ago`;
+        }
+
+        function renderAwaitingMembersChips(night) {
+            const awaitingMembers = Array.isArray(night.awaiting_members) ? night.awaiting_members : [];
+            if (awaitingMembers.length === 0) {
+                return '<span class="awaiting-chip is-clear">Everyone responded</span>';
+            }
+
+            const chips = awaitingMembers.slice(0, 3)
+                .map((name) => `<span class="awaiting-chip">${escapeHtml(name)}</span>`)
+                .join('');
+            const extra = awaitingMembers.length > 3
+                ? `<span class="awaiting-chip">+${awaitingMembers.length - 3} more</span>`
+                : '';
+            return chips + extra;
+        }
+
+        function getCurrentUserRsvpState(night) {
+            if (night.current_user_is_available === null || night.current_user_is_available === undefined) {
+                return 'pending';
+            }
+            return Boolean(night.current_user_is_available) ? 'yes' : 'no';
+        }
+
+        function formatCurrentUserRsvp(night) {
+            const state = getCurrentUserRsvpState(night);
+            if (state === 'yes') return 'Your RSVP: Attending';
+            if (state === 'no') return 'Your RSVP: Not attending';
+            return 'Your RSVP: Pending';
+        }
+
+        function canSubmitRsvp(night) {
+            if (night.status !== 'planned') return false;
+            if (!night.rsvp_deadline) return true;
+            const deadline = parseDateValue(night.rsvp_deadline);
+            if (!deadline) return false;
+            return deadline.getTime() >= Date.now();
+        }
+
+        function renderRsvpActions(night) {
+            const state = getCurrentUserRsvpState(night);
+            const canSubmit = canSubmitRsvp(night);
+            const closed = !!night.rsvp_deadline && !canSubmit;
+
+            return `
+                <div class="movie-night-rsvp-row">
+                    <p class="movie-night-rsvp-status state-${state}">${formatCurrentUserRsvp(night)}</p>
+                    <div class="movie-night-rsvp-actions">
+                        <button
+                            class="btn btn-ghost js-rsvp-choice ${state === 'yes' ? 'is-selected' : ''}"
+                            data-night-id="${night.night_id}"
+                            data-available="1"
+                            ${canSubmit ? '' : 'disabled'}
+                            type="button"
+                        >Attending</button>
+                        <button
+                            class="btn btn-ghost js-rsvp-choice ${state === 'no' ? 'is-selected' : ''}"
+                            data-night-id="${night.night_id}"
+                            data-available="0"
+                            ${canSubmit ? '' : 'disabled'}
+                            type="button"
+                        >Not Attending</button>
+                    </div>
+                    ${closed ? '<p class="movie-night-rsvp-closed">RSVP is closed for this event.</p>' : ''}
+                </div>
+            `;
+        }
+
+        function formatReminderLeadLabel(minutes) {
+            const value = Number(minutes);
+            if (!Number.isFinite(value) || value <= 0) return 'No reminder configured';
+            if (value % 1440 === 0) {
+                const days = value / 1440;
+                return `${days} day${days === 1 ? '' : 's'} before`;
+            }
+            if (value % 60 === 0) {
+                const hours = value / 60;
+                return `${hours} hour${hours === 1 ? '' : 's'} before`;
+            }
+            return `${value} minutes before`;
+        }
+
+        function setupEventListeners() {
+            document.querySelectorAll('.close').forEach((closeBtn) => {
+                closeBtn.addEventListener('click', () => {
+                    closeBtn.closest('.modal').style.display = 'none';
+                });
+            });
+
+            window.addEventListener('click', (event) => {
+                if (event.target.classList.contains('modal')) {
+                    event.target.style.display = 'none';
+                }
+            });
+
+            createGroupBtn.addEventListener('click', () => {
                 if (!checkAuth()) {
                     window.location.href = 'Log_In.html';
                     return;
                 }
-                createModal.style.display = 'block';
+                createModal.style.display = 'flex';
                 groupNameInput.value = '';
                 groupNameInput.focus();
-            }
-
-            confirmCreateBtn.onclick = handleCreateGroup;
-            groupNameInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') confirmCreateBtn.click();
             });
 
-            // Back button
-            backToGroups.onclick = () => {
+            confirmCreateBtn.addEventListener('click', handleCreateGroup);
+            groupNameInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleCreateGroup();
+            });
+
+            backToGroups.addEventListener('click', () => {
                 groupDetail.classList.remove('active');
                 loadGroups();
-            }
-
-            // Tab switching
-            document.querySelectorAll('.detail-tab').forEach(tab => {
-                tab.addEventListener('click', () => {
-                    const tabName = tab.dataset.tab;
-                    switchTab(tabName);
-                });
             });
 
-            // Add member
-            document.getElementById('addMemberBtn').onclick = handleAddMember;
+            document.querySelectorAll('.detail-tab').forEach((tab) => {
+                tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+            });
+
+            document.getElementById('addMemberBtn').addEventListener('click', handleAddMember);
             document.getElementById('memberEmailInput').addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') handleAddMember();
             });
+            membersList.addEventListener('change', handleMemberRoleChange);
+            membersList.addEventListener('click', handleMemberRemoval);
 
-            // Create movie night
-            document.getElementById('createMovieNightBtn').onclick = handleCreateMovieNight;
+            document.getElementById('createMovieNightBtn').addEventListener('click', handleCreateMovieNight);
+            movieNightDateInput.addEventListener('change', handleMovieNightDateChange);
+            movieNightTimeInput.addEventListener('change', updateSelectedDatePreview);
+            rsvpDeadlineDateInput.addEventListener('change', updateSelectedDatePreview);
+            rsvpDeadlineTimeInput.addEventListener('change', updateSelectedDatePreview);
+            calendarPrevMonth.addEventListener('click', () => shiftCalendarMonth(-1));
+            calendarNextMonth.addEventListener('click', () => shiftCalendarMonth(1));
+            movieNightsList.addEventListener('click', handleMovieNightsListActions);
+            timelineEventFilter.addEventListener('change', () => {
+                timelineFilter = timelineEventFilter.value;
+                loadTimeline();
+            });
         }
 
-        // Load and display groups
         async function loadGroups() {
-            if (!currentUser) {
+            if (!checkAuth()) {
                 content.innerHTML = `
-                    <div class="login-prompt">
+                    <div class="login-prompt card">
                         <h3>Please log in to view your groups</h3>
-                        <p>Join or create movie groups with your friends!</p>
-                        <a href="Log_In.html">Log In</a> or <a href="Sign_Up.html">Sign Up</a>
+                        <p>Join or create movie groups with your friends.</p>
+                        <p><a href="Log_In.html">Log In</a> or <a href="Sign_Up.html">Sign Up</a></p>
                     </div>
                 `;
                 createGroupBtn.style.display = 'none';
                 return;
             }
 
-            createGroupBtn.style.display = 'block';
+            createGroupBtn.style.display = '';
 
             try {
-                const groups = await getGroups();
-
-                if (groups.length === 0) {
+                const groups = normalizeCollection(await getGroups());
+                groupsCache = groups.map((group) => ({
+                    ...group,
+                    user_role: normalizeRole(group.user_role || (Number(group.created_by) === Number(currentUser?.id) ? 'owner' : 'member')),
+                }));
+                if (!checkAuth()) {
                     content.innerHTML = `
-                        <div class="empty-state">
-                            <h3>No groups yet!</h3>
-                            <p>Create your first group to start planning movie nights with friends.</p>
+                        <div class="login-prompt card">
+                            <h3>Please log in to view your groups</h3>
+                            <p>Join or create movie groups with your friends.</p>
+                            <p><a href="Log_In.html">Log In</a> or <a href="Sign_Up.html">Sign Up</a></p>
                         </div>
                     `;
-                } else {
-                    displayGroups(groups);
+                    createGroupBtn.style.display = 'none';
+                    return;
                 }
+                if (groups.length === 0) {
+                    content.innerHTML = `
+                        <div class="empty-state card">
+                            <h3>No groups yet</h3>
+                            <p>Create your first group to start planning movie nights.</p>
+                        </div>
+                    `;
+                    return;
+                }
+                displayGroups(groupsCache);
             } catch (error) {
-                content.innerHTML = `
-                    <div class="empty-state">
-                        <h3>Error loading groups</h3>
-                        <p>Please try refreshing the page.</p>
-                    </div>
-                `;
+                content.innerHTML = '<div class="empty-state card"><h3>Error loading groups</h3><p>Please refresh and try again.</p></div>';
             }
         }
 
@@ -824,22 +676,24 @@
             const grid = document.createElement('div');
             grid.className = 'groups-grid';
 
-            groups.forEach(group => {
-                const card = document.createElement('div');
-                card.className = 'group-card';
-
+            groups.forEach((group) => {
+                const card = document.createElement('article');
+                card.className = 'group-card card animate-fade-in-up';
                 card.innerHTML = `
                     <div class="group-name">${escapeHtml(group.group_name)}</div>
                     <div class="group-info">
                         Created: ${formatDate(group.created_at)}<br>
-                        Creator: ${escapeHtml(group.creator_name)}
+                        Creator: ${escapeHtml(group.creator_name || 'Unknown')}<br>
+                        Your role: ${formatRole(group.user_role)}
                     </div>
                     <div class="group-actions">
-                        <button class="group-btn" onclick="viewMembers(${group.group_id}, '${escapeHtml(group.group_name)}')">View Members</button>
-                        <button class="group-btn primary" onclick="enterGroup(${group.group_id}, '${escapeHtml(group.group_name)}')">Enter Group</button>
+                        <button class="btn btn-secondary js-members" type="button">View Members</button>
+                        <button class="btn btn-primary js-enter" type="button">Enter Group</button>
                     </div>
                 `;
 
+                card.querySelector('.js-members').addEventListener('click', () => enterGroup(group));
+                card.querySelector('.js-enter').addEventListener('click', () => enterGroup(group));
                 grid.appendChild(card);
             });
 
@@ -847,11 +701,9 @@
             content.appendChild(grid);
         }
 
-        // Create new group
         async function handleCreateGroup() {
             const groupName = groupNameInput.value.trim();
             const errorDiv = document.getElementById('createGroupError');
-
             if (!groupName) {
                 showError(errorDiv, 'Please enter a group name');
                 return;
@@ -860,86 +712,238 @@
             try {
                 await createGroup(groupName);
                 createModal.style.display = 'none';
-                loadGroups(); // Reload groups
-                showSuccess(null, 'Group created successfully!');
+                showSuccess(null, 'Group created successfully');
+                loadGroups();
             } catch (error) {
                 showError(errorDiv, error.message || 'Failed to create group');
             }
         }
 
-        // Enter group detail view
-        async function enterGroup(groupId, groupName) {
-            currentGroupId = groupId;
-            currentGroup = { group_id: groupId, group_name: groupName };
-
-            groupDetailTitle.textContent = groupName;
+        async function enterGroup(group) {
+            currentGroupId = group.group_id;
+            currentGroupName = group.group_name;
+            currentGroupRole = normalizeRole(group.user_role);
+            groupDetailTitle.textContent = currentGroupName;
+            groupDetailRole.textContent = `Role: ${formatRole(currentGroupRole)}`;
+            timelineFilter = '';
+            timelineEventFilter.value = '';
             groupDetail.classList.add('active');
-
-            // Load initial tab content
-            await loadMembers();
             await loadWatchlistMovies();
+            switchTab('watchlist');
         }
 
-        // Switch tabs in group detail view
+        function syncCurrentGroupRoleFromCache() {
+            const cachedGroup = groupsCache.find((group) => Number(group.group_id) === Number(currentGroupId));
+            if (!cachedGroup) return;
+            currentGroupRole = normalizeRole(cachedGroup.user_role);
+            currentGroupName = cachedGroup.group_name || currentGroupName;
+            groupDetailTitle.textContent = currentGroupName;
+            groupDetailRole.textContent = `Role: ${formatRole(currentGroupRole)}`;
+        }
+
         function switchTab(tabName) {
-            // Update tab active states
-            document.querySelectorAll('.detail-tab').forEach(tab => {
+            const tabIdMap = {
+                members: 'membersTab',
+                watchlist: 'watchlistTab',
+                movieNights: 'movieNightsTab',
+                timeline: 'timelineTab'
+            };
+
+            document.querySelectorAll('.detail-tab').forEach((tab) => {
                 tab.classList.toggle('active', tab.dataset.tab === tabName);
             });
 
-            // Update tab content
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
+            document.querySelectorAll('.tab-content').forEach((tab) => {
+                tab.classList.remove('active');
             });
 
-            const targetTab = document.getElementById(`${tabName}Tab`);
-            if (targetTab) {
-                targetTab.classList.add('active');
-            }
+            const targetTab = document.getElementById(tabIdMap[tabName] || `${tabName}Tab`);
+            if (targetTab) targetTab.classList.add('active');
 
-            // Load tab-specific content
-            switch (tabName) {
-                case 'members':
-                    loadMembers();
-                    break;
-                case 'watchlist':
-                    loadWatchlist();
-                    break;
-                case 'movie-nights':
-                    loadMovieNights();
-                    break;
+            if (tabName === 'members') loadMembers();
+            if (tabName === 'watchlist') loadWatchlist();
+            if (tabName === 'movieNights') loadMovieNights();
+            if (tabName === 'timeline') loadTimeline();
+        }
+
+        function describeTimelineEvent(activity) {
+            const actor = activity.actor_name ? escapeHtml(activity.actor_name) : 'System';
+            const target = activity.target_name ? escapeHtml(activity.target_name) : 'member';
+            const metadata = activity && activity.metadata && typeof activity.metadata === 'object'
+                ? activity.metadata
+                : {};
+
+            switch (activity.event_type) {
+            case 'group_created':
+                return `${actor} created this group`;
+            case 'member_added':
+                return `${actor} added ${target}`;
+            case 'member_removed':
+                return `${actor} removed ${target}`;
+            case 'role_changed':
+                return `${actor} updated ${target}'s role${metadata.newRole ? ` to ${escapeHtml(metadata.newRole)}` : ''}`;
+            case 'movie_night_created':
+                return `${actor} scheduled a movie night`;
+            case 'movie_night_updated':
+                return `${actor} updated movie-night details`;
+            case 'movie_night_locked':
+                return `${actor} locked the movie-night schedule`;
+            case 'movie_night_unlocked':
+                return `${actor} unlocked the movie-night schedule`;
+            case 'rsvp_reminder_sent':
+                return `${actor} sent RSVP reminders${metadata.recipients ? ` (${metadata.recipients} recipients)` : ''}`;
+            case 'availability_updated':
+                return `${actor} updated availability`;
+            case 'watchlist_added':
+                return `${actor} added a movie to the watchlist`;
+            case 'watchlist_removed':
+                return `${actor} removed a movie from the watchlist`;
+            case 'vote_cast':
+                return `${actor} cast a vote${metadata.voteValue ? ` (${metadata.voteValue}/5)` : ''}`;
+            default:
+                return `${actor} performed a group action`;
             }
         }
 
-        // Load group members
-        async function loadMembers() {
+        async function loadTimeline() {
             if (!currentGroupId) return;
+            timelineList.innerHTML = '<li class="timeline-item card">Loading timeline...</li>';
 
             try {
-                const members = await getGroupMembers(currentGroupId);
+                const timelineItems = normalizeCollection(await getGroupActivity(currentGroupId, {
+                    eventType: timelineFilter || '',
+                    limit: 40,
+                }));
 
-                if (members.length === 0) {
-                    membersList.innerHTML = '<div class="empty-state"><h3>No members yet</h3></div>';
-                } else {
-                    membersList.innerHTML = members.map(member => `
-                        <div class="member-item">
-                            <div class="member-info">
-                                <div class="member-name">${escapeHtml(member.name)}</div>
-                                <div class="member-email">${escapeHtml(member.email)}</div>
-                            </div>
-                        </div>
-                    `).join('');
+                if (timelineItems.length === 0) {
+                    timelineList.innerHTML = '<li class="empty-state card">No activity recorded yet</li>';
+                    return;
                 }
+
+                timelineList.innerHTML = timelineItems.map((activity) => `
+                    <li class="timeline-item card">
+                        <p class="timeline-item-message">${describeTimelineEvent(activity)}</p>
+                        <time class="timeline-item-time" datetime="${escapeHtml(activity.created_at)}">${formatDateTime(activity.created_at)}</time>
+                    </li>
+                `).join('');
             } catch (error) {
-                membersList.innerHTML = '<div class="empty-state"><h3>Error loading members</h3></div>';
+                timelineList.innerHTML = '<li class="empty-state card">Failed to load activity timeline</li>';
             }
         }
 
-        // Add member to group
+        async function loadMembers() {
+            if (!currentGroupId) return;
+            const addMemberForm = document.querySelector('.add-member-form');
+            if (addMemberForm) addMemberForm.style.display = hasMinimumRole('moderator') ? '' : 'none';
+
+            if (memberPermissionHint) {
+                memberPermissionHint.textContent = hasMinimumRole('moderator')
+                    ? 'You can invite members and manage removals based on your role.'
+                    : 'Only moderators and owners can invite or remove members.';
+            }
+
+            try {
+                const members = normalizeCollection(await getGroupMembers(currentGroupId))
+                    .map((member) => ({
+                        ...member,
+                        role: normalizeRole(member.role || (Number(member.user_id) === Number(currentUser?.id) && currentGroupRole === 'owner'
+                            ? 'owner'
+                            : 'member')),
+                    }))
+                    .sort((a, b) => {
+                        const roleDiff = (GROUP_ROLE_ORDER[b.role] || 0) - (GROUP_ROLE_ORDER[a.role] || 0);
+                        if (roleDiff !== 0) return roleDiff;
+                        return new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime();
+                    });
+
+                if (members.length === 0) {
+                    membersList.innerHTML = '<li class="empty-state card">No members yet</li>';
+                    return;
+                }
+
+                membersList.innerHTML = members.map((member) => `
+                    <li class="member-item card">
+                        <div class="member-info">
+                            <div class="member-name">${escapeHtml(member.name)}</div>
+                            <div class="member-email">${escapeHtml(member.email)}</div>
+                        </div>
+                        <div class="member-role-controls">
+                            <span class="member-role-badge role-${member.role}">${formatRole(member.role)}</span>
+                            ${currentGroupRole === 'owner' && Number(member.user_id) !== Number(currentUser?.id) ? `
+                                <label class="sr-only" for="role-${member.user_id}">Role for ${escapeHtml(member.name)}</label>
+                                <select id="role-${member.user_id}" class="member-role-select" data-member-id="${member.user_id}">
+                                    <option value="member" ${member.role === 'member' ? 'selected' : ''}>Member</option>
+                                    <option value="moderator" ${member.role === 'moderator' ? 'selected' : ''}>Moderator</option>
+                                    <option value="owner" ${member.role === 'owner' ? 'selected' : ''}>Owner</option>
+                                </select>
+                            ` : ''}
+                            ${hasMinimumRole('moderator')
+                                && Number(member.user_id) !== Number(currentUser?.id)
+                                && member.role !== 'owner'
+                                && (currentGroupRole === 'owner' || member.role === 'member') ? `
+                                <button class="btn btn-ghost js-remove-member" data-member-id="${member.user_id}" type="button">Remove</button>
+                            ` : ''}
+                        </div>
+                    </li>
+                `).join('');
+            } catch (error) {
+                membersList.innerHTML = '<li class="empty-state card">Error loading members</li>';
+            }
+        }
+
+        async function handleMemberRoleChange(event) {
+            const select = event.target.closest('.member-role-select');
+            if (!select || !currentGroupId || !hasMinimumRole('owner')) return;
+
+            const memberId = Number(select.dataset.memberId);
+            const role = normalizeRole(select.value);
+            if (!memberId) return;
+
+            try {
+                await updateGroupMemberRole(currentGroupId, memberId, role);
+                showSuccess(document.getElementById('memberSuccess'), role === 'owner' ? 'Ownership transferred successfully' : 'Role updated');
+                await loadGroups();
+                syncCurrentGroupRoleFromCache();
+                await loadMembers();
+            } catch (error) {
+                showError(document.getElementById('memberError'), error.message || 'Failed to update role');
+                await loadMembers();
+            }
+        }
+
+        async function handleMemberRemoval(event) {
+            const removeButton = event.target.closest('.js-remove-member');
+            if (!removeButton || !currentGroupId || !hasMinimumRole('moderator')) return;
+
+            const memberId = Number(removeButton.dataset.memberId);
+            if (!memberId) return;
+            if (!confirm('Remove this member from the group?')) return;
+
+            try {
+                await removeGroupMember(currentGroupId, memberId);
+                showSuccess(document.getElementById('memberSuccess'), 'Member removed');
+                await loadGroups();
+                syncCurrentGroupRoleFromCache();
+                await loadMembers();
+            } catch (error) {
+                showError(document.getElementById('memberError'), error.message || 'Failed to remove member');
+            }
+        }
+
         async function handleAddMember() {
             const email = document.getElementById('memberEmailInput').value.trim();
             const successDiv = document.getElementById('memberSuccess');
             const errorDiv = document.getElementById('memberError');
+
+            if (!currentGroupId) {
+                showError(errorDiv, 'Select a group before inviting members');
+                return;
+            }
+
+            if (!hasMinimumRole('moderator')) {
+                showError(errorDiv, 'Only moderators and owners can invite members');
+                return;
+            }
 
             if (!email) {
                 showError(errorDiv, 'Please enter an email address');
@@ -949,274 +953,378 @@
             try {
                 await addGroupMember(currentGroupId, email);
                 document.getElementById('memberEmailInput').value = '';
-                showSuccess(successDiv, 'Member invited successfully!');
-                await loadMembers(); // Reload members list
+                showSuccess(successDiv, 'Member invited successfully');
+                loadMembers();
             } catch (error) {
                 showError(errorDiv, error.message || 'Failed to add member');
             }
         }
 
-        // Load group watchlist with voting
         async function loadWatchlist() {
             if (!currentGroupId) return;
-
             try {
-                const watchlist = await getWatchlist(currentGroupId);
-
+                const watchlist = normalizeCollection(await getWatchlist(currentGroupId));
                 if (watchlist.length === 0) {
-                    document.getElementById('watchlistVotingGrid').innerHTML = `
-                        <div class="empty-state">
-                            <h3>No movies in watchlist</h3>
-                            <p>Add movies from <a href="Binge_Bank.html" style="color: blueviolet;">Binge Bank</a> to start voting!</p>
-                        </div>
-                    `;
-                } else {
-                    await displayWatchlistWithVoting(watchlist);
+                    watchlistVotingGrid.innerHTML = '<div class="empty-state card"><h3>No movies in watchlist</h3><p>Add movies from Binge Bank to start voting.</p></div>';
+                    return;
                 }
+                await displayWatchlistWithVoting(watchlist);
             } catch (error) {
-                document.getElementById('watchlistVotingGrid').innerHTML = '<div class="empty-state"><h3>Error loading watchlist</h3></div>';
+                watchlistVotingGrid.innerHTML = '<div class="empty-state card"><h3>Error loading watchlist</h3></div>';
             }
         }
 
-        // Display watchlist with voting interface
         async function displayWatchlistWithVoting(watchlist) {
-            const watchlistGrid = document.getElementById('watchlistVotingGrid');
-
+            const currentUserId = currentUser ? currentUser.id : null;
             let html = '';
-
             for (const movie of watchlist) {
-                // Get votes for this movie
-                const votes = await getMovieVotes(currentGroupId, movie.movie_id);
-                const userVote = votes.find(v => v.user_id === currentUser.id);
-                const averageRating = votes.length > 0 ?
-                    (votes.reduce((sum, v) => sum + v.vote_value, 0) / votes.length).toFixed(1) : 0;
+                const votes = normalizeCollection(await getMovieVotes(currentGroupId, movie.movie_id));
+                const userVote = currentUserId ? votes.find((v) => v.user_id === currentUserId) : null;
+                const avg = votes.length > 0 ? (votes.reduce((sum, v) => sum + v.vote_value, 0) / votes.length).toFixed(1) : '0.0';
 
                 html += `
-                    <div class="watchlist-item">
+                    <article class="watchlist-item card">
                         <div class="watchlist-poster">
-                            ${movie.poster_url ?
-                        `<img src="${movie.poster_url}" alt="${escapeHtml(movie.title)}">` :
-                        '<span>No Poster</span>'
-                    }
+                            ${movie.poster_url ? `<img src="${movie.poster_url}" alt="${escapeHtml(movie.title)}" loading="lazy" decoding="async">` : '<span>No Poster</span>'}
                         </div>
                         <div class="watchlist-info">
                             <div class="watchlist-title">${escapeHtml(movie.title)}</div>
                             <div class="watchlist-year">${movie.release_year || 'Unknown'}</div>
-                            <div class="watchlist-meta">Added by ${escapeHtml(movie.added_by_name)}</div>
+                            <div class="watchlist-meta">Added by ${escapeHtml(movie.added_by_name || 'Unknown')}</div>
                         </div>
                         <div class="voting-section">
                             <div class="voting-header">
                                 <span class="voting-title">Rate this movie</span>
-                                ${averageRating > 0 ? `
-                                    <div class="average-rating">
-                                        ⭐ ${averageRating}/5
-                                    </div>
-                                ` : ''}
+                                <span class="average-rating">${avg}/5</span>
                             </div>
-                            
                             <div class="star-rating" data-movie-id="${movie.movie_id}">
-                                ${[1, 2, 3, 4, 5].map(rating => `
-                                    <span class="star ${userVote && userVote.vote_value >= rating ? 'active' : ''}" 
-                                          data-rating="${rating}" 
-                                          onclick="voteMovie(${movie.movie_id}, ${rating})">
-                                        ★
-                                    </span>
+                                ${[1, 2, 3, 4, 5].map((rating) => `
+                                    <span class="star ${userVote && userVote.vote_value >= rating ? 'active' : ''}" data-rating="${rating}" onclick="voteMovie(${movie.movie_id}, ${rating})">*</span>
                                 `).join('')}
                             </div>
-                            
-                            ${userVote ? `
-                                <div class="your-vote">Your vote: ${userVote.vote_value}/5 stars</div>
-                            ` : `
-                                <div class="your-vote">Click stars to vote</div>
-                            `}
-                            
+                            <div class="your-vote">${userVote ? `Your vote: ${userVote.vote_value}/5` : 'Click stars to vote'}</div>
                             <div class="vote-stats">
-                                <div class="vote-count">
-                                    👥 ${votes.length} vote${votes.length !== 1 ? 's' : ''}
-                                </div>
-                                ${votes.length > 0 ? `
-                                    <div style="cursor: pointer; color: blueviolet;" 
-                                         onclick="toggleVoteBreakdown(${movie.movie_id})">
-                                        View breakdown
-                                    </div>
-                                ` : ''}
+                                <div class="vote-count">${votes.length} vote${votes.length !== 1 ? 's' : ''}</div>
+                                ${votes.length > 0 ? `<button class="btn btn-ghost" onclick="toggleVoteBreakdown(${movie.movie_id})" type="button">Breakdown</button>` : ''}
                             </div>
-                            
-                            <div class="vote-breakdown" id="breakdown-${movie.movie_id}">
-                                ${generateVoteBreakdown(votes)}
-                            </div>
+                            <div class="vote-breakdown" id="breakdown-${movie.movie_id}">${generateVoteBreakdown(votes)}</div>
                         </div>
-                    </div>
+                    </article>
                 `;
             }
 
-            watchlistGrid.innerHTML = html;
+            watchlistVotingGrid.innerHTML = html;
             setupStarHoverEffects();
         }
 
-        // Generate vote breakdown visualization
         function generateVoteBreakdown(votes) {
             if (votes.length === 0) return '';
-
             const breakdown = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-            votes.forEach(vote => breakdown[vote.vote_value]++);
+            votes.forEach((vote) => { breakdown[vote.vote_value] += 1; });
 
-            return [5, 4, 3, 2, 1].map(rating => {
+            return [5, 4, 3, 2, 1].map((rating) => {
                 const count = breakdown[rating];
                 const percentage = votes.length > 0 ? (count / votes.length) * 100 : 0;
-
                 return `
                     <div class="vote-bar">
-                        <span>${rating}★</span>
-                        <div class="vote-bar-fill">
-                            <div class="vote-bar-progress" style="width: ${percentage}%"></div>
-                        </div>
+                        <span>${rating}</span>
+                        <div class="vote-bar-fill"><div class="vote-bar-progress" style="width:${percentage}%"></div></div>
                         <span>${count}</span>
                     </div>
                 `;
             }).join('');
         }
 
-        // Vote on a movie
         async function voteMovie(movieId, rating) {
             try {
-                const starRating = document.querySelector(`[data-movie-id="${movieId}"]`);
-                starRating.classList.add('loading-vote');
-
                 await voteOnMovie(currentGroupId, movieId, rating);
-
-                // Reload the watchlist to show updated votes
                 await loadWatchlist();
-
-                // Show success message briefly
-                console.log(`Voted ${rating} stars!`);
+                if (typeof showToast === 'function') showToast(`Voted ${rating}/5`, 'success');
             } catch (error) {
-                console.error('Failed to record vote:', error);
-                alert(error.message || 'Failed to record vote');
-                // Remove loading state
-                const starRating = document.querySelector(`[data-movie-id="${movieId}"]`);
-                if (starRating) starRating.classList.remove('loading-vote');
+                if (typeof showToast === 'function') showToast(error.message || 'Failed to record vote', 'error');
             }
         }
 
-        // Setup star hover effects
         function setupStarHoverEffects() {
-            document.querySelectorAll('.star-rating').forEach(ratingContainer => {
+            document.querySelectorAll('.star-rating').forEach((ratingContainer) => {
                 const stars = ratingContainer.querySelectorAll('.star');
-
                 stars.forEach((star, index) => {
                     star.addEventListener('mouseenter', () => {
-                        stars.forEach((s, i) => {
-                            s.classList.toggle('hover', i <= index);
-                        });
+                        stars.forEach((s, i) => s.classList.toggle('hover', i <= index));
                     });
-
                     star.addEventListener('mouseleave', () => {
-                        stars.forEach(s => s.classList.remove('hover'));
+                        stars.forEach((s) => s.classList.remove('hover'));
                     });
                 });
             });
         }
 
-        // Toggle vote breakdown visibility
         function toggleVoteBreakdown(movieId) {
             const breakdown = document.getElementById(`breakdown-${movieId}`);
-            breakdown.classList.toggle('show');
+            if (breakdown) breakdown.classList.toggle('show');
         }
 
-        // Load watchlist movies for movie night dropdown
         async function loadWatchlistMovies() {
             if (!currentGroupId) return;
-
             try {
-                const watchlist = await getWatchlist(currentGroupId);
+                const watchlist = normalizeCollection(await getWatchlist(currentGroupId));
                 const select = document.getElementById('chosenMovie');
-
                 select.innerHTML = '<option value="">Select a movie from watchlist...</option>';
-                watchlist.forEach(movie => {
-                    select.innerHTML += `<option value="${movie.movie_id}">${escapeHtml(movie.title)} (${movie.release_year})</option>`;
+                watchlist.forEach((movie) => {
+                    select.innerHTML += `<option value="${movie.movie_id}">${escapeHtml(movie.title)} (${movie.release_year || 'Unknown'})</option>`;
                 });
             } catch (error) {
                 console.error('Error loading watchlist for dropdown:', error);
             }
         }
 
-        // Load movie nights
         async function loadMovieNights() {
             if (!currentGroupId) return;
-
             try {
-                const movieNights = await getMovieNights(currentGroupId);
+                const movieNights = normalizeCollection(await getMovieNights(currentGroupId));
+                const plannedCount = movieNights.filter((night) => night.status === 'planned').length;
+                movieNightPlanCount.textContent = `${plannedCount} planned`;
+                movieNightsCache = movieNights;
+                renderMovieNightCalendar(movieNights);
 
                 if (movieNights.length === 0) {
-                    movieNightsList.innerHTML = '<div class="empty-state"><h3>No movie nights scheduled</h3><p>Schedule your first movie night!</p></div>';
-                } else {
-                    movieNightsList.innerHTML = movieNights.map(night => `
-                        <div class="movie-night-item">
-                            <div class="movie-night-header">
-                                <div class="movie-night-date">${formatDateTime(night.scheduled_date)}</div>
-                                <div class="movie-night-status status-${night.status}">${night.status}</div>
-                            </div>
-                            ${night.movie_title ?
-                            `<div class="movie-night-movie">Movie: ${escapeHtml(night.movie_title)}</div>` :
-                            '<div class="movie-night-movie">No movie selected yet</div>'
-                        }
-                        </div>
-                    `).join('');
+                    movieNightsList.innerHTML = '<li class="empty-state card">No movie nights scheduled yet</li>';
+                    updateCalendarDaySummary(movieNightDateInput.value);
+                    return;
                 }
+
+                movieNightsList.innerHTML = movieNights.map((night) => `
+                    <li class="movie-night-item card">
+                        <div class="movie-night-header">
+                            <div class="movie-night-date">${formatDateTime(night.scheduled_date)}</div>
+                            <div class="movie-night-header-tags">
+                                <div class="movie-night-status status-${night.status}">${night.status}</div>
+                                <div class="movie-night-lock ${night.is_locked ? 'is-locked' : 'is-open'}">${night.is_locked ? 'Locked' : 'Open'}</div>
+                            </div>
+                        </div>
+                        <div class="movie-night-movie">${night.movie_title ? `Movie: ${escapeHtml(night.movie_title)}` : 'No movie selected yet'}</div>
+                        <div class="movie-night-rsvp-meta">
+                            <p class="movie-night-rsvp-countdown">${formatRsvpCountdown(night.rsvp_deadline)}</p>
+                            <p class="movie-night-rsvp-note">${night.reminder_minutes_before ? `Auto reminder ${formatReminderLeadLabel(night.reminder_minutes_before)}` : 'No automatic reminder configured'}</p>
+                            <div class="awaiting-row">
+                                <span class="awaiting-label">${Number(night.pending_rsvp_count || 0)} awaiting response</span>
+                                <div class="awaiting-chips">${renderAwaitingMembersChips(night)}</div>
+                            </div>
+                            ${renderRsvpActions(night)}
+                        </div>
+                        <div class="movie-night-actions">
+                            ${hasMinimumRole('moderator') ? `
+                                <button
+                                    class="btn btn-ghost js-toggle-lock"
+                                    data-night-id="${night.night_id}"
+                                    data-locked="${night.is_locked ? '1' : '0'}"
+                                    type="button"
+                                >${night.is_locked ? 'Unlock Schedule' : 'Lock Schedule'}</button>
+                            ` : ''}
+                            ${hasMinimumRole('moderator') && night.rsvp_deadline ? `
+                                <button class="btn btn-ghost js-send-rsvp-reminder" data-night-id="${night.night_id}" type="button">Send RSVP Reminder</button>
+                            ` : ''}
+                            <button class="btn btn-secondary js-export-ics" data-night-id="${night.night_id}" type="button">Export .ics</button>
+                        </div>
+                    </li>
+                `).join('');
             } catch (error) {
-                movieNightsList.innerHTML = '<div class="empty-state"><h3>Error loading movie nights</h3></div>';
+                movieNightPlanCount.textContent = '0 planned';
+                movieNightsCache = [];
+                renderMovieNightCalendar([]);
+                movieNightsList.innerHTML = '<li class="empty-state card">Error loading movie nights</li>';
             }
         }
 
-        // Create movie night
         async function handleCreateMovieNight() {
-            const dateInput = document.getElementById('movieNightDate').value;
+            const scheduledDate = buildSelectedDateTime();
             const movieSelect = document.getElementById('chosenMovie').value;
+            const rsvpDeadline = buildRsvpDeadlineDateTime();
+            const reminderMinutesBefore = rsvpReminderMinutesInput.value ? Number(rsvpReminderMinutesInput.value) : null;
             const successDiv = document.getElementById('movieNightSuccess');
             const errorDiv = document.getElementById('movieNightError');
 
-            if (!dateInput) {
-                showError(errorDiv, 'Please select a date and time');
+            if (!scheduledDate) {
+                showError(errorDiv, 'Please select a calendar date');
                 return;
             }
 
+            const selectedDate = parseDateValue(scheduledDate);
+            if (!selectedDate || selectedDate.getTime() < Date.now() - 60000) {
+                showError(errorDiv, 'Please select a future date and time');
+                return;
+            }
+
+            let parsedRsvpDeadline = null;
+            if (rsvpDeadline) {
+                parsedRsvpDeadline = parseDateValue(rsvpDeadline);
+                if (!parsedRsvpDeadline) {
+                    showError(errorDiv, 'Please provide a valid RSVP deadline');
+                    return;
+                }
+                if (parsedRsvpDeadline.getTime() < Date.now() - 60000) {
+                    showError(errorDiv, 'RSVP deadline must be in the future');
+                    return;
+                }
+                if (parsedRsvpDeadline.getTime() >= selectedDate.getTime()) {
+                    showError(errorDiv, 'RSVP deadline must be before the movie night start');
+                    return;
+                }
+            }
+
+            if (reminderMinutesBefore && !parsedRsvpDeadline) {
+                showError(errorDiv, 'Select an RSVP deadline before enabling reminders');
+                return;
+            }
+
+            const payload = {};
+            if (rsvpDeadline) payload.rsvpDeadline = rsvpDeadline;
+            if (reminderMinutesBefore) payload.reminderMinutesBefore = reminderMinutesBefore;
+
             try {
-                await createMovieNight(currentGroupId, dateInput, movieSelect || null);
-                document.getElementById('movieNightDate').value = '';
+                await createMovieNight(currentGroupId, scheduledDate, movieSelect || null, payload);
                 document.getElementById('chosenMovie').value = '';
-                showSuccess(successDiv, 'Movie night scheduled successfully!');
-                await loadMovieNights(); // Reload movie nights
+                rsvpDeadlineDateInput.value = '';
+                rsvpDeadlineTimeInput.value = '18:00';
+                rsvpReminderMinutesInput.value = '';
+                updateSelectedDatePreview();
+                showSuccess(successDiv, 'Movie night scheduled');
+                await loadMovieNights();
             } catch (error) {
                 showError(errorDiv, error.message || 'Failed to create movie night');
             }
         }
 
-        // Quick view members function (for compatibility)
-        async function viewMembers(groupId, groupName) {
-            enterGroup(groupId, groupName);
+        async function handleMovieNightsListActions(event) {
+            const rsvpButton = event.target.closest('.js-rsvp-choice');
+            if (rsvpButton && currentGroupId) {
+                const nightId = Number(rsvpButton.dataset.nightId);
+                const isAvailable = rsvpButton.dataset.available === '1';
+                if (!nightId || rsvpButton.disabled) return;
+
+                const rsvpButtons = Array.from(
+                    movieNightsList.querySelectorAll(`.js-rsvp-choice[data-night-id="${nightId}"]`)
+                );
+                const originalLabels = rsvpButtons.map((button) => button.textContent);
+                rsvpButtons.forEach((button) => { button.disabled = true; });
+                rsvpButton.textContent = 'Saving...';
+
+                try {
+                    await setMovieNightAvailability(currentGroupId, nightId, isAvailable);
+                    showSuccess(
+                        document.getElementById('movieNightSuccess'),
+                        isAvailable ? 'RSVP saved: attending' : 'RSVP saved: not attending'
+                    );
+                    await loadMovieNights();
+                    if (document.getElementById('timelineTab').classList.contains('active')) {
+                        await loadTimeline();
+                    }
+                } catch (error) {
+                    showError(document.getElementById('movieNightError'), error.message || 'Failed to update RSVP');
+                    rsvpButtons.forEach((button, index) => {
+                        button.disabled = false;
+                        button.textContent = originalLabels[index];
+                    });
+                }
+                return;
+            }
+
+            const reminderButton = event.target.closest('.js-send-rsvp-reminder');
+            if (reminderButton && currentGroupId && hasMinimumRole('moderator')) {
+                const nightId = Number(reminderButton.dataset.nightId);
+                if (!nightId) return;
+
+                reminderButton.disabled = true;
+                const originalLabel = reminderButton.textContent;
+                reminderButton.textContent = 'Sending...';
+
+                try {
+                    const result = await sendRsvpReminder(currentGroupId, nightId, true);
+                    const recipientCount = Number(result && result.recipients ? result.recipients : 0);
+                    showSuccess(
+                        document.getElementById('movieNightSuccess'),
+                        recipientCount > 0 ? `RSVP reminder sent to ${recipientCount} member${recipientCount === 1 ? '' : 's'}` : 'RSVP reminder processed'
+                    );
+                    await loadMovieNights();
+                } catch (error) {
+                    showError(document.getElementById('movieNightError'), error.message || 'Failed to send RSVP reminder');
+                    reminderButton.disabled = false;
+                    reminderButton.textContent = originalLabel;
+                }
+                return;
+            }
+
+            const lockButton = event.target.closest('.js-toggle-lock');
+            if (lockButton && currentGroupId && hasMinimumRole('moderator')) {
+                const nightId = Number(lockButton.dataset.nightId);
+                const currentlyLocked = lockButton.dataset.locked === '1';
+                if (!nightId) return;
+
+                lockButton.disabled = true;
+                const originalLabel = lockButton.textContent;
+                lockButton.textContent = currentlyLocked ? 'Unlocking...' : 'Locking...';
+
+                try {
+                    await setMovieNightLock(currentGroupId, nightId, !currentlyLocked);
+                    showSuccess(document.getElementById('movieNightSuccess'), currentlyLocked ? 'Movie night unlocked' : 'Movie night locked');
+                    await loadMovieNights();
+                } catch (error) {
+                    showError(document.getElementById('movieNightError'), error.message || 'Failed to update lock status');
+                    lockButton.disabled = false;
+                    lockButton.textContent = originalLabel;
+                }
+                return;
+            }
+
+            const exportButton = event.target.closest('.js-export-ics');
+            if (!exportButton || !currentGroupId) return;
+
+            const nightId = Number(exportButton.dataset.nightId);
+            if (!nightId) return;
+
+            const originalLabel = exportButton.textContent;
+            exportButton.disabled = true;
+            exportButton.textContent = 'Preparing...';
+
+            try {
+                const { blob, filename } = await exportMovieNightIcs(currentGroupId, nightId);
+                triggerFileDownload(blob, filename);
+                showSuccess(null, 'Calendar invite exported');
+            } catch (error) {
+                showError(document.getElementById('movieNightError'), error.message || 'Failed to export .ics');
+            } finally {
+                exportButton.disabled = false;
+                exportButton.textContent = originalLabel;
+            }
         }
 
-        // Utility functions
+        function triggerFileDownload(blob, filename) {
+            const objectUrl = URL.createObjectURL(blob);
+            const downloadLink = document.createElement('a');
+            downloadLink.href = objectUrl;
+            downloadLink.download = filename || 'movie-night.ics';
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            downloadLink.remove();
+            setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+        }
+
         function showError(element, message) {
-            if (element) {
-                element.textContent = message;
-                element.style.display = 'block';
-                setTimeout(() => element.style.display = 'none', 5000);
-            }
+            if (!element) return;
+            element.textContent = message;
+            element.style.display = 'block';
+            setTimeout(() => { element.style.display = 'none'; }, 5000);
+            if (typeof showToast === 'function') showToast(message, 'error');
         }
 
         function showSuccess(element, message) {
             if (element) {
                 element.textContent = message;
                 element.style.display = 'block';
-                setTimeout(() => element.style.display = 'none', 3000);
-            } else {
-                // Show global success message (you can implement this)
-                console.log('Success:', message);
+                setTimeout(() => { element.style.display = 'none'; }, 3000);
             }
+            if (typeof showToast === 'function') showToast(message, 'success');
         }
     </script>
 </body>
-
 </html>

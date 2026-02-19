@@ -1,456 +1,204 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Heads Up - MovieNightPlanner</title>
+    <meta name="description" content="Heads Up - Notifications, movie night countdowns, and schedule updates for WatchPartyHQ.">
+    <meta property="og:title" content="Heads Up - WatchPartyHQ">
+    <meta property="og:description" content="Notifications, movie night countdowns, and schedule updates.">
+    <meta property="og:type" content="website">
+    <link rel="canonical" href="heads_up.html">
+    <title>Heads Up - WatchPartyHQ</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .notifications-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-
-        .notifications-title {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .notification-count {
-            background: blueviolet;
-            color: white;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            font-weight: bold;
-        }
-
-        .mark-all-read {
-            color: blueviolet;
-            cursor: pointer;
-            font-size: 14px;
-            transition: color 0.3s;
-            text-decoration: underline;
-        }
-
-        .mark-all-read:hover {
-            color: #7b3ff2;
-        }
-
-        .mark-all-read:disabled {
-            color: #666;
-            cursor: not-allowed;
-            text-decoration: none;
-        }
-
-        .notifications-filters {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 30px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #333;
-            flex-wrap: wrap;
-        }
-
-        .filter-chip {
-            padding: 8px 16px;
-            background: #222;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-size: 14px;
-            color: #ccc;
-            border: 1px solid #444;
-        }
-
-        .filter-chip:hover {
-            background: #333;
-            border-color: blueviolet;
-        }
-
-        .filter-chip.active {
-            background: blueviolet;
-            color: white;
-            border-color: blueviolet;
-        }
-
-        .notifications-list {
-            margin-top: 20px;
-        }
-
-        .notification-card {
-            background: #111;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 15px;
-            border-left: 4px solid transparent;
-            transition: all 0.3s;
-            position: relative;
-        }
-
-        .notification-card.unread {
-            border-left-color: blueviolet;
-            background: rgba(138, 43, 226, 0.05);
-        }
-
-        .notification-card.read {
-            border-left-color: #333;
-            opacity: 0.7;
-        }
-
-        .notification-card:hover {
-            transform: translateX(5px);
-            box-shadow: 0 2px 10px rgba(138, 43, 226, 0.3);
-        }
-
-        .notification-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: start;
-            margin-bottom: 10px;
-        }
-
-        .notification-title {
-            font-weight: bold;
-            color: #fff;
-            font-size: 18px;
-            margin: 0;
-        }
-
-        .notification-time {
-            color: #999;
-            font-size: 14px;
-            white-space: nowrap;
-        }
-
-        .notification-body {
-            color: #ccc;
-            line-height: 1.6;
-            margin-bottom: 15px;
-        }
-
-        .notification-type-badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 10px;
-            font-weight: bold;
-            text-transform: uppercase;
-            margin-bottom: 10px;
-        }
-
-        .type-group_invite {
-            background: rgba(33, 150, 243, 0.2);
-            color: #42a5f5;
-        }
-
-        .type-movie_night {
-            background: rgba(138, 43, 226, 0.2);
-            color: blueviolet;
-        }
-
-        .type-vote_reminder {
-            background: rgba(255, 193, 7, 0.2);
-            color: #ffb300;
-        }
-
-        .notification-actions {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .action-button {
-            padding: 6px 15px;
-            background: #222;
-            color: #fff;
-            border: 1px solid #444;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s;
-        }
-
-        .action-button:hover {
-            background: #333;
-            border-color: blueviolet;
-        }
-
-        .action-button.primary {
-            background: blueviolet;
-            border-color: blueviolet;
-        }
-
-        .action-button.primary:hover {
-            background: #7b3ff2;
-        }
-
-        .action-button.danger {
-            background: #d32f2f;
-            border-color: #d32f2f;
-        }
-
-        .action-button.danger:hover {
-            background: #b71c1c;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #999;
-        }
-
-        .empty-state h3 {
-            font-size: 24px;
-            margin-bottom: 10px;
-            color: #fff;
-        }
-
-        .loading-spinner {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 40px;
-        }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid rgba(138, 43, 226, 0.2);
-            border-left-color: blueviolet;
-            border-radius: 50%;
-            animation: spin 1s ease-in-out infinite;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        .login-prompt {
-            text-align: center;
-            padding: 60px 20px;
-            background: #111;
-            border-radius: 8px;
-        }
-
-        .login-prompt h3 {
-            margin-bottom: 15px;
-            color: #fff;
-        }
-
-        .login-prompt a {
-            color: blueviolet;
-            text-decoration: none;
-        }
-
-        .login-prompt a:hover {
-            text-decoration: underline;
-        }
-
-        .refresh-btn {
-            background: #333;
-            color: #fff;
-            border: 1px solid #555;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s;
-        }
-
-        .refresh-btn:hover {
-            background: #444;
-            border-color: blueviolet;
-        }
-
-        .notification-unread-indicator {
-            position: absolute;
-            top: 20px;
-            left: -2px;
-            width: 8px;
-            height: 8px;
-            background: blueviolet;
-            border-radius: 50%;
-        }
-
-        .success-message,
-        .error-message {
-            padding: 10px 15px;
-            border-radius: 4px;
-            margin-bottom: 20px;
-            display: none;
-        }
-
-        .success-message {
-            background: rgba(76, 175, 80, 0.1);
-            border: 1px solid #4caf50;
-            color: #66bb6a;
-        }
-
-        .error-message {
-            background: rgba(255, 68, 68, 0.1);
-            border: 1px solid #ff4444;
-            color: #ff6666;
-        }
-
-        @media (max-width: 768px) {
-            .notifications-header {
-                flex-direction: column;
-                gap: 15px;
-                align-items: flex-start;
-            }
-
-            .notifications-filters {
-                justify-content: center;
-            }
-
-            .notification-header {
-                flex-direction: column;
-                gap: 10px;
-                align-items: flex-start;
-            }
-
-            .notification-actions {
-                justify-content: center;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="css/pages/heads-up.css">
 </head>
-
 <body>
     <header class="header">
-        <h1 class="logo">MovieNightPlanner</h1>
-        <nav class="main-nav">
+        <a href="website.html" class="logo-link" aria-label="WatchPartyHQ home">
+            <h1 class="logo">WatchPartyHQ</h1>
+        </a>
+        <nav class="main-nav" aria-label="Main navigation">
             <a href="website.html">Home</a>
             <a href="Binge_Bank.html">Binge Bank</a>
             <a href="Stream_team.html">Stream Team</a>
             <a href="Friends.html">Friends</a>
-            <a href="heads_up.html">Heads up</a>
-            <a href="Setting.html">Setting</a>
-            <a href="Log_In.html" id="loginLink">Log In</a>
-            <a href="Sign_Up.html" id="signUpLink">Sign Up</a>
-            <a href="#" id="logoutLink" style="display: none;">Sign Out</a>
+            <a href="heads_up.html">Heads Up</a>
+            <a href="Setting.html">Settings</a>
         </nav>
+        <div class="nav-auth">
+            <a href="Log_In.html" id="loginLink" class="nav-auth-btn nav-auth-ghost">Log In</a>
+            <a href="Sign_Up.html" id="signUpLink" class="nav-auth-btn nav-auth-primary">Sign Up</a>
+            <button type="button" id="logoutLink" class="nav-auth-btn nav-auth-primary" style="display:none;">Sign Out</button>
+        </div>
     </header>
 
-    <div class="container">
-        <div class="notifications-header">
-            <div class="notifications-title">
-                <h1>Notifications</h1>
-                <span class="notification-count" id="unreadCount" style="display: none;">0</span>
+    <main class="hu-main">
+        <section class="hu-header card" data-animate>
+            <div class="title-wrap">
+                <h2>Heads Up</h2>
+                <span class="notification-count" id="unreadCount" style="display:none;">0</span>
             </div>
-            <div style="display: flex; gap: 15px; align-items: center;">
-                <button class="refresh-btn" id="refreshBtn">Refresh</button>
-                <span class="mark-all-read" id="markAllRead" style="display: none;">Mark all as read</span>
+            <div class="header-actions">
+                <button class="btn btn-secondary" id="refreshBtn" type="button">Refresh</button>
+                <button class="btn btn-ghost" id="markAllRead" type="button" style="display:none;">Mark all as read</button>
             </div>
-        </div>
+        </section>
 
-        <div class="success-message" id="successMessage"></div>
-        <div class="error-message" id="errorMessage"></div>
+        <section class="status-messages" data-animate>
+            <div class="success-message" id="successMessage" aria-live="polite"></div>
+            <div class="error-message" id="errorMessage" aria-live="assertive"></div>
+        </section>
 
-        <div id="content">
-            <!-- Content will be loaded here -->
-        </div>
-    </div>
+        <section class="upcoming-wrap" data-animate>
+            <div class="section-head">
+                <h3>Upcoming Movie Nights</h3>
+                <p>Countdown to your next plans.</p>
+            </div>
+            <div id="upcomingContainer" class="upcoming-grid"></div>
+        </section>
+
+        <section class="notifications-wrap" data-animate>
+            <div id="content"></div>
+        </section>
+    </main>
 
     <script src="app.js"></script>
     <script>
-        // State management
         let notifications = [];
         let currentFilter = 'all';
+        let unreadCountFromServer = null;
 
-        // DOM elements
         const content = document.getElementById('content');
         const unreadCount = document.getElementById('unreadCount');
         const markAllRead = document.getElementById('markAllRead');
         const refreshBtn = document.getElementById('refreshBtn');
         const successMessage = document.getElementById('successMessage');
         const errorMessage = document.getElementById('errorMessage');
+        const upcomingContainer = document.getElementById('upcomingContainer');
 
-        // Initialize page
-        document.addEventListener('DOMContentLoaded', () => {
-            loadNotifications();
+        document.addEventListener('DOMContentLoaded', async () => {
+            await ensureAuthState();
+            loadAllData();
             setupEventListeners();
-
-            // Auto-refresh every 30 seconds
-            setInterval(loadNotifications, 30000);
+            setInterval(loadAllData, 30000);
         });
+
+        function normalizeNotification(raw) {
+            return {
+                id: raw.id || raw.notification_id,
+                title: raw.title || 'Notification',
+                message: raw.message || '',
+                type: raw.type || 'update',
+                created_at: raw.created_at,
+                read: typeof raw.read === 'boolean' ? raw.read : !!raw.is_read
+            };
+        }
 
         function setupEventListeners() {
             markAllRead.addEventListener('click', handleMarkAllAsRead);
-            refreshBtn.addEventListener('click', () => {
-                loadNotifications(true);
-            });
+            refreshBtn.addEventListener('click', loadAllData);
         }
 
-        // Load notifications from API
+        async function loadAllData() {
+            await Promise.all([loadNotifications(true), loadUpcomingMovieNights()]);
+        }
+
         async function loadNotifications(showLoading = false) {
             if (!currentUser) {
-                content.innerHTML = `
-                    <div class="login-prompt">
-                        <h3>Please log in to view your notifications</h3>
-                        <p>Get updates about movie nights, group invites, and more!</p>
-                        <a href="Log_In.html">Log In</a> or <a href="Sign_Up.html">Sign Up</a>
-                    </div>
-                `;
+                renderStandardState(
+                    content,
+                    'empty',
+                    'Please log in to view notifications',
+                    'Get updates about movie nights, group invites, and votes.'
+                );
                 return;
             }
 
             if (showLoading) {
-                content.innerHTML = `
-                    <div class="loading-spinner">
-                        <div class="spinner"></div>
-                    </div>
-                `;
+                renderStandardState(content, 'loading');
             }
 
             try {
-                notifications = await getNotifications();
+                const apiResult = await getNotifications({ page: 1, limit: 100 });
+                notifications = normalizeCollection(apiResult).map(normalizeNotification);
                 displayNotifications();
+                await refreshUnreadCount();
                 updateNotificationCount();
             } catch (error) {
-                console.error('Error loading notifications:', error);
-                showError('Failed to load notifications. Please try again.');
-                content.innerHTML = `
-                    <div class="empty-state">
-                        <h3>Error loading notifications</h3>
-                        <p>Please check your connection and try again.</p>
-                    </div>
-                `;
+                showError(getErrorMessage(error, 'Failed to load notifications. Please try again.'));
+                renderStandardState(content, 'error', 'Error loading notifications', 'Please check your connection and refresh.');
             }
         }
 
-        // Display notifications with filters
-        function displayNotifications() {
-            if (notifications.length === 0) {
-                content.innerHTML = createFiltersHTML() + `
-                    <div class="empty-state">
-                        <h3>No notifications yet</h3>
-                        <p>You'll see updates about your groups and movie nights here</p>
-                    </div>
-                `;
+        async function loadUpcomingMovieNights() {
+            if (!currentUser) {
+                renderStandardState(upcomingContainer, 'empty', 'Log in to see your upcoming nights');
                 return;
             }
 
-            const filteredNotifications = filterNotifications(notifications, currentFilter);
+            try {
+                const groups = normalizeCollection(await getGroups());
+                const allNights = [];
+
+                for (const group of groups.slice(0, 8)) {
+                    const nights = normalizeCollection(await getMovieNights(group.group_id));
+                    nights.forEach((night) => {
+                        if (night.status === 'planned') {
+                            allNights.push({ ...night, group_name: group.group_name });
+                        }
+                    });
+                }
+
+                allNights.sort((a, b) => new Date(a.scheduled_date) - new Date(b.scheduled_date));
+                const upcoming = allNights.slice(0, 6);
+
+                if (upcoming.length === 0) {
+                    renderStandardState(upcomingContainer, 'empty', 'No upcoming movie nights scheduled yet');
+                    return;
+                }
+
+                upcomingContainer.innerHTML = upcoming.map((night) => {
+                    const target = new Date(night.scheduled_date);
+                    const countdown = getCountdown(target);
+                    return `
+                        <article class="upcoming-card card">
+                            <div class="upcoming-top">
+                                <h4>${escapeHtml(night.group_name)}</h4>
+                                <span class="night-status">Planned</span>
+                            </div>
+                            <p class="upcoming-date">${formatDateTime(night.scheduled_date)}</p>
+                            <p class="upcoming-movie">${night.movie_title ? `Movie: ${escapeHtml(night.movie_title)}` : 'Movie: TBD'}</p>
+                            <div class="countdown-grid">
+                                <div><strong>${countdown.days}</strong><span>days</span></div>
+                                <div><strong>${countdown.hours}</strong><span>hours</span></div>
+                                <div><strong>${countdown.minutes}</strong><span>mins</span></div>
+                            </div>
+                        </article>
+                    `;
+                }).join('');
+            } catch (error) {
+                renderStandardState(upcomingContainer, 'error', 'Could not load upcoming nights');
+            }
+        }
+
+        function getCountdown(target) {
+            const now = new Date();
+            const diff = Math.max(0, target - now);
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+            const minutes = Math.floor((diff / (1000 * 60)) % 60);
+            return { days, hours, minutes };
+        }
+
+        function displayNotifications() {
+            if (notifications.length === 0) {
+                content.innerHTML = createFiltersHTML() + '<div class="empty-state card"><h3>No notifications yet</h3><p>You are all caught up.</p></div>';
+                return;
+            }
+
+            const filtered = filterNotifications(notifications, currentFilter);
             const filtersHTML = createFiltersHTML();
-            const notificationsHTML = createNotificationsHTML(filteredNotifications);
+            const notificationsHTML = createNotificationsHTML(filtered);
 
             content.innerHTML = filtersHTML + notificationsHTML;
             setupFilterListeners();
@@ -460,18 +208,15 @@
             const filters = [
                 { key: 'all', label: 'All' },
                 { key: 'unread', label: 'Unread' },
-                { key: 'group_invite', label: 'Invitations' },
+                { key: 'group_invite', label: 'Invites' },
                 { key: 'movie_night', label: 'Movie Nights' },
                 { key: 'vote_reminder', label: 'Votes' }
             ];
 
             return `
                 <div class="notifications-filters">
-                    ${filters.map(filter => `
-                        <div class="filter-chip ${currentFilter === filter.key ? 'active' : ''}" 
-                             data-filter="${filter.key}">
-                            ${filter.label}
-                        </div>
+                    ${filters.map((filter) => `
+                        <button class="filter-chip ${currentFilter === filter.key ? 'active' : ''}" data-filter="${filter.key}" type="button">${filter.label}</button>
                     `).join('')}
                 </div>
             `;
@@ -479,70 +224,51 @@
 
         function createNotificationsHTML(filteredNotifications) {
             if (filteredNotifications.length === 0) {
-                return `
-                    <div class="empty-state">
-                        <h3>No notifications match this filter</h3>
-                        <p>Try selecting a different filter or refresh the page.</p>
-                    </div>
-                `;
+                return '<div class="empty-state card"><h3>No notifications for this filter</h3></div>';
             }
 
             return `
-                <div class="notifications-list">
-                    ${filteredNotifications.map(notification => `
-                        <div class="notification-card ${notification.read ? 'read' : 'unread'}" 
-                             data-id="${notification.id}">
-                            ${!notification.read ? '<div class="notification-unread-indicator"></div>' : ''}
-                            
-                            <div class="notification-type-badge type-${notification.type}">
-                                ${notification.type.replace('_', ' ')}
-                            </div>
-                            
+                <ul class="notifications-list">
+                    ${filteredNotifications.map((notification) => `
+                        <li class="notification-card card ${notification.read ? 'read' : 'unread'}" data-id="${notification.id}">
+                            <div class="notification-type-badge type-${notification.type}">${notification.type.replace('_', ' ')}</div>
                             <div class="notification-header">
-                                <h3 class="notification-title">${escapeHtml(notification.title)}</h3>
+                                <h4 class="notification-title">${escapeHtml(notification.title)}</h4>
                                 <div class="notification-time">${getTimeAgo(notification.created_at)}</div>
                             </div>
-                            
-                            <div class="notification-body">
-                                ${escapeHtml(notification.message)}
-                            </div>
-                            
-                            <div class="notification-actions">
-                                ${createActionButtons(notification)}
-                            </div>
-                        </div>
+                            <div class="notification-body">${escapeHtml(notification.message)}</div>
+                            <div class="notification-actions">${createActionButtons(notification)}</div>
+                        </li>
                     `).join('')}
-                </div>
+                </ul>
             `;
         }
 
         function createActionButtons(notification) {
-            let buttons = [];
+            const buttons = [];
 
-            // Type-specific action buttons
-            switch (notification.type) {
-                case 'group_invite':
-                    buttons.push(`<button class="action-button primary" onclick="acceptInvite(${notification.id})">Accept</button>`);
-                    buttons.push(`<button class="action-button danger" onclick="declineInvite(${notification.id})">Decline</button>`);
-                    break;
-                case 'movie_night':
-                    buttons.push(`<button class="action-button primary" onclick="viewMovieNight(${notification.id})">View Details</button>`);
-                    break;
-                case 'vote_reminder':
-                    buttons.push(`<button class="action-button primary" onclick="goToVote(${notification.id})">Go to Vote</button>`);
-                    break;
+            if (notification.type === 'group_invite') {
+                buttons.push(`<button class="btn btn-primary" onclick="acceptInvite(${notification.id})" type="button">Accept</button>`);
+                buttons.push(`<button class="btn btn-danger" onclick="declineInvite(${notification.id})" type="button">Decline</button>`);
             }
 
-            // Mark as read button for unread notifications
+            if (notification.type === 'movie_night') {
+                buttons.push(`<button class="btn btn-secondary" onclick="viewMovieNight(${notification.id})" type="button">Open Group</button>`);
+            }
+
+            if (notification.type === 'vote_reminder') {
+                buttons.push(`<button class="btn btn-secondary" onclick="goToVote(${notification.id})" type="button">Go to Vote</button>`);
+            }
+
             if (!notification.read) {
-                buttons.push(`<button class="action-button" onclick="markAsRead(${notification.id})">Mark as Read</button>`);
+                buttons.push(`<button class="btn btn-ghost" onclick="markAsRead(${notification.id})" type="button">Mark as Read</button>`);
             }
 
             return buttons.join('');
         }
 
         function setupFilterListeners() {
-            document.querySelectorAll('.filter-chip').forEach(chip => {
+            document.querySelectorAll('.filter-chip').forEach((chip) => {
                 chip.addEventListener('click', () => {
                     currentFilter = chip.dataset.filter;
                     displayNotifications();
@@ -550,74 +276,70 @@
             });
         }
 
-        function filterNotifications(notifications, filter) {
-            switch (filter) {
-                case 'unread':
-                    return notifications.filter(n => !n.read);
-                case 'all':
-                    return notifications;
-                default:
-                    return notifications.filter(n => n.type === filter);
-            }
+        function filterNotifications(items, filter) {
+            if (filter === 'unread') return items.filter((n) => !n.read);
+            if (filter === 'all') return items;
+            return items.filter((n) => n.type === filter);
         }
 
         function updateNotificationCount() {
-            const unreadNotifications = notifications.filter(n => !n.read);
-            const count = unreadNotifications.length;
+            const localUnreadCount = notifications.filter((n) => !n.read).length;
+            const count = Number.isInteger(unreadCountFromServer) ? unreadCountFromServer : localUnreadCount;
 
             if (count > 0) {
                 unreadCount.textContent = count;
-                unreadCount.style.display = 'flex';
-                markAllRead.style.display = 'inline';
+                unreadCount.style.display = 'inline-flex';
+                markAllRead.style.display = 'inline-flex';
             } else {
                 unreadCount.style.display = 'none';
                 markAllRead.style.display = 'none';
             }
 
-            // Update page title with count
-            document.title = count > 0
-                ? `(${count}) Heads Up - MovieNightPlanner`
-                : 'Heads Up - MovieNightPlanner';
+            document.title = count > 0 ? `(${count}) Heads Up - WatchPartyHQ` : 'Heads Up - WatchPartyHQ';
         }
 
-        // Action handlers
+        async function refreshUnreadCount() {
+            try {
+                unreadCountFromServer = await getUnreadNotificationsCount();
+            } catch (_error) {
+                unreadCountFromServer = null;
+            }
+        }
+
         async function markAsRead(notificationId) {
             try {
                 await markNotificationAsRead(notificationId);
-
-                // Update local state
-                const notification = notifications.find(n => n.id === notificationId);
-                if (notification) {
+                const notification = notifications.find((n) => n.id === notificationId);
+                if (notification && !notification.read) {
                     notification.read = true;
+                    if (Number.isInteger(unreadCountFromServer)) {
+                        unreadCountFromServer = Math.max(0, unreadCountFromServer - 1);
+                    }
                 }
-
                 displayNotifications();
                 updateNotificationCount();
                 showSuccess('Notification marked as read');
             } catch (error) {
-                showError('Failed to mark notification as read');
+                showError(getErrorMessage(error, 'Failed to mark notification as read'));
             }
         }
 
         async function handleMarkAllAsRead() {
             try {
                 await markAllNotificationsAsRead();
-
-                // Update local state
-                notifications.forEach(n => n.read = true);
-
+                notifications.forEach((n) => { n.read = true; });
+                unreadCountFromServer = 0;
                 displayNotifications();
                 updateNotificationCount();
                 showSuccess('All notifications marked as read');
             } catch (error) {
-                showError('Failed to mark all notifications as read');
+                showError(getErrorMessage(error, 'Failed to mark all notifications as read'));
             }
         }
 
-        // Type-specific action handlers
         function acceptInvite(notificationId) {
             markAsRead(notificationId);
-            showSuccess('Group invitation accepted!');
+            showSuccess('Group invitation accepted');
         }
 
         function declineInvite(notificationId) {
@@ -626,56 +348,22 @@
         }
 
         function viewMovieNight(notificationId) {
-            // Navigate to the movie night details
             markAsRead(notificationId);
             window.location.href = 'Stream_team.html';
         }
 
         function goToVote(notificationId) {
-            // Navigate to the voting page
             markAsRead(notificationId);
             window.location.href = 'Stream_team.html';
         }
 
-        // Utility functions
         function showSuccess(message) {
-            successMessage.textContent = message;
-            successMessage.style.display = 'block';
-            setTimeout(() => {
-                successMessage.style.display = 'none';
-            }, 3000);
+            setStatusMessage(successMessage, errorMessage, message, 'success', 3000);
         }
 
         function showError(message) {
-            errorMessage.textContent = message;
-            errorMessage.style.display = 'block';
-            setTimeout(() => {
-                errorMessage.style.display = 'none';
-            }, 5000);
+            setStatusMessage(successMessage, errorMessage, message, 'error', 5000);
         }
-
-        // Simulate real-time updates (in a real app, you'd use WebSockets)
-        function simulateRealTimeUpdate() {
-            // Randomly add new notifications for demo purposes
-            if (Math.random() > 0.95 && currentUser) {
-                const newNotification = {
-                    id: Date.now(),
-                    type: 'movie_night',
-                    title: 'New Movie Night Alert',
-                    message: 'A movie night has been scheduled for tonight!',
-                    read: false,
-                    created_at: new Date().toISOString()
-                };
-
-                notifications.unshift(newNotification);
-                displayNotifications();
-                updateNotificationCount();
-            }
-        }
-
-        // Run real-time simulation every 10 seconds (remove in production)
-        // setInterval(simulateRealTimeUpdate, 10000);
     </script>
 </body>
-
 </html>

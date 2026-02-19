@@ -1,0 +1,237 @@
+/* ── Shared Navigation ────────────────────────────────────────────────────── */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 0.6rem 1.5rem;
+  margin: 0.75rem;
+  border-radius: var(--radius-xl);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur));
+  box-shadow: var(--shadow-md);
+}
+
+.header::after {
+  content: '';
+  position: absolute;
+  left: 1.5rem;
+  right: 1.5rem;
+  bottom: -1px;
+  height: 2px;
+  background: var(--gradient-primary);
+  opacity: 0.5;
+  border-radius: var(--radius-full);
+}
+
+/* ── Logo ─────────────────────────────────────────────────────────────────── */
+.logo-link {
+  text-decoration: none;
+  flex-shrink: 0;
+  order: -2;
+}
+
+.logo {
+  margin: 0;
+  font-size: clamp(1rem, 2vw, 1.35rem);
+  font-family: var(--font-display);
+  font-weight: 800;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  white-space: nowrap;
+}
+
+/* ── Main Nav (centered page links) ───────────────────────────────────────── */
+.main-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0 auto;
+}
+
+.main-nav > a {
+  position: relative;
+  color: var(--text-secondary);
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.main-nav > a::after {
+  content: '';
+  position: absolute;
+  left: 0.65rem;
+  right: 0.65rem;
+  bottom: 0.2rem;
+  height: 2px;
+  border-radius: var(--radius-full);
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform var(--transition-base);
+  background: var(--gradient-primary);
+}
+
+.main-nav > a:hover,
+.main-nav > a.active {
+  color: var(--text-primary);
+  background: rgba(148, 163, 184, 0.1);
+}
+
+.main-nav > a:hover::after,
+.main-nav > a.active::after {
+  transform: scaleX(1);
+}
+
+/* ── Auth Actions (top-right) ─────────────────────────────────────────────── */
+.nav-auth {
+  position: absolute;
+  top: 0.55rem;
+  right: 1rem;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.nav-auth-btn {
+  font-size: var(--text-sm);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  font-weight: 600;
+  line-height: 1;
+  border: 1px solid transparent;
+  transition: transform var(--transition-bounce),
+              box-shadow var(--transition-base),
+              background var(--transition-base),
+              color var(--transition-base),
+              border-color var(--transition-base);
+}
+
+.nav-auth-btn:hover {
+  transform: translateY(-1px) scale(1.03);
+}
+
+.nav-auth-ghost {
+  color: var(--text-secondary);
+  background: transparent;
+  border-color: var(--glass-border);
+}
+
+.nav-auth-ghost:hover {
+  color: var(--text-primary);
+  border-color: var(--border-hover);
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.nav-auth-primary {
+  color: #fff;
+  background: var(--gradient-primary);
+  box-shadow: var(--glow-primary-subtle);
+}
+
+.nav-auth-primary:hover {
+  background: var(--gradient-primary-hover);
+  box-shadow: var(--glow-primary);
+}
+
+/* ── Mobile Toggle ────────────────────────────────────────────────────────── */
+.nav-mobile-toggle {
+  display: none;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  color: var(--text-primary);
+}
+
+/* ── Mobile Responsive ────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .header {
+    margin: 0.5rem;
+    padding: 0.6rem 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .nav-mobile-toggle {
+    display: inline-flex;
+    order: 0;
+    margin-left: auto;
+  }
+
+  .logo-link {
+    order: -2;
+  }
+
+  .main-nav {
+    order: 3;
+    width: 100%;
+    position: fixed;
+    top: 4.2rem;
+    right: 0.5rem;
+    left: 0.5rem;
+    display: grid;
+    gap: 0.45rem;
+    padding: 0.65rem;
+    border-radius: var(--radius-lg);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(var(--glass-blur));
+    box-shadow: var(--shadow-lg);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-10px);
+    transition: opacity var(--transition-base), transform var(--transition-base);
+    margin: 0;
+  }
+
+  .main-nav.nav-open {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+
+  .main-nav > a {
+    width: 100%;
+    padding: 0.65rem 0.75rem;
+    background: rgba(148, 163, 184, 0.06);
+    font-size: var(--text-base);
+  }
+
+  .main-nav > a::after {
+    left: 0.75rem;
+    right: auto;
+    width: 32px;
+  }
+
+  .nav-auth {
+    position: static;
+    top: auto;
+    right: auto;
+    z-index: auto;
+    order: -1;
+    display: none;
+    width: 100%;
+    padding: 0.5rem 0 0;
+    border-top: 1px solid var(--glass-border);
+  }
+
+  .main-nav.nav-open ~ .nav-auth {
+    display: flex;
+  }
+
+  .nav-auth-btn {
+    flex: 1;
+    text-align: center;
+  }
+}
