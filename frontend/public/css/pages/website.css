@@ -206,7 +206,7 @@
 
 .trending-overlay p {
   margin: 0.2rem 0 0;
-  color: var(--text-secondary);
+  color: rgba(255, 255, 255, 0.82);
   font-size: var(--text-xs);
 }
 
