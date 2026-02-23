@@ -201,6 +201,7 @@
 .trending-overlay h4 {
   margin: 0;
   font-size: var(--text-sm);
+  color: #fff;
 }
 
 .trending-overlay p {
