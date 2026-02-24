@@ -307,12 +307,13 @@ textarea:focus {
 .modal-title {
   font-family: var(--font-display);
   font-size: clamp(1.4rem, 2.6vw, 2rem);
+  color: #f1f5f9;
 }
 
 .modal-meta {
   display: flex;
   gap: 0.8rem;
-  color: var(--text-secondary);
+  color: rgba(241, 245, 249, 0.75);
   font-size: var(--text-xs);
 }
 
