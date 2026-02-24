@@ -194,20 +194,24 @@
 .trending-overlay {
   position: absolute;
   inset: auto 0 0 0;
+  z-index: 1;
   padding: 0.75rem;
   background: linear-gradient(180deg, transparent 0%, rgba(11, 13, 19, 0.92) 100%);
-}
-
-.trending-overlay h4 {
-  margin: 0;
-  font-size: var(--text-sm);
   color: #fff;
 }
 
-.trending-overlay p {
+.trending-card .trending-overlay h4 {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: #fff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.trending-card .trending-overlay p {
   margin: 0.2rem 0 0;
-  color: rgba(255, 255, 255, 0.82);
+  color: rgba(255, 255, 255, 0.82) !important;
   font-size: var(--text-xs);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
 }
 
 .loading,
