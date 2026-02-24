@@ -222,9 +222,9 @@
     gap: 0.45rem;
     padding: 0.65rem;
     border-radius: var(--radius-lg);
-    background: var(--glass-bg);
+    background: var(--bg-raised);
     border: 1px solid var(--glass-border);
-    backdrop-filter: blur(var(--glass-blur));
+    backdrop-filter: none;
     box-shadow: var(--shadow-lg);
     opacity: 0;
     pointer-events: none;
