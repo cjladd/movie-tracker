@@ -254,27 +254,38 @@ function initMobileNavToggle() {
     const nav = document.querySelector('.main-nav');
     if (!header || !nav) return;
 
+    const iconHamburger = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>`;
+    const iconClose = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+
     let menuToggle = document.getElementById('navMobileToggle');
     if (!menuToggle) {
         menuToggle = document.createElement('button');
         menuToggle.id = 'navMobileToggle';
         menuToggle.type = 'button';
-        menuToggle.className = 'btn-icon nav-mobile-toggle';
-        menuToggle.setAttribute('aria-label', 'Toggle navigation menu');
+        menuToggle.className = 'nav-mobile-toggle';
+        menuToggle.setAttribute('aria-label', 'Open navigation menu');
         menuToggle.setAttribute('aria-expanded', 'false');
-        menuToggle.textContent = 'Menu';
+        menuToggle.innerHTML = iconHamburger;
         header.appendChild(menuToggle);
+    }
+
+    // Move nav-auth into the dropdown panel on mobile so it appears inside the menu
+    const navAuth = document.querySelector('.nav-auth');
+    if (navAuth && window.matchMedia('(max-width: 768px)').matches) {
+        nav.appendChild(navAuth);
     }
 
     const closeNav = () => {
         nav.classList.remove('nav-open');
-        menuToggle.textContent = 'Menu';
+        menuToggle.innerHTML = iconHamburger;
+        menuToggle.setAttribute('aria-label', 'Open navigation menu');
         menuToggle.setAttribute('aria-expanded', 'false');
     };
 
     menuToggle.addEventListener('click', () => {
         const isOpen = nav.classList.toggle('nav-open');
-        menuToggle.textContent = isOpen ? 'Close' : 'Menu';
+        menuToggle.innerHTML = isOpen ? iconClose : iconHamburger;
+        menuToggle.setAttribute('aria-label', isOpen ? 'Close navigation menu' : 'Open navigation menu');
         menuToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
     });
 
@@ -282,7 +293,6 @@ function initMobileNavToggle() {
         link.addEventListener('click', closeNav);
     });
 
-    const navAuth = document.querySelector('.nav-auth');
     if (navAuth) {
         navAuth.querySelectorAll('a, button').forEach((el) => {
             el.addEventListener('click', closeNav);

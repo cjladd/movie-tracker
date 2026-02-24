@@ -150,9 +150,28 @@
 /* ── Mobile Toggle ────────────────────────────────────────────────────────── */
 .nav-mobile-toggle {
   display: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  padding: 0;
+  background: transparent;
   border: 1px solid var(--glass-border);
-  background: var(--glass-bg);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color var(--transition-fast),
+              border-color var(--transition-fast),
+              background var(--transition-fast);
+}
+
+.nav-mobile-toggle:hover {
   color: var(--text-primary);
+  border-color: var(--border-hover);
+  background: rgba(148, 163, 184, 0.08);
+  transform: none;
+  box-shadow: none;
 }
 
 /* ── Mobile Responsive ────────────────────────────────────────────────────── */
@@ -167,6 +186,25 @@
     display: inline-flex;
     order: 0;
     margin-left: auto;
+  }
+
+  /* nav-auth moved inside .main-nav by JS on mobile */
+  .main-nav .nav-auth {
+    display: flex;
+    position: static;
+    top: auto;
+    right: auto;
+    z-index: auto;
+    order: unset;
+    width: 100%;
+    padding: 0.5rem 0 0;
+    margin-top: 0.1rem;
+    border-top: 1px solid var(--glass-border);
+  }
+
+  .main-nav .nav-auth-btn {
+    flex: 1;
+    text-align: center;
   }
 
   .logo-link {
@@ -214,24 +252,8 @@
     width: 32px;
   }
 
+  /* nav-auth is moved into .main-nav by JS; hide it if still a header sibling */
   .nav-auth {
-    position: static;
-    top: auto;
-    right: auto;
-    z-index: auto;
-    order: -1;
     display: none;
-    width: 100%;
-    padding: 0.5rem 0 0;
-    border-top: 1px solid var(--glass-border);
-  }
-
-  .main-nav.nav-open ~ .nav-auth {
-    display: flex;
-  }
-
-  .nav-auth-btn {
-    flex: 1;
-    text-align: center;
   }
 }
