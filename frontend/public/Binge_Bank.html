@@ -78,6 +78,7 @@
             </div>
             <div class="modal-body">
                 <div id="modalDescription"></div>
+                <div id="watchProviders"></div>
                 <div class="group-selector" id="groupSelector" style="display:none;">
                     <h4>Add to Group Watchlist</h4>
                     <div class="group-list" id="groupList"></div>
@@ -312,6 +313,11 @@
                     ${movie.genres && movie.genres.length > 0 ? `<p><strong>Genres:</strong> ${movie.genres.map((g) => g.name).join(', ')}</p>` : ''}
                     ${movie.cast && movie.cast.length > 0 ? `<p><strong>Cast:</strong> ${movie.cast.slice(0, 5).map((c) => c.name).join(', ')}</p>` : ''}
                 `;
+
+                const watchProvidersEl = document.getElementById('watchProviders');
+                if (watchProvidersEl) {
+                    watchProvidersEl.innerHTML = renderWatchProviders(movie.watch_providers || null);
+                }
 
                 const groupSelector = document.getElementById('groupSelector');
                 if (currentUser && userGroups.length > 0) {

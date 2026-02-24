@@ -4,6 +4,7 @@ const logger = require('../utils/logger');
 
 const TMDB_IMAGE_URL = `${env.tmdb.imageBase}/w780`;
 const TMDB_BACKDROP_URL = `${env.tmdb.imageBase}/w1280`;
+const TMDB_LOGO_URL = `${env.tmdb.imageBase}/w92`;
 
 const tmdbClient = axios.create({
   baseURL: env.tmdb.baseUrl,
@@ -66,4 +67,22 @@ function addImageUrls(movie) {
   };
 }
 
-module.exports = { fetchFromTMDB, mapTMDBMovie, addImageUrls };
+function mapProviders(watchProvidersData) {
+  const usData = watchProvidersData?.results?.US || null;
+  if (!usData) return null;
+
+  const mapProvider = (p) => ({
+    id: p.provider_id,
+    name: p.provider_name,
+    logo_url: `${TMDB_LOGO_URL}${p.logo_path}`,
+  });
+
+  return {
+    link: usData.link || null,
+    stream: (usData.flatrate || []).map(mapProvider),
+    rent: (usData.rent || []).map(mapProvider),
+    buy: (usData.buy || []).map(mapProvider),
+  };
+}
+
+module.exports = { fetchFromTMDB, mapTMDBMovie, addImageUrls, mapProviders };

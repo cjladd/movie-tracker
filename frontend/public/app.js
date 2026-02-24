@@ -718,6 +718,39 @@ function escapeHtml(text) {
     return text ? text.toString().replace(/[&<>"']/g, m => map[m]) : '';
 }
 
+function renderWatchProviders(providers) {
+    if (!providers || (!providers.stream.length && !providers.rent.length && !providers.buy.length)) {
+        const justWatchLink = providers?.link
+            ? `<a href="${escapeHtml(providers.link)}" target="_blank" rel="noopener noreferrer" class="watch-providers-link">Search on JustWatch</a>`
+            : '';
+        return `<div class="watch-providers">
+            <p class="watch-providers-none">We couldn't find a place to watch this.</p>
+            ${justWatchLink}
+        </div>`;
+    }
+
+    const renderGroup = (label, items, link) => {
+        if (!items.length) return '';
+        const logos = items.map((p) =>
+            `<a href="${escapeHtml(link || '#')}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(p.name)}" class="provider-logo-link">
+                <img src="${escapeHtml(p.logo_url)}" alt="${escapeHtml(p.name)}" class="provider-logo" loading="lazy">
+            </a>`
+        ).join('');
+        return `<div class="provider-group">
+            <span class="provider-label">${label}</span>
+            <div class="provider-logos">${logos}</div>
+        </div>`;
+    };
+
+    return `<div class="watch-providers">
+        <h4 class="watch-providers-title">Where to Watch</h4>
+        ${renderGroup('Stream', providers.stream, providers.link)}
+        ${renderGroup('Rent', providers.rent, providers.link)}
+        ${renderGroup('Buy', providers.buy, providers.link)}
+        ${providers.link ? `<p class="watch-providers-credit">Data by <a href="${escapeHtml(providers.link)}" target="_blank" rel="noopener noreferrer" class="watch-providers-link">JustWatch</a></p>` : ''}
+    </div>`;
+}
+
 function formatDate(dateString) {
     return new Date(dateString).toLocaleDateString();
 }

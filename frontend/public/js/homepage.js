@@ -229,6 +229,7 @@ function renderHomeMovieModal(movie) {
     const metaEl = document.getElementById('modalMeta');
     const descriptionEl = document.getElementById('modalDescription');
     const modalHeader = document.getElementById('modalHeader');
+    const watchProvidersEl = document.getElementById('watchProviders');
 
     if (!titleEl || !metaEl || !descriptionEl || !modalHeader) return;
 
@@ -254,6 +255,10 @@ function renderHomeMovieModal(movie) {
         ${movie.genres && movie.genres.length > 0 ? `<p><strong>Genres:</strong> ${movie.genres.map((g) => g.name).join(', ')}</p>` : ''}
         ${movie.cast && movie.cast.length > 0 ? `<p><strong>Cast:</strong> ${movie.cast.slice(0, 5).map((c) => c.name).join(', ')}</p>` : ''}
     `;
+
+    if (watchProvidersEl) {
+        watchProvidersEl.innerHTML = renderWatchProviders(movie.watch_providers || null);
+    }
 }
 
 async function loadHomeUserGroups() {

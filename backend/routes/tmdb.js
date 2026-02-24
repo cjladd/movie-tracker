@@ -1,6 +1,6 @@
 const { Router } = require('express');
 const { pool } = require('../config/database');
-const { fetchFromTMDB, mapTMDBMovie, addImageUrls } = require('../config/tmdb');
+const { fetchFromTMDB, mapTMDBMovie, addImageUrls, mapProviders } = require('../config/tmdb');
 const { requireAuth } = require('../middleware/auth');
 const { validateParamId, requireFields } = require('../middleware/validate');
 const { verifyMembership, apiResponse, apiError, isPositiveInt } = require('../utils/helpers');
@@ -62,9 +62,10 @@ router.get('/search', async (req, res, next) => {
 // Get movie details by TMDB ID
 router.get('/movie/:tmdbId', validateParamId('tmdbId'), async (req, res, next) => {
   try {
-    const [movieDetails, credits] = await Promise.all([
+    const [movieDetails, credits, watchProvidersData] = await Promise.all([
       fetchFromTMDB(`/movie/${req.params.tmdbId}`),
       fetchFromTMDB(`/movie/${req.params.tmdbId}/credits`).catch(() => ({ cast: [], crew: [] })),
+      fetchFromTMDB(`/movie/${req.params.tmdbId}/watch/providers`).catch(() => ({ results: {} })),
     ]);
 
     res.json(apiResponse({
@@ -73,6 +74,7 @@ router.get('/movie/:tmdbId', validateParamId('tmdbId'), async (req, res, next) =
       crew: (credits.crew || []).filter((p) =>
         ['Director', 'Producer', 'Writer'].includes(p.job)
       ),
+      watch_providers: mapProviders(watchProvidersData),
     }));
   } catch (err) {
     next(err);
