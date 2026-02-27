@@ -51,8 +51,8 @@
 
         <section class="bb-tabs-wrap" data-animate>
             <div class="tabs">
-                <button class="tab active" type="button" data-tab="search">Search Results</button>
-                <button class="tab" type="button" data-tab="popular">Popular</button>
+                <button class="tab" type="button" data-tab="search">Search Results</button>
+                <button class="tab active" type="button" data-tab="popular">Popular</button>
                 <button class="tab" type="button" data-tab="trending">Trending</button>
             </div>
             <div class="success-message" id="successMessage" aria-live="polite"></div>
@@ -89,7 +89,7 @@
 
     <script src="app.js"></script>
     <script>
-        let currentTab = 'search';
+        let currentTab = 'popular';
         let currentPage = 1;
         let currentQuery = '';
         let currentMovieData = null;
@@ -106,7 +106,7 @@
         document.addEventListener('DOMContentLoaded', async () => {
             setupEventListeners();
             await ensureAuthState();
-            loadPopularMovies();
+            switchTab('popular');
             loadUserGroups();
         });
 
