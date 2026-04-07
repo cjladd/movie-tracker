@@ -1,5 +1,7 @@
 # WatchPartyHQ (movie-tracker)
 
+**Live site: [watchpartyhq.live](https://watchpartyhq.live)**
+
 Collaborative movie night app: create groups, build a watchlist, vote on movies, and pull fresh data from TMDB.
 
 ## ✨ Features

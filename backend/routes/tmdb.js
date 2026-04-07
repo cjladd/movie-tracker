@@ -9,7 +9,7 @@ const logger = require('../utils/logger');
 const router = Router();
 
 // Seed database with popular TMDB movies
-router.post('/seed', async (req, res, next) => {
+router.post('/seed', requireAuth, async (req, res, next) => {
   try {
     const popularMovies = await fetchFromTMDB('/movie/popular');
     const results = popularMovies.results || [];
